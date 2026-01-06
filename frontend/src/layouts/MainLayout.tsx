@@ -26,7 +26,10 @@ import {
   Logout as LogoutIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
+  Brightness4 as MoonIcon,
+  Brightness7 as SunIcon,
 } from '@mui/icons-material'
+import { useThemeContext } from '../contexts/ThemeContext'
 
 const DRAWER_WIDTH = 260
 const CLOSED_DRAWER_WIDTH = 72 // Enough for icon
@@ -80,6 +83,7 @@ const MiniDrawer = styled(Drawer, { shouldForwardProp: (prop) => prop !== 'open'
 
 const MainLayout = () => {
   const theme = useTheme()
+  const { toggleTheme, mode } = useThemeContext()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const [mobileOpen, setMobileOpen] = useState(false)
   const [open, setOpen] = useState(true) // Desktop expand state
@@ -102,15 +106,7 @@ const MainLayout = () => {
   ]
 
   const drawerContent = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <DrawerHeader>
-        {/* Toggle Button for Desktop inside Drawer */}
-        {!isMobile && (
-          <IconButton onClick={handleDrawerToggle}>
-            {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-          </IconButton>
-        )}
-      </DrawerHeader>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', mt: 2 }}>
 
       {/* Brand Title (Hide when closed on desktop) */}
       {(open || isMobile) && (
@@ -207,33 +203,29 @@ const MainLayout = () => {
         }}
       >
         <Toolbar>
+          {/* Desktop Menu Toggle (Optional on Appbar if preferred, but usually inside drawer or here) */}
+          {/* If we want the button to expand the drawer from closed state, we might need it on AppBar OR rely on the MiniDrawer strip which is always visible */}
+          {/* Since we have a mini drawer, the drawer header is always visible for the button */}
+
           {/* Mobile Menu Toggle */}
+
           <IconButton
             color="inherit"
             aria-label="open drawer"
             edge="start"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            sx={{ mr: 2, display: { md: 'none' } }}
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2 }}
           >
             <MenuIcon />
           </IconButton>
 
-          {/* Desktop Menu Toggle (Optional on Appbar if preferred, but usually inside drawer or here) */}
-          {/* If we want the button to expand the drawer from closed state, we might need it on AppBar OR rely on the MiniDrawer strip which is always visible */}
-          {/* Since we have a mini drawer, the drawer header is always visible for the button */}
-          {!open && !isMobile && (
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
 
           <Box sx={{ flexGrow: 1 }} />
+
+          <IconButton onClick={toggleTheme} color="inherit" sx={{ mr: 1 }}>
+            {mode === 'dark' ? <SunIcon /> : <MoonIcon />}
+          </IconButton>
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant="subtitle2">Admin User</Typography>
             <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main }}>A</Avatar>
