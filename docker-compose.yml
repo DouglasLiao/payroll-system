@@ -8,7 +8,14 @@ services:
       - ./backend:/app
     environment:
       - DEBUG=1
-      # Add other env vars if needed
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=payroll
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      - db
     command: python manage.py runserver 0.0.0.0:8000
 
   frontend:
@@ -23,3 +30,20 @@ services:
       - CHOKIDAR_USEPOLLING=true # Often needed for hot reload in docker
     depends_on:
       - backend
+
+  db:
+    image: postgres:15-alpine
+    container_name: payroll_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=payroll
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
+
+
