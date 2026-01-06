@@ -3,27 +3,22 @@ import {
   Box,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   TextField,
   MenuItem,
+  IconButton,
   Grid,
 } from '@mui/material'
 import { Add, Edit, Delete } from '@mui/icons-material'
+import { GenericTable } from '../components/GenericTable'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useSnackbar } from 'notistack'
-import { getProviders, createProvider } from '../services/api'
+import { getProviders, createProvider, deleteProvider } from '../services/api'
 import type { Provider } from '../types'
 
 const providerSchema = z
@@ -58,7 +53,10 @@ const Providers = () => {
   const queryClient = useQueryClient()
   const { enqueueSnackbar } = useSnackbar()
 
-  const { data: providers } = useQuery({ queryKey: ['providers'], queryFn: getProviders })
+  const { data: providers, isLoading } = useQuery({
+    queryKey: ['providers'],
+    queryFn: getProviders,
+  })
 
   const createMutation = useMutation({
     mutationFn: createProvider,
@@ -69,6 +67,15 @@ const Providers = () => {
       reset()
     },
     onError: () => enqueueSnackbar('Error creating provider', { variant: 'error' }),
+  })
+
+  // Placeholder mutations for actions
+  const deleteMutation = useMutation({
+    mutationFn: deleteProvider,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['providers'] })
+      enqueueSnackbar('Provider deleted', { variant: 'success' })
+    },
   })
 
   const {
@@ -96,14 +103,18 @@ const Providers = () => {
   const paymentMethod = watch('payment_method')
 
   const onSubmit = (data: ProviderFormInputs) => {
-    // We need to cast or transform data to match what createProvider expects (Omit<Provider, 'id'>)
-    // Since our form inputs match nicely, we can just cast to unknown then to the expected type if needed,
-    // or better yet, just pass it if the types align.
-    // createProvider expects Omit<Provider, 'id'>.
-    // ProviderFormInputs has all string fields basically.
-    // Let's rely on the API to handle string->decimal conversion or handle it here?
-    // The previous code had (data as any), I will prioritize fixing the lint error.
     createMutation.mutate(data as unknown as Omit<Provider, 'id'>)
+  }
+
+  const handleDelete = (id: number) => {
+    if (confirm('Are you sure?')) {
+      deleteMutation.mutate(id)
+    }
+  }
+
+  const handleEdit = (provider: Provider) => {
+    console.log('Edit', provider)
+    // TODO: Implement Edit logic (populate form, set edit mode)
   }
 
   return (
@@ -115,37 +126,36 @@ const Providers = () => {
         </Button>
       </Box>
 
-      <Paper>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Role</TableCell>
-              <TableCell>Base Salary</TableCell>
-              <TableCell>Method</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {providers?.map((provider) => (
-              <TableRow key={provider.id}>
-                <TableCell>{provider.name}</TableCell>
-                <TableCell>{provider.role}</TableCell>
-                <TableCell>R$ {provider.salary_base}</TableCell>
-                <TableCell>{provider.payment_method}</TableCell>
-                <TableCell>
-                  <IconButton size="small">
-                    <Edit />
-                  </IconButton>
-                  <IconButton size="small" color="error">
-                    <Delete />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Paper>
+      <GenericTable
+        data={providers}
+        loading={isLoading}
+        keyExtractor={(p) => p.id}
+        columns={[
+          { id: 'name', label: 'Name', accessor: 'name' },
+          { id: 'role', label: 'Role', accessor: 'role' },
+          {
+            id: 'salary',
+            label: 'Base Salary',
+            render: (p) => `R$ ${p.salary_base}`,
+          },
+          { id: 'method', label: 'Method', accessor: 'payment_method' },
+          {
+            id: 'actions',
+            label: 'Actions',
+            align: 'right',
+            render: (p) => (
+              <>
+                <IconButton size="small" onClick={() => handleEdit(p)}>
+                  <Edit />
+                </IconButton>
+                <IconButton size="small" color="error" onClick={() => handleDelete(p.id)}>
+                  <Delete />
+                </IconButton>
+              </>
+            ),
+          },
+        ]}
+      />
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>New Provider</DialogTitle>

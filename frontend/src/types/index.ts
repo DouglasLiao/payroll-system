@@ -1,3 +1,10 @@
+export interface PaginatedResponse<T> {
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}
+
 export type PaymentMethod = 'PIX' | 'TED' | 'TRANSFER'
 export type PaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED'
 

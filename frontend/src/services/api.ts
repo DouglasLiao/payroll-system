@@ -1,13 +1,13 @@
 import axios from 'axios'
-import type { Provider, Payment, DashboardStats } from '../types'
+import type { Provider, Payment, DashboardStats, PaginatedResponse } from '../types'
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api',
 })
 
 export const getProviders = async () => {
-  const { data } = await api.get<Provider[]>('/providers/')
-  return data
+  const { data } = await api.get<PaginatedResponse<Provider>>('/providers/')
+  return data.results
 }
 
 export const createProvider = async (provider: Omit<Provider, 'id'>) => {
@@ -25,8 +25,8 @@ export const deleteProvider = async (id: number) => {
 }
 
 export const getPayments = async () => {
-  const { data } = await api.get<Payment[]>('/payments/')
-  return data
+  const { data } = await api.get<PaginatedResponse<Payment>>('/payments/')
+  return data.results
 }
 
 export const createPayment = async (payment: Omit<Payment, 'id' | 'total_calculated'>) => {

@@ -1,24 +1,14 @@
-import {
-  Box,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Paper,
-  Button,
-  Chip,
-} from '@mui/material'
+import { Box, Typography, Button, Chip } from '@mui/material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSnackbar } from 'notistack'
 import { Check, Download } from '@mui/icons-material'
 import { getPayments, payPayment } from '../services/api'
+import { GenericTable } from '../components/GenericTable'
 
 const Payments = () => {
   const queryClient = useQueryClient()
   const { enqueueSnackbar } = useSnackbar()
-  const { data: payments } = useQuery({ queryKey: ['payments'], queryFn: getPayments })
+  const { data: payments, isLoading } = useQuery({ queryKey: ['payments'], queryFn: getPayments })
 
   const payMutation = useMutation({
     mutationFn: payPayment,
@@ -38,61 +28,59 @@ const Payments = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, gap: 2 }}>
         <Typography variant="h4">Payments</Typography>
         <Button variant="outlined">Generate Monthly Roll</Button>
       </Box>
 
-      <Paper>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Provider</TableCell>
-              <TableCell>Ref</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {payments?.map((payment) => (
-              <TableRow key={payment.id}>
-                <TableCell>{payment.provider_name}</TableCell>
-                <TableCell>{payment.reference}</TableCell>
-                <TableCell>R$ {payment.total_calculated}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={payment.status}
-                    color={payment.status === 'PAID' ? 'success' : 'warning'}
+      <GenericTable
+        data={payments}
+        loading={isLoading}
+        keyExtractor={(p) => p.id}
+        columns={[
+          { id: 'provider', label: 'Provider', accessor: 'provider_name' },
+          { id: 'ref', label: 'Ref', accessor: 'reference' },
+          {
+            id: 'amount',
+            label: 'Amount',
+            render: (p) => `R$ ${p.total_calculated}`,
+          },
+          {
+            id: 'status',
+            label: 'Status',
+            render: (p) => (
+              <Chip
+                label={p.status}
+                color={p.status === 'PAID' ? 'success' : 'warning'}
+                size="small"
+              />
+            ),
+          },
+          {
+            id: 'actions',
+            label: 'Actions',
+            render: (p) => (
+              <>
+                {p.status === 'PENDING' && (
+                  <Button size="small" startIcon={<Check />} onClick={() => handlePay(p.id)}>
+                    Pay
+                  </Button>
+                )}
+                {p.status === 'PAID' && (
+                  <Button
                     size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  {payment.status === 'PENDING' && (
-                    <Button
-                      size="small"
-                      startIcon={<Check />}
-                      onClick={() => handlePay(payment.id)}
-                    >
-                      Pay
-                    </Button>
-                  )}
-                  {payment.status === 'PAID' && (
-                    <Button
-                      size="small"
-                      href={`http://localhost:8000/api/receipt/${payment.id}/`}
-                      target="_blank"
-                      startIcon={<Download />}
-                    >
-                      Receipt
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Paper>
+                    href={`http://localhost:8000/api/receipt/${p.id}/`}
+                    target="_blank"
+                    startIcon={<Download />}
+                  >
+                    Receipt
+                  </Button>
+                )}
+              </>
+            ),
+          },
+        ]}
+      />
     </Box>
   )
 }

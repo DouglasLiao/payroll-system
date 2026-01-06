@@ -1,4 +1,4 @@
-import { Grid, Card, Typography, Box, Chip } from '@mui/material'
+import { Grid, Card, Typography, Box, Chip, Skeleton } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
 import ReactApexChart from 'react-apexcharts'
 import { getDashboardStats } from '../services/api'
@@ -23,7 +23,42 @@ const Dashboard = () => {
     { name: 'Pending', data: [1100, 3200, 4500, 3200, 3400, 5200] },
   ]
 
-  if (isLoading) return <Typography>Loading...</Typography>
+  if (isLoading) {
+    return (
+      <Box>
+        <Typography variant="h4" sx={{ mb: 4 }}>
+          Dashboard
+        </Typography>
+        <Grid container spacing={3}>
+          {[...Array(4)].map((_, i) => (
+            <Grid key={i} size={{ xs: 12, sm: 6, md: 3 }}>
+              <Card sx={{ p: 3 }}>
+                <Skeleton variant="text" width={100} />
+                <Skeleton variant="rectangular" height={40} width={150} sx={{ mt: 2 }} />
+              </Card>
+            </Grid>
+          ))}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Card sx={{ p: 3 }}>
+              <Skeleton variant="text" width={150} sx={{ mb: 2 }} />
+              <Skeleton variant="rectangular" height={350} />
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Card sx={{ p: 3 }}>
+              <Skeleton variant="text" width={150} sx={{ mb: 2 }} />
+              {[...Array(5)].map((_, i) => (
+                <Box key={i} sx={{ mb: 2 }}>
+                  <Skeleton variant="text" width="60%" />
+                  <Skeleton variant="text" width="40%" />
+                </Box>
+              ))}
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
+    )
+  }
 
   return (
     <Box>
@@ -49,6 +84,25 @@ const Dashboard = () => {
             <Typography variant="h3" color="success.main">
               R$ {data?.stats.paid || 0}
             </Typography>
+          </Card>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card sx={{ p: 3 }}>
+            <Typography variant="subtitle2" color="textSecondary">
+              Total Providers
+            </Typography>
+            <Typography variant="h3" color="primary.main">
+              {/* Mock or fetch provider count */}
+              12
+            </Typography>
+          </Card>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card sx={{ p: 3 }}>
+            <Typography variant="subtitle2" color="textSecondary">
+              Next Payout
+            </Typography>
+            <Typography variant="h3">15 Jan</Typography>
           </Card>
         </Grid>
 
