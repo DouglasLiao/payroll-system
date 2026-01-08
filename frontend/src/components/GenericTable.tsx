@@ -36,8 +36,8 @@ export function GenericTable<T>({
   loading = false,
 }: GenericTableProps<T>) {
   return (
-    <TableContainer component={Paper}>
-      <Table>
+    <TableContainer component={Paper} sx={{ width: '100%' }}>
+      <Table sx={{ width: '100%' }}>
         <TableHead>
           <TableRow>
             {columns.map((col) => (

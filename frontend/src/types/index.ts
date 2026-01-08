@@ -7,12 +7,19 @@ export interface PaginatedResponse<T> {
 
 export type PaymentMethod = 'PIX' | 'TED' | 'TRANSFER'
 export type PaymentStatus = 'PENDING' | 'PAID' | 'CANCELLED'
+export type PayrollStatus = 'DRAFT' | 'CLOSED' | 'PAID'
+export type ItemType = 'CREDIT' | 'DEBIT'
 
 export interface Provider {
   id: number
   name: string
   role: string
-  salary_base: string // Decimal comes as string from API usually, or number
+  salary_base?: string // Mantido por compatibilidade
+  monthly_value: string
+  monthly_hours: number
+  advance_enabled: boolean
+  advance_percentage: string
+  vt_value: string
   payment_method: PaymentMethod
   pix_key?: string
   bank_name?: string
@@ -25,7 +32,7 @@ export interface Provider {
 export interface Payment {
   id: number
   provider: number
-  provider_name?: string // Read only
+  provider_name?: string
   reference: string
   amount_base: string
   bonus: string
@@ -33,6 +40,87 @@ export interface Payment {
   total_calculated: string
   status: PaymentStatus
   paid_at?: string
+}
+
+export interface PayrollItem {
+  id: number
+  type: ItemType
+  type_display: string
+  description: string
+  amount: string
+}
+
+export interface Payroll {
+  id: number
+  provider: number
+  provider_name: string
+  reference_month: string
+  status: PayrollStatus
+  status_display: string
+
+  // Valores base
+  base_value: string
+  hourly_rate: string
+  advance_value: string
+  remaining_value: string
+
+  // Horas
+  overtime_hours_50: string
+  holiday_hours: string
+  night_hours: string
+  late_minutes: number
+  absence_hours: string
+
+  // Descontos variáveis
+  manual_discounts: string
+  vt_discount: string
+
+  // Valores calculados - Proventos
+  overtime_amount: string
+  holiday_amount: string
+  dsr_amount: string
+  night_shift_amount: string
+  total_earnings: string
+
+  // Valores calculados - Descontos
+  late_discount: string
+  absence_discount: string
+  dsr_on_absences: string
+  total_discounts: string
+
+  // Totais
+  gross_value: string
+  net_value: string
+
+  // Metadados
+  notes?: string
+  closed_at?: string
+  paid_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface PayrollDetail extends Omit<Payroll, 'provider'> {
+  items: PayrollItem[]
+  provider: {
+    id: number
+    name: string
+    role: string
+    monthly_value: string
+  }
+}
+
+export interface PayrollCreateData {
+  provider_id: number
+  reference_month: string
+  overtime_hours_50?: number
+  holiday_hours?: number
+  night_hours?: number
+  late_minutes?: number
+  absence_hours?: number
+  manual_discounts?: number
+  advance_already_paid?: number
+  notes?: string
 }
 
 export interface DashboardStats {

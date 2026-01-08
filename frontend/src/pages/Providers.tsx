@@ -10,6 +10,8 @@ import {
   MenuItem,
   IconButton,
   Grid,
+  Card,
+  Container,
 } from '@mui/material'
 import { Add, Edit, Delete } from '@mui/icons-material'
 import { GenericTable } from '../components/GenericTable'
@@ -118,44 +120,46 @@ const Providers = () => {
   }
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+    <Container maxWidth="xl" sx={{ py: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 2 }}>
         <Typography variant="h4">Providers</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={() => setOpen(true)}>
           Add Provider
         </Button>
       </Box>
 
-      <GenericTable
-        data={providers}
-        loading={isLoading}
-        keyExtractor={(p) => p.id}
-        columns={[
-          { id: 'name', label: 'Name', accessor: 'name' },
-          { id: 'role', label: 'Role', accessor: 'role' },
-          {
-            id: 'salary',
-            label: 'Base Salary',
-            render: (p) => `R$ ${p.salary_base}`,
-          },
-          { id: 'method', label: 'Method', accessor: 'payment_method' },
-          {
-            id: 'actions',
-            label: 'Actions',
-            align: 'right',
-            render: (p) => (
-              <>
-                <IconButton size="small" onClick={() => handleEdit(p)}>
-                  <Edit />
-                </IconButton>
-                <IconButton size="small" color="error" onClick={() => handleDelete(p.id)}>
-                  <Delete />
-                </IconButton>
-              </>
-            ),
-          },
-        ]}
-      />
+      <Card sx={{ p: 2 }}>
+        <GenericTable
+          data={providers}
+          loading={isLoading}
+          keyExtractor={(p) => p.id}
+          columns={[
+            { id: 'name', label: 'Name', accessor: 'name' },
+            { id: 'role', label: 'Role', accessor: 'role' },
+            {
+              id: 'salary',
+              label: 'Base Salary',
+              render: (p) => `R$ ${p.monthly_value || '0.00'}`,
+            },
+            { id: 'method', label: 'Method', accessor: 'payment_method' },
+            {
+              id: 'actions',
+              label: 'Actions',
+              align: 'right',
+              render: (p) => (
+                <>
+                  <IconButton size="small" onClick={() => handleEdit(p)}>
+                    <Edit />
+                  </IconButton>
+                  <IconButton size="small" color="error" onClick={() => handleDelete(p.id)}>
+                    <Delete />
+                  </IconButton>
+                </>
+              ),
+            },
+          ]}
+        />
+      </Card>
 
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>New Provider</DialogTitle>
@@ -305,7 +309,7 @@ const Providers = () => {
           </Box>
         </form>
       </Dialog>
-    </Box>
+    </Container>
   )
 }
 

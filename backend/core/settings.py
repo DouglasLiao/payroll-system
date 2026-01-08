@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'drf_spectacular',
     'corsheaders',
     'api',
 ]
@@ -133,7 +134,103 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 
+# Django REST Framework Configuration
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100
 }
+
+# drf-spectacular Configuration
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Sistema de Gestão de Pagamentos PJ - API',
+    'DESCRIPTION': """
+# Sistema de Folha de Pagamento para Prestadores PJ
+
+Este sistema gerencia o cálculo de pagamentos para prestadores **Pessoa Jurídica (PJ)** 
+com regras contratuais customizadas que incluem:
+
+- ✅ Horas extras (50% adicional)
+- ✅ Horas em feriados (100% adicional)  
+- ✅ Adicional noturno (20%)
+- ✅ DSR (Descanso Semanal Remunerado)
+- ✅ Descontos (atrasos, faltas, vale transporte)
+- ✅ Adiantamento quinzenal
+
+## Fórmulas de Cálculo
+
+### Valor da Hora
+```
+valor_hora = valor_contrato_mensal ÷ 220
+```
+
+### Adiantamento Quinzenal (padrão 40%)
+```
+adiantamento = valor_contrato_mensal × 0.40
+```
+
+### Horas Extras 50%
+```
+valor_hora_extra = valor_hora × 1.5
+total_horas_extras = horas_extras × valor_hora_extra
+```
+
+### Horas em Feriado (100%)
+```
+valor_hora_feriado = valor_hora × 2.0
+total_feriados = horas_feriado × valor_hora_feriado
+```
+
+### DSR (16.67%)
+```
+dsr = total_horas_extras × 0.1667
+```
+
+### Adicional Noturno (20%)
+```
+adicional_noturno = horas_noturnas × (valor_hora × 0.20)
+```
+
+### Valor Final
+```
+proventos = saldo_base + horas_extras + feriados + dsr + adicional_noturno
+descontos = atrasos + faltas + dsr_sobre_faltas + vt + manuais
+líquido = proventos - descontos
+```
+
+## Autenticação
+
+⚠️ **Nota**: Autenticação será implementada em fase futura. 
+Por enquanto, todos os endpoints estão abertos para desenvolvimento.
+    """,
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'CONTACT': {
+        'name': 'Equipe de Desenvolvimento',
+        'email': 'dev@payroll-system.com'
+    },
+    'LICENSE': {
+        'name': 'Proprietary'
+    },
+    'TAGS': [
+        {
+            'name': 'providers',
+            'description': 'Gerenciamento de prestadores PJ'
+        },
+        {
+            'name': 'payrolls',
+            'description': 'Folhas de pagamento com cálculos automáticos'
+        },
+        {
+            'name': 'payments',
+            'description': 'Pagamentos (sistema legado)'
+        },
+    ],
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SORT_OPERATIONS': False,
+}
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

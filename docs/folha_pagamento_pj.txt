@@ -1,0 +1,127 @@
+FOLHA DE PAGAMENTO — MODELO PJ (DOCUMENTAÇÃO TÉCNICA)
+
+Este documento descreve as regras de cálculo extraídas da planilha fornecida.
+Apesar de se tratar de PJ, o modelo adota conceitos atípicos como hora extra e DSR,
+que NÃO têm amparo legal trabalhista, sendo tratados aqui apenas como regras
+contratuais/comerciais.
+
+==================================================
+1. PREMISSAS GERAIS
+==================================================
+
+- Tipo de vínculo: Pessoa Jurídica (PJ)
+- Não existe relação CLT
+- Não há INSS, FGTS, férias ou 13º obrigatórios
+- Todos os valores são definidos por contrato
+- Hora extra e DSR são adicionais contratuais (não legais)
+- Pagamento mensal com possível adiantamento
+
+==================================================
+2. DADOS DE ENTRADA (INPUTS)
+==================================================
+
+- Valor mensal do contrato
+- Carga horária mensal de referência (ex: 220h)
+- Percentual de adiantamento (ex: 40%)
+- Horas extras contratuais
+- Horas trabalhadas em feriados (contratual)
+- Minutos de atraso
+- Descontos manuais
+- Percentual de DSR contratual
+
+==================================================
+3. CÁLCULOS BASE
+==================================================
+
+Valor da hora contratual:
+
+valor_hora = valor_contrato_mensal / carga_horaria_mensal
+
+==================================================
+4. ADIANTAMENTO (SE APLICÁVEL)
+==================================================
+
+valor_adiantamento = valor_contrato_mensal × percentual_adiantamento
+
+saldo_pagamento = valor_contrato_mensal − valor_adiantamento
+
+==================================================
+5. HORAS EXTRAS (CONTRATUAL)
+==================================================
+
+Hora extra 50% (regra contratual):
+
+valor_hora_extra_50 = valor_hora × 1.5
+total_hora_extra_50 = horas_extras_50 × valor_hora_extra_50
+
+==================================================
+6. HORAS EM FERIADO (CONTRATUAL)
+==================================================
+
+valor_hora_feriado = valor_hora × 2
+total_feriado = horas_feriado × valor_hora_feriado
+
+==================================================
+7. DSR CONTRATUAL
+==================================================
+
+DSR não é obrigação legal para PJ.
+Aqui é tratado como adicional contratual.
+
+dsr = total_hora_extra_50 × percentual_dsr
+
+==================================================
+8. PROVENTOS
+==================================================
+
+total_proventos =
+    saldo_pagamento +
+    total_hora_extra_50 +
+    total_feriado +
+    dsr
+
+==================================================
+9. DESCONTOS
+==================================================
+
+Atrasos:
+
+desconto_atraso = (minutos_atraso / 60) × valor_hora
+
+Total de descontos:
+
+total_descontos =
+    desconto_atraso +
+    descontos_manuais
+
+==================================================
+10. VALOR FINAL A PAGAR (PJ)
+==================================================
+
+valor_liquido_pagar = total_proventos − total_descontos
+
+==================================================
+11. OBSERVAÇÕES IMPORTANTES
+==================================================
+
+- Este modelo NÃO representa folha CLT
+- Não há encargos trabalhistas
+- Regras devem constar em contrato PJ
+- Recomendado chamar este módulo de:
+  "Cálculo de Pagamento PJ"
+
+==================================================
+12. USO NO SISTEMA
+==================================================
+
+Backend:
+- Serviço puro de cálculo
+- Sem dependência de legislação trabalhista
+
+Frontend:
+- Formulário de simulação contratual
+- Campos percentuais configuráveis
+
+==================================================
+FIM DO DOCUMENTO
+==================================================

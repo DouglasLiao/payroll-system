@@ -1,9 +1,19 @@
 import axios from 'axios'
-import type { Provider, Payment, DashboardStats, PaginatedResponse } from '../types'
+import type {
+  Provider,
+  Payment,
+  DashboardStats,
+  PaginatedResponse,
+  Payroll,
+  PayrollDetail,
+  PayrollCreateData
+} from '../types'
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api',
 })
+
+// ==================== PROVIDERS ====================
 
 export const getProviders = async () => {
   const { data } = await api.get<PaginatedResponse<Provider>>('/providers/')
@@ -24,6 +34,8 @@ export const deleteProvider = async (id: number) => {
   await api.delete(`/providers/${id}/`)
 }
 
+// ==================== PAYMENTS (Legacy) ====================
+
 export const getPayments = async () => {
   const { data } = await api.get<PaginatedResponse<Payment>>('/payments/')
   return data.results
@@ -38,6 +50,66 @@ export const payPayment = async (id: number) => {
   const { data } = await api.post<Payment>(`/payments/${id}/pay/`)
   return data
 }
+
+// ==================== PAYROLLS ====================
+
+export interface PayrollFilters {
+  status?: string
+  reference_month?: string
+  provider?: number
+}
+
+export const getPayrolls = async (params?: PayrollFilters) => {
+  const searchParams = new URLSearchParams()
+
+  if (params?.status && params.status !== 'all') {
+    searchParams.append('status', params.status)
+  }
+  if (params?.reference_month) {
+    searchParams.append('reference_month', params.reference_month)
+  }
+  if (params?.provider) {
+    searchParams.append('provider', params.provider.toString())
+  }
+
+  const queryString = searchParams.toString()
+  const url = `/payrolls/${queryString ? '?' + queryString : ''}`
+
+  const { data } = await api.get<PaginatedResponse<Payroll>>(url)
+  return data.results
+}
+
+export const getPayrollDetail = async (id: number) => {
+  const { data } = await api.get<PayrollDetail>(`/payrolls/${id}/`)
+  return data
+}
+
+export const createPayroll = async (payrollData: PayrollCreateData) => {
+  const { data } = await api.post<PayrollDetail>('/payrolls/calculate/', payrollData)
+  return data
+}
+
+export const closePayroll = async (id: number) => {
+  const { data } = await api.post<Payroll>(`/payrolls/${id}/close/`)
+  return data
+}
+
+export const markPayrollAsPaid = async (id: number) => {
+  const { data } = await api.post<Payroll>(`/payrolls/${id}/mark-paid/`)
+  return data
+}
+
+export const recalculatePayroll = async (id: number, updates: Partial<PayrollCreateData>) => {
+  const { data } = await api.put<PayrollDetail>(`/payrolls/${id}/recalculate/`, updates)
+  return data
+}
+
+export const reopenPayroll = async (id: number) => {
+  const { data } = await api.post<Payroll>(`/payrolls/${id}/reopen/`)
+  return data
+}
+
+// ==================== DASHBOARD ====================
 
 export const getDashboardStats = async () => {
   const { data } = await api.get<DashboardStats>('/dashboard/')

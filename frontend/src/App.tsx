@@ -4,12 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SnackbarProvider } from 'notistack'
 import { ThemeContextProvider } from './contexts/ThemeContext'
 
-// Layouts & Pages (Placeholders for now)
+// Layouts & Pages
 import MainLayout from './layouts/MainLayout'
 import Dashboard from './pages/Dashboard'
 import Providers from './pages/Providers'
 import Payments from './pages/Payments'
-// const EmployeeView = () => <div>Employee View</div>; // Still placeholder for now
+import Payrolls from './pages/Payrolls'
 const EmployeeView = () => <div>Employee View (Coming Soon)</div>
 
 const queryClient = new QueryClient()
@@ -27,6 +27,7 @@ function App() {
                 <Route index element={<Dashboard />} />
                 <Route path="admin/providers" element={<Providers />} />
                 <Route path="admin/payments" element={<Payments />} />
+                <Route path="admin/payrolls" element={<Payrolls />} />
               </Route>
 
               {/* Standalone Employee Route */}
