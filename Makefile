@@ -1,4 +1,4 @@
-.PHONY: up down build logs lint local-install local-run
+.PHONY: up down build logs lint local-install local-backend local-frontend
 
 # Docker Commands (Default)
 up:
@@ -22,10 +22,10 @@ local-install:
 	cd backend && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
 	cd frontend && npm install
 
-local-run-backend:
+local-backend:
 	cd backend && ./venv/bin/python3 manage.py runserver 0.0.0.0:8000
 
-local-run-frontend:
+local-frontend:
 	cd frontend && npm run dev
 
 lint:
