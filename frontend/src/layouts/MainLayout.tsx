@@ -27,6 +27,7 @@ import {
 import { useThemeContext } from '../contexts/ThemeContext'
 
 const DRAWER_WIDTH = 260
+const VIEW_PORT_WIDTH = 95
 
 const MainLayout = () => {
   const { toggleTheme, mode } = useThemeContext()
@@ -146,37 +147,40 @@ const MainLayout = () => {
         variant="persistent"
         open={open}
         sx={{
-          width: open ? DRAWER_WIDTH : 0,
+          width: DRAWER_WIDTH,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,
             boxSizing: 'border-box',
-            transition: (theme) =>
-              theme.transitions.create('transform', {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
-              }),
           },
         }}
       >
         {drawerContent}
       </Drawer>
 
+
       <Box
         component="main"
-        sx={{
+        sx={(theme) => ({
           flexGrow: 1,
           p: 3,
-          width: `calc(100% - ${open ? DRAWER_WIDTH : 0}px)`,
-          transition: (theme) =>
-            theme.transitions.create(['width', 'margin'], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
-            }),
           minHeight: '100vh',
+          minWidth: open ? `calc(${VIEW_PORT_WIDTH}vw - ${DRAWER_WIDTH}px)` : `${VIEW_PORT_WIDTH}vw`,
           bgcolor: 'background.default',
-        }}
+
+          marginLeft: open ? 0 : `${-DRAWER_WIDTH}px`,
+
+          transition: theme.transitions.create('margin', {
+            easing: open
+              ? theme.transitions.easing.easeOut
+              : theme.transitions.easing.sharp,
+            duration: open
+              ? theme.transitions.duration.enteringScreen
+              : theme.transitions.duration.leavingScreen,
+          }),
+        })}
       >
+
         <Toolbar /> {/* Spacer for AppBar */}
         <Outlet />
       </Box>

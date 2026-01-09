@@ -154,7 +154,7 @@ const Dashboard = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: '100%', width: '100%' }}>
+    <Box sx={{ maxWidth: '100%', width: '100%', mt: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4">Dashboard</Typography>
         <Typography variant="body2" color="text.secondary">

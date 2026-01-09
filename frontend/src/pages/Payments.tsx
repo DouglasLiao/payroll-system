@@ -29,7 +29,7 @@ const Payments = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2 }}>
+    <Container sx={{ py: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, gap: 2, flexWrap: 'wrap' }}>
         <Typography variant="h4">Payments</Typography>
         <Button variant="outlined">Generate Monthly Roll</Button>
