@@ -78,13 +78,11 @@ const MainLayout = () => {
                 },
                 '& .MuiListItemIcon-root': {
                   color: 'primary.contrastText',
-                }
-              }
+                },
+              },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40 }}>
-              {item.icon}
-            </ListItemIcon>
+            <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
             <ListItemText primary={item.text} />
           </ListItemButton>
         ))}
@@ -138,7 +136,9 @@ const MainLayout = () => {
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant="subtitle2">Admin User</Typography>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>A</Avatar>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+              A
+            </Avatar>
           </Box>
         </Toolbar>
       </AppBar>
@@ -158,14 +158,15 @@ const MainLayout = () => {
         {drawerContent}
       </Drawer>
 
-
       <Box
         component="main"
         sx={(theme) => ({
           flexGrow: 1,
           p: 3,
           minHeight: '100vh',
-          minWidth: open ? `calc(${VIEW_PORT_WIDTH}vw - ${DRAWER_WIDTH}px)` : `${VIEW_PORT_WIDTH}vw`,
+          minWidth: open
+            ? `calc(${VIEW_PORT_WIDTH}vw - ${DRAWER_WIDTH}px)`
+            : `${VIEW_PORT_WIDTH}vw`,
           bgcolor: 'background.default',
 
           marginLeft: open ? 0 : `${-DRAWER_WIDTH}px`,
@@ -180,7 +181,6 @@ const MainLayout = () => {
           }),
         })}
       >
-
         <Toolbar /> {/* Spacer for AppBar */}
         <Outlet />
       </Box>

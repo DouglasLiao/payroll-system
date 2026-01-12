@@ -16,7 +16,12 @@ import {
     IconButton,
     Container,
 } from '@mui/material'
-import { Add, Visibility, FilterList, Info as InfoIcon } from '@mui/icons-material'
+import {
+    Add,
+    Visibility,
+    FilterList,
+    Info as InfoIcon,
+} from '@mui/icons-material'
 import { GenericTable } from '../components/GenericTable'
 import { StatusChip } from '../components/StatusChip'
 import { StatCard } from '../components/StatCard'
@@ -25,7 +30,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useSnackbar } from 'notistack'
-import type { Payroll, PayrollDetail, Provider } from '../types'
+import type { Payroll, Provider } from '../types'
 import { formatCurrency } from '../utils/formatters'
 import {
     getPayrolls,
@@ -40,7 +45,9 @@ import {
 // Schema de validação
 const payrollSchema = z.object({
     provider_id: z.number().min(1, 'Selecione um prestador'),
-    reference_month: z.string().regex(/^\d{2}\/\d{4}$/, 'Formato deve ser MM/YYYY'),
+    reference_month: z
+        .string()
+        .regex(/^\d{2}\/\d{4}$/, 'Formato deve ser MM/YYYY'),
     overtime_hours_50: z.number().min(0).optional(),
     holiday_hours: z.number().min(0).optional(),
     night_hours: z.number().min(0).optional(),
@@ -56,8 +63,14 @@ const Payrolls = () => {
     const [openForm, setOpenForm] = useState(false)
     const [openDetail, setOpenDetail] = useState(false)
     const [selectedPayroll, setSelectedPayroll] = useState<number | null>(null)
-    const [filters, setFilters] = useState({ status: 'all', reference_month: '', provider: undefined as number | undefined })
-    const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
+    const [filters, setFilters] = useState({
+        status: 'all',
+        reference_month: '',
+        provider: undefined as number | undefined,
+    })
+    const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
+        null
+    )
     const queryClient = useQueryClient()
     const { enqueueSnackbar } = useSnackbar()
 
@@ -86,7 +99,8 @@ const Payrolls = () => {
             reset()
             setSelectedProvider(null)
         },
-        onError: (error: Error) => enqueueSnackbar(error.message, { variant: 'error' }),
+        onError: (error: Error) =>
+            enqueueSnackbar(error.message, { variant: 'error' }),
     })
 
     const closeMutation = useMutation({
@@ -145,18 +159,31 @@ const Payrolls = () => {
     const totalAdditionals = totalOvertime + totalHoliday + dsrValue
     const totalDiscounts = lateDiscount + (watchedValues.manual_discounts || 0)
     const advanceValue = selectedProvider
-        ? Number(selectedProvider.monthly_value) * (Number(selectedProvider.advance_percentage) / 100)
+        ? Number(selectedProvider.monthly_value) *
+        (Number(selectedProvider.advance_percentage) / 100)
         : 0
     const finalValue = selectedProvider
-        ? Number(selectedProvider.monthly_value) - advanceValue + totalAdditionals - totalDiscounts
+        ? Number(selectedProvider.monthly_value) -
+        advanceValue +
+        totalAdditionals -
+        totalDiscounts
         : 0
 
     useEffect(() => {
         if (watchedValues.provider_id && providers) {
-            const provider = providers.find((p: Provider) => p.id === watchedValues.provider_id)
+            const provider = providers.find(
+                (p: Provider) => p.id === watchedValues.provider_id
+            )
             setSelectedProvider(provider || null)
         }
     }, [watchedValues.provider_id, providers])
+
+    // Helper function to handle numeric field changes
+    const handleNumericChange =
+        (field: any) => (e: React.ChangeEvent<HTMLInputElement>) => {
+            const val = e.target.value
+            field.onChange(val === '' ? 0 : parseFloat(val) || 0)
+        }
 
     const onSubmit = (data: PayrollFormInputs) => {
         createMutation.mutate(data)
@@ -167,14 +194,16 @@ const Payrolls = () => {
         setOpenDetail(true)
     }
 
-
-
     return (
         <Container maxWidth="xl" sx={{ py: 2 }}>
             {/* Header */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Folhas de Pagamento</Typography>
-                <Button variant="contained" startIcon={<Add />} onClick={() => setOpenForm(true)}>
+                <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={() => setOpenForm(true)}
+                >
                     Nova Folha
                 </Button>
             </Box>
@@ -182,21 +211,22 @@ const Payrolls = () => {
             {/* Stats Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid size={{ xs: 4 }}>
-                    <StatCard
-                        title="Total de Folhas"
-                        value={payrolls?.length || 0}
-                    />
+                    <StatCard title="Total de Folhas" value={payrolls?.length || 0} />
                 </Grid>
                 <Grid size={{ xs: 4 }}>
                     <StatCard
                         title="Rascunhos"
-                        value={payrolls?.filter((p: Payroll) => p.status === 'DRAFT').length || 0}
+                        value={
+                            payrolls?.filter((p: Payroll) => p.status === 'DRAFT').length || 0
+                        }
                     />
                 </Grid>
                 <Grid size={{ xs: 4 }}>
                     <StatCard
                         title="Pagas"
-                        value={payrolls?.filter((p: Payroll) => p.status === 'PAID').length || 0}
+                        value={
+                            payrolls?.filter((p: Payroll) => p.status === 'PAID').length || 0
+                        }
                         color="success.main"
                     />
                 </Grid>
@@ -222,7 +252,9 @@ const Payrolls = () => {
                     <TextField
                         label="Mês (MM/YYYY)"
                         value={filters.reference_month}
-                        onChange={(e) => setFilters({ ...filters, reference_month: e.target.value })}
+                        onChange={(e) =>
+                            setFilters({ ...filters, reference_month: e.target.value })
+                        }
                         placeholder="01/2026"
                         size="small"
                     />
@@ -240,7 +272,12 @@ const Payrolls = () => {
                     {
                         id: 'status',
                         label: 'Status',
-                        render: (p) => <StatusChip status={p.status as 'DRAFT' | 'CLOSED' | 'PAID'} label={p.status_display} />,
+                        render: (p) => (
+                            <StatusChip
+                                status={p.status as 'DRAFT' | 'CLOSED' | 'PAID'}
+                                label={p.status_display}
+                            />
+                        ),
                     },
                     {
                         id: 'base',
@@ -252,26 +289,42 @@ const Payrolls = () => {
                         id: 'earnings',
                         label: 'Proventos',
                         align: 'right',
-                        render: (p) => <Box sx={{ color: 'success.main' }}>+{formatCurrency(p.total_earnings)}</Box>,
+                        render: (p) => (
+                            <Box sx={{ color: 'success.main' }}>
+                                +{formatCurrency(p.total_earnings)}
+                            </Box>
+                        ),
                     },
                     {
                         id: 'discounts',
                         label: 'Descontos',
                         align: 'right',
-                        render: (p) => <Box sx={{ color: 'error.main' }}>-{formatCurrency(p.total_discounts)}</Box>,
+                        render: (p) => (
+                            <Box sx={{ color: 'error.main' }}>
+                                -{formatCurrency(p.total_discounts)}
+                            </Box>
+                        ),
                     },
                     {
                         id: 'net',
                         label: 'Líquido',
                         align: 'right',
-                        render: (p) => <Typography fontWeight={700}>{formatCurrency(p.net_value)}</Typography>,
+                        render: (p) => (
+                            <Typography fontWeight={700}>
+                                {formatCurrency(p.net_value)}
+                            </Typography>
+                        ),
                     },
                     {
                         id: 'actions',
                         label: 'Ações',
                         align: 'right',
                         render: (p) => (
-                            <Button size="small" startIcon={<Visibility />} onClick={() => handleViewDetails(p)}>
+                            <Button
+                                size="small"
+                                startIcon={<Visibility />}
+                                onClick={() => handleViewDetails(p)}
+                            >
                                 Ver
                             </Button>
                         ),
@@ -280,7 +333,12 @@ const Payrolls = () => {
             />
 
             {/* Form Dialog - REFATORADO EM 4 CARDS */}
-            <Dialog open={openForm} onClose={() => setOpenForm(false)} maxWidth="lg" fullWidth>
+            <Dialog
+                open={openForm}
+                onClose={() => setOpenForm(false)}
+                maxWidth="lg"
+                fullWidth
+            >
                 <DialogTitle>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         Nova Folha de Pagamento
@@ -298,7 +356,11 @@ const Payrolls = () => {
                             <Grid size={{ xs: 12 }}>
                                 <Card variant="outlined">
                                     <CardContent>
-                                        <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', fontWeight: 600 }}>
+                                        <Typography
+                                            variant="h6"
+                                            gutterBottom
+                                            sx={{ color: 'primary.main', fontWeight: 600 }}
+                                        >
                                             📋 Dados do Contrato
                                         </Typography>
                                         <Divider sx={{ mb: 2 }} />
@@ -316,7 +378,9 @@ const Payrolls = () => {
                                                             fullWidth
                                                             error={!!errors.provider_id}
                                                             helperText={errors.provider_id?.message}
-                                                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                                            onChange={(e) =>
+                                                                field.onChange(parseInt(e.target.value))
+                                                            }
                                                         >
                                                             <MenuItem value={0}>Selecione...</MenuItem>
                                                             {providers?.map((p: Provider) => (
@@ -350,10 +414,16 @@ const Payrolls = () => {
                                                     <Grid size={{ xs: 3 }}>
                                                         <TextField
                                                             label="Valor Mensal do Contrato"
-                                                            value={formatCurrency(selectedProvider.monthly_value)}
+                                                            value={formatCurrency(
+                                                                selectedProvider.monthly_value
+                                                            )}
                                                             fullWidth
                                                             disabled
-                                                            sx={{ '& .MuiInputBase-input.Mui-disabled': { color: 'text.primary' } }}
+                                                            sx={{
+                                                                '& .MuiInputBase-input.Mui-disabled': {
+                                                                    color: 'text.primary',
+                                                                },
+                                                            }}
                                                         />
                                                     </Grid>
                                                     <Grid size={{ xs: 3 }}>
@@ -362,7 +432,11 @@ const Payrolls = () => {
                                                             value={`${selectedProvider.monthly_hours}h`}
                                                             fullWidth
                                                             disabled
-                                                            sx={{ '& .MuiInputBase-input.Mui-disabled': { color: 'text.primary' } }}
+                                                            sx={{
+                                                                '& .MuiInputBase-input.Mui-disabled': {
+                                                                    color: 'text.primary',
+                                                                },
+                                                            }}
                                                         />
                                                     </Grid>
                                                     <Grid size={{ xs: 3 }}>
@@ -371,7 +445,11 @@ const Payrolls = () => {
                                                             value={`${selectedProvider.advance_percentage}%`}
                                                             fullWidth
                                                             disabled
-                                                            sx={{ '& .MuiInputBase-input.Mui-disabled': { color: 'text.primary' } }}
+                                                            sx={{
+                                                                '& .MuiInputBase-input.Mui-disabled': {
+                                                                    color: 'text.primary',
+                                                                },
+                                                            }}
                                                         />
                                                     </Grid>
                                                     <Grid size={{ xs: 3 }}>
@@ -383,9 +461,9 @@ const Payrolls = () => {
                                                             sx={{
                                                                 '& .MuiInputBase-input.Mui-disabled': {
                                                                     color: 'primary.main',
-                                                                    fontWeight: 600
+                                                                    fontWeight: 600,
                                                                 },
-                                                                bgcolor: 'action.hover'
+                                                                bgcolor: 'action.hover',
                                                             }}
                                                         />
                                                     </Grid>
@@ -400,7 +478,11 @@ const Payrolls = () => {
                             <Grid size={{ xs: 12 }}>
                                 <Card variant="outlined" sx={{ bgcolor: 'success.50' }}>
                                     <CardContent>
-                                        <Typography variant="h6" gutterBottom sx={{ color: 'success.main', fontWeight: 600 }}>
+                                        <Typography
+                                            variant="h6"
+                                            gutterBottom
+                                            sx={{ color: 'success.main', fontWeight: 600 }}
+                                        >
                                             💰 Adicionais Contratuais
                                         </Typography>
                                         <Divider sx={{ mb: 2 }} />
@@ -408,7 +490,10 @@ const Payrolls = () => {
                                         <Grid container spacing={2}>
                                             {/* Hora Extra */}
                                             <Grid size={{ xs: 12 }}>
-                                                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                                                <Typography
+                                                    variant="subtitle2"
+                                                    sx={{ mb: 1, fontWeight: 600 }}
+                                                >
                                                     Hora Extra (50%)
                                                 </Typography>
                                             </Grid>
@@ -420,9 +505,10 @@ const Payrolls = () => {
                                                         <TextField
                                                             {...field}
                                                             label="Horas Extras"
-                                                            type="number"
                                                             fullWidth
-                                                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                            value={field.value || ''}
+                                                            onChange={handleNumericChange(field)}
+                                                            placeholder="0"
                                                         />
                                                     )}
                                                 />
@@ -446,15 +532,18 @@ const Payrolls = () => {
                                                         bgcolor: 'success.100',
                                                         '& .MuiInputBase-input.Mui-disabled': {
                                                             color: 'success.dark',
-                                                            fontWeight: 600
-                                                        }
+                                                            fontWeight: 600,
+                                                        },
                                                     }}
                                                 />
                                             </Grid>
 
                                             {/* Feriados */}
                                             <Grid size={{ xs: 12 }}>
-                                                <Typography variant="subtitle2" sx={{ mt: 1, mb: 1, fontWeight: 600 }}>
+                                                <Typography
+                                                    variant="subtitle2"
+                                                    sx={{ mt: 1, mb: 1, fontWeight: 600 }}
+                                                >
                                                     Feriados Trabalhados
                                                 </Typography>
                                             </Grid>
@@ -466,9 +555,10 @@ const Payrolls = () => {
                                                         <TextField
                                                             {...field}
                                                             label="Horas em Feriado"
-                                                            type="number"
                                                             fullWidth
-                                                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                            value={field.value || ''}
+                                                            onChange={handleNumericChange(field)}
+                                                            placeholder="0"
                                                         />
                                                     )}
                                                 />
@@ -492,15 +582,18 @@ const Payrolls = () => {
                                                         bgcolor: 'success.100',
                                                         '& .MuiInputBase-input.Mui-disabled': {
                                                             color: 'success.dark',
-                                                            fontWeight: 600
-                                                        }
+                                                            fontWeight: 600,
+                                                        },
                                                     }}
                                                 />
                                             </Grid>
 
                                             {/* DSR */}
                                             <Grid size={{ xs: 12 }}>
-                                                <Typography variant="subtitle2" sx={{ mt: 1, mb: 1, fontWeight: 600 }}>
+                                                <Typography
+                                                    variant="subtitle2"
+                                                    sx={{ mt: 1, mb: 1, fontWeight: 600 }}
+                                                >
                                                     DSR Contratual
                                                 </Typography>
                                             </Grid>
@@ -523,8 +616,8 @@ const Payrolls = () => {
                                                         bgcolor: 'success.100',
                                                         '& .MuiInputBase-input.Mui-disabled': {
                                                             color: 'success.dark',
-                                                            fontWeight: 600
-                                                        }
+                                                            fontWeight: 600,
+                                                        },
                                                     }}
                                                 />
                                             </Grid>
@@ -537,14 +630,21 @@ const Payrolls = () => {
                             <Grid size={{ xs: 12 }}>
                                 <Card variant="outlined" sx={{ bgcolor: 'error.50' }}>
                                     <CardContent>
-                                        <Typography variant="h6" gutterBottom sx={{ color: 'error.main', fontWeight: 600 }}>
+                                        <Typography
+                                            variant="h6"
+                                            gutterBottom
+                                            sx={{ color: 'error.main', fontWeight: 600 }}
+                                        >
                                             📉 Descontos
                                         </Typography>
                                         <Divider sx={{ mb: 2 }} />
 
                                         <Grid container spacing={2}>
                                             <Grid size={{ xs: 12 }}>
-                                                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                                                <Typography
+                                                    variant="subtitle2"
+                                                    sx={{ mb: 1, fontWeight: 600 }}
+                                                >
                                                     Atrasos
                                                 </Typography>
                                             </Grid>
@@ -556,9 +656,10 @@ const Payrolls = () => {
                                                         <TextField
                                                             {...field}
                                                             label="Minutos de Atraso"
-                                                            type="number"
                                                             fullWidth
-                                                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                            value={field.value || ''}
+                                                            onChange={handleNumericChange(field)}
+                                                            placeholder="0"
                                                         />
                                                     )}
                                                 />
@@ -573,14 +674,17 @@ const Payrolls = () => {
                                                         bgcolor: 'error.100',
                                                         '& .MuiInputBase-input.Mui-disabled': {
                                                             color: 'error.dark',
-                                                            fontWeight: 600
-                                                        }
+                                                            fontWeight: 600,
+                                                        },
                                                     }}
                                                 />
                                             </Grid>
 
                                             <Grid size={{ xs: 12 }}>
-                                                <Typography variant="subtitle2" sx={{ mt: 1, mb: 1, fontWeight: 600 }}>
+                                                <Typography
+                                                    variant="subtitle2"
+                                                    sx={{ mt: 1, mb: 1, fontWeight: 600 }}
+                                                >
                                                     Outros Descontos
                                                 </Typography>
                                             </Grid>
@@ -592,9 +696,10 @@ const Payrolls = () => {
                                                         <TextField
                                                             {...field}
                                                             label="Horas de Falta"
-                                                            type="number"
                                                             fullWidth
-                                                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                            value={field.value || ''}
+                                                            onChange={handleNumericChange(field)}
+                                                            placeholder="0"
                                                         />
                                                     )}
                                                 />
@@ -607,9 +712,10 @@ const Payrolls = () => {
                                                         <TextField
                                                             {...field}
                                                             label="Descontos Manuais (R$)"
-                                                            type="number"
                                                             fullWidth
-                                                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                            value={field.value || ''}
+                                                            onChange={handleNumericChange(field)}
+                                                            placeholder="0,00"
                                                         />
                                                     )}
                                                 />
@@ -625,8 +731,8 @@ const Payrolls = () => {
                                                         '& .MuiInputBase-input.Mui-disabled': {
                                                             color: 'error.dark',
                                                             fontWeight: 700,
-                                                            fontSize: '1.1rem'
-                                                        }
+                                                            fontSize: '1.1rem',
+                                                        },
                                                     }}
                                                 />
                                             </Grid>
@@ -637,33 +743,69 @@ const Payrolls = () => {
 
                             {/* CARD 4 - RESUMO DO PAGAMENTO */}
                             <Grid size={{ xs: 12 }}>
-                                <Card sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+                                <Card
+                                    sx={{
+                                        bgcolor: 'primary.main',
+                                        color: 'primary.contrastText',
+                                    }}
+                                >
                                     <CardContent>
-                                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                                        <Typography
+                                            variant="h6"
+                                            gutterBottom
+                                            sx={{ fontWeight: 600 }}
+                                        >
                                             ⭐ Resumo do Pagamento
                                         </Typography>
                                         <Divider sx={{ mb: 2, borderColor: 'primary.light' }} />
 
                                         <Grid container spacing={2}>
                                             <Grid size={{ xs: 3 }}>
-                                                <Typography variant="caption" sx={{ opacity: 0.8 }}>Valor do Contrato</Typography>
-                                                <Typography variant="h6">{selectedProvider ? formatCurrency(selectedProvider.monthly_value) : '-'}</Typography>
+                                                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                                                    Valor do Contrato
+                                                </Typography>
+                                                <Typography variant="h6">
+                                                    {selectedProvider
+                                                        ? formatCurrency(selectedProvider.monthly_value)
+                                                        : '-'}
+                                                </Typography>
                                             </Grid>
                                             <Grid size={{ xs: 3 }}>
-                                                <Typography variant="caption" sx={{ opacity: 0.8 }}>Adiantamento</Typography>
-                                                <Typography variant="h6">- {formatCurrency(advanceValue)}</Typography>
+                                                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                                                    Adiantamento
+                                                </Typography>
+                                                <Typography variant="h6">
+                                                    - {formatCurrency(advanceValue)}
+                                                </Typography>
                                             </Grid>
                                             <Grid size={{ xs: 3 }}>
-                                                <Typography variant="caption" sx={{ opacity: 0.8 }}>Total Adicionais</Typography>
-                                                <Typography variant="h6" sx={{ color: 'success.light' }}>+ {formatCurrency(totalAdditionals)}</Typography>
+                                                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                                                    Total Adicionais
+                                                </Typography>
+                                                <Typography
+                                                    variant="h6"
+                                                    sx={{ color: 'success.light' }}
+                                                >
+                                                    + {formatCurrency(totalAdditionals)}
+                                                </Typography>
                                             </Grid>
                                             <Grid size={{ xs: 3 }}>
-                                                <Typography variant="caption" sx={{ opacity: 0.8 }}>Total Descontos</Typography>
-                                                <Typography variant="h6" sx={{ color: 'error.light' }}>- {formatCurrency(totalDiscounts)}</Typography>
+                                                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                                                    Total Descontos
+                                                </Typography>
+                                                <Typography variant="h6" sx={{ color: 'error.light' }}>
+                                                    - {formatCurrency(totalDiscounts)}
+                                                </Typography>
                                             </Grid>
                                             <Grid size={{ xs: 12 }}>
                                                 <Divider sx={{ my: 1, borderColor: 'primary.light' }} />
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                    }}
+                                                >
                                                     <Typography variant="h5" sx={{ fontWeight: 700 }}>
                                                         Valor Final a Pagar:
                                                     </Typography>
@@ -682,15 +824,27 @@ const Payrolls = () => {
                                     name="notes"
                                     control={control}
                                     render={({ field }) => (
-                                        <TextField {...field} label="Observações" multiline rows={2} fullWidth />
+                                        <TextField
+                                            {...field}
+                                            label="Observações"
+                                            multiline
+                                            rows={2}
+                                            fullWidth
+                                        />
                                     )}
                                 />
                             </Grid>
                         </Grid>
                     </DialogContent>
-                    <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                    <Box
+                        sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}
+                    >
                         <Button onClick={() => setOpenForm(false)}>Cancelar</Button>
-                        <Button type="submit" variant="contained" disabled={createMutation.isPending || !selectedProvider}>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={createMutation.isPending || !selectedProvider}
+                        >
                             {createMutation.isPending ? 'Calculando...' : 'Criar Folha'}
                         </Button>
                     </Box>
@@ -698,7 +852,12 @@ const Payrolls = () => {
             </Dialog>
 
             {/* Detail Dialog */}
-            <Dialog open={openDetail} onClose={() => setOpenDetail(false)} maxWidth="lg" fullWidth>
+            <Dialog
+                open={openDetail}
+                onClose={() => setOpenDetail(false)}
+                maxWidth="lg"
+                fullWidth
+            >
                 <DialogTitle>
                     {payrollDetail?.provider.name} - {payrollDetail?.reference_month}
                 </DialogTitle>
@@ -706,8 +865,17 @@ const Payrolls = () => {
                     {payrollDetail && (
                         <Grid container spacing={3}>
                             <Grid size={{ xs: 12 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <StatusChip status={payrollDetail.status as 'DRAFT' | 'CLOSED' | 'PAID'} label={payrollDetail.status_display} />
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    <StatusChip
+                                        status={payrollDetail.status as 'DRAFT' | 'CLOSED' | 'PAID'}
+                                        label={payrollDetail.status_display}
+                                    />
                                     <Box sx={{ display: 'flex', gap: 1 }}>
                                         {payrollDetail.status === 'DRAFT' && (
                                             <Button
@@ -721,7 +889,9 @@ const Payrolls = () => {
                                         {payrollDetail.status === 'CLOSED' && (
                                             <Button
                                                 variant="contained"
-                                                onClick={() => markPaidMutation.mutate(payrollDetail.id)}
+                                                onClick={() =>
+                                                    markPaidMutation.mutate(payrollDetail.id)
+                                                }
                                                 disabled={markPaidMutation.isPending}
                                             >
                                                 Marcar como Paga
@@ -737,29 +907,51 @@ const Payrolls = () => {
                                         <Typography variant="h6" gutterBottom color="success.main">
                                             💰 Proventos
                                         </Typography>
-                                        <Box sx={{ '& > div': { display: 'flex', justifyContent: 'space-between', mb: 1 } }}>
+                                        <Box
+                                            sx={{
+                                                '& > div': {
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    mb: 1,
+                                                },
+                                            }}
+                                        >
                                             <div>
                                                 <Typography variant="body2">Saldo base:</Typography>
-                                                <Typography>{formatCurrency(payrollDetail.remaining_value)}</Typography>
+                                                <Typography>
+                                                    {formatCurrency(payrollDetail.remaining_value)}
+                                                </Typography>
                                             </div>
                                             <div>
                                                 <Typography variant="body2">Horas extras:</Typography>
-                                                <Typography>{formatCurrency(payrollDetail.overtime_amount)}</Typography>
+                                                <Typography>
+                                                    {formatCurrency(payrollDetail.overtime_amount)}
+                                                </Typography>
                                             </div>
                                             <div>
                                                 <Typography variant="body2">Feriados:</Typography>
-                                                <Typography>{formatCurrency(payrollDetail.holiday_amount)}</Typography>
+                                                <Typography>
+                                                    {formatCurrency(payrollDetail.holiday_amount)}
+                                                </Typography>
                                             </div>
                                             <div>
                                                 <Typography variant="body2">DSR:</Typography>
-                                                <Typography>{formatCurrency(payrollDetail.dsr_amount)}</Typography>
+                                                <Typography>
+                                                    {formatCurrency(payrollDetail.dsr_amount)}
+                                                </Typography>
                                             </div>
                                             <div>
-                                                <Typography variant="body2">Adicional noturno:</Typography>
-                                                <Typography>{formatCurrency(payrollDetail.night_shift_amount)}</Typography>
+                                                <Typography variant="body2">
+                                                    Adicional noturno:
+                                                </Typography>
+                                                <Typography>
+                                                    {formatCurrency(payrollDetail.night_shift_amount)}
+                                                </Typography>
                                             </div>
                                             <div>
-                                                <Typography variant="subtitle1" fontWeight={700}>Total:</Typography>
+                                                <Typography variant="subtitle1" fontWeight={700}>
+                                                    Total:
+                                                </Typography>
                                                 <Typography fontWeight={700} color="success.main">
                                                     {formatCurrency(payrollDetail.total_earnings)}
                                                 </Typography>
@@ -775,29 +967,51 @@ const Payrolls = () => {
                                         <Typography variant="h6" gutterBottom color="error.main">
                                             📉 Descontos
                                         </Typography>
-                                        <Box sx={{ '& > div': { display: 'flex', justifyContent: 'space-between', mb: 1 } }}>
+                                        <Box
+                                            sx={{
+                                                '& > div': {
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    mb: 1,
+                                                },
+                                            }}
+                                        >
                                             <div>
                                                 <Typography variant="body2">Adiantamento:</Typography>
-                                                <Typography>{formatCurrency(payrollDetail.advance_value)}</Typography>
+                                                <Typography>
+                                                    {formatCurrency(payrollDetail.advance_value)}
+                                                </Typography>
                                             </div>
                                             <div>
                                                 <Typography variant="body2">Atrasos:</Typography>
-                                                <Typography>{formatCurrency(payrollDetail.late_discount)}</Typography>
+                                                <Typography>
+                                                    {formatCurrency(payrollDetail.late_discount)}
+                                                </Typography>
                                             </div>
                                             <div>
                                                 <Typography variant="body2">Faltas:</Typography>
-                                                <Typography>{formatCurrency(payrollDetail.absence_discount)}</Typography>
+                                                <Typography>
+                                                    {formatCurrency(payrollDetail.absence_discount)}
+                                                </Typography>
                                             </div>
                                             <div>
                                                 <Typography variant="body2">DSR s/ faltas:</Typography>
-                                                <Typography>{formatCurrency(payrollDetail.dsr_on_absences)}</Typography>
+                                                <Typography>
+                                                    {formatCurrency(payrollDetail.dsr_on_absences)}
+                                                </Typography>
                                             </div>
                                             <div>
-                                                <Typography variant="body2">Vale transporte:</Typography>
-                                                <Typography>{formatCurrency(payrollDetail.vt_discount)}</Typography>
+                                                <Typography variant="body2">
+                                                    Vale transporte:
+                                                </Typography>
+                                                <Typography>
+                                                    {formatCurrency(payrollDetail.vt_discount)}
+                                                </Typography>
                                             </div>
                                             <div>
-                                                <Typography variant="subtitle1" fontWeight={700}>Total:</Typography>
+                                                <Typography variant="subtitle1" fontWeight={700}>
+                                                    Total:
+                                                </Typography>
                                                 <Typography fontWeight={700} color="error.main">
                                                     {formatCurrency(payrollDetail.total_discounts)}
                                                 </Typography>
@@ -808,9 +1022,20 @@ const Payrolls = () => {
                             </Grid>
 
                             <Grid size={{ xs: 12 }}>
-                                <Card sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+                                <Card
+                                    sx={{
+                                        bgcolor: 'primary.main',
+                                        color: 'primary.contrastText',
+                                    }}
+                                >
                                     <CardContent>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                            }}
+                                        >
                                             <Typography variant="h5">Valor Líquido</Typography>
                                             <Typography variant="h3" fontWeight={700}>
                                                 {formatCurrency(payrollDetail.net_value)}

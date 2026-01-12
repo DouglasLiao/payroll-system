@@ -10,7 +10,10 @@ import { StatusChip } from '../components/StatusChip'
 const Payments = () => {
   const queryClient = useQueryClient()
   const { enqueueSnackbar } = useSnackbar()
-  const { data: payments, isLoading } = useQuery({ queryKey: ['payments'], queryFn: getPayments })
+  const { data: payments, isLoading } = useQuery({
+    queryKey: ['payments'],
+    queryFn: getPayments,
+  })
 
   const payMutation = useMutation({
     mutationFn: payPayment,
@@ -19,7 +22,8 @@ const Payments = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       enqueueSnackbar('Payment marked as PAID', { variant: 'success' })
     },
-    onError: () => enqueueSnackbar('Error processing payment', { variant: 'error' }),
+    onError: () =>
+      enqueueSnackbar('Error processing payment', { variant: 'error' }),
   })
 
   const handlePay = (id: number) => {
@@ -30,7 +34,15 @@ const Payments = () => {
 
   return (
     <Container sx={{ py: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, gap: 2, flexWrap: 'wrap' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          mb: 3,
+          gap: 2,
+          flexWrap: 'wrap',
+        }}
+      >
         <Typography variant="h4">Payments</Typography>
         <Button variant="outlined">Generate Monthly Roll</Button>
       </Box>
@@ -60,7 +72,11 @@ const Payments = () => {
                 render: (p) => (
                   <>
                     {p.status === 'PENDING' && (
-                      <Button size="small" startIcon={<Check />} onClick={() => handlePay(p.id)}>
+                      <Button
+                        size="small"
+                        startIcon={<Check />}
+                        onClick={() => handlePay(p.id)}
+                      >
                         Pay
                       </Button>
                     )}

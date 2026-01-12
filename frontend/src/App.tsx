@@ -19,7 +19,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeContextProvider>
         <CssBaseline />
-        <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
+        <SnackbarProvider
+          maxSnack={3}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
           <BrowserRouter>
             <Routes>
               {/* Admin Routes with Sidebar */}

@@ -16,7 +16,7 @@ import type { Payroll } from '../types'
 const Dashboard = () => {
   const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
     queryKey: ['dashboard'],
-    queryFn: getDashboardStats
+    queryFn: getDashboardStats,
   })
 
   const { data: payrolls, isLoading: payrollsLoading } = useQuery({
@@ -32,27 +32,38 @@ const Dashboard = () => {
   const isLoading = dashboardLoading || payrollsLoading || providersLoading
 
   // Calculate payroll metrics
-  const payrollStats = payrolls ? {
-    total: payrolls.length,
-    drafts: payrolls.filter((p: Payroll) => p.status === 'DRAFT').length,
-    closed: payrolls.filter((p: Payroll) => p.status === 'CLOSED').length,
-    paid: payrolls.filter((p: Payroll) => p.status === 'PAID').length,
-    totalValue: payrolls.reduce((sum: number, p: Payroll) => sum + parseFloat(p.net_value), 0),
-    avgValue: payrolls.length > 0
-      ? payrolls.reduce((sum: number, p: Payroll) => sum + parseFloat(p.net_value), 0) / payrolls.length
-      : 0,
-  } : { total: 0, drafts: 0, closed: 0, paid: 0, totalValue: 0, avgValue: 0 }
+  const payrollStats = payrolls
+    ? {
+        total: payrolls.length,
+        drafts: payrolls.filter((p: Payroll) => p.status === 'DRAFT').length,
+        closed: payrolls.filter((p: Payroll) => p.status === 'CLOSED').length,
+        paid: payrolls.filter((p: Payroll) => p.status === 'PAID').length,
+        totalValue: payrolls.reduce(
+          (sum: number, p: Payroll) => sum + parseFloat(p.net_value),
+          0
+        ),
+        avgValue:
+          payrolls.length > 0
+            ? payrolls.reduce(
+                (sum: number, p: Payroll) => sum + parseFloat(p.net_value),
+                0
+              ) / payrolls.length
+            : 0,
+      }
+    : { total: 0, drafts: 0, closed: 0, paid: 0, totalValue: 0, avgValue: 0 }
 
   // Group payrolls by month for chart
-  const monthlyData = payrolls ? payrolls.reduce((acc: any, p: Payroll) => {
-    const month = p.reference_month
-    if (!acc[month]) {
-      acc[month] = { draft: 0, closed: 0, paid: 0, total: 0 }
-    }
-    acc[month][p.status.toLowerCase() as 'draft' | 'closed' | 'paid']++
-    acc[month].total += parseFloat(p.net_value)
-    return acc
-  }, {}) : {}
+  const monthlyData = payrolls
+    ? payrolls.reduce((acc: any, p: Payroll) => {
+        const month = p.reference_month
+        if (!acc[month]) {
+          acc[month] = { draft: 0, closed: 0, paid: 0, total: 0 }
+        }
+        acc[month][p.status.toLowerCase() as 'draft' | 'closed' | 'paid']++
+        acc[month].total += parseFloat(p.net_value)
+        return acc
+      }, {})
+    : {}
 
   const sortedMonths = Object.keys(monthlyData).sort()
   const last6Months = sortedMonths.slice(-6)
@@ -67,20 +78,20 @@ const Dashboard = () => {
     stroke: { curve: 'smooth', width: 2 },
     xaxis: {
       categories: last6Months.length > 0 ? last6Months : ['N/A'],
-      labels: { style: { fontSize: '12px' } }
+      labels: { style: { fontSize: '12px' } },
     },
     yaxis: [
       {
         title: { text: 'Quantidade' },
-        labels: { formatter: (val) => Math.round(val).toString() }
+        labels: { formatter: (val) => Math.round(val).toString() },
       },
       {
         opposite: true,
         title: { text: 'Valor (R$)' },
         labels: {
-          formatter: (val) => `R$ ${(val / 1000).toFixed(1)}k`
-        }
-      }
+          formatter: (val) => `R$ ${(val / 1000).toFixed(1)}k`,
+        },
+      },
     ],
     colors: ['#FFA726', '#42A5F5', '#66BB6A', '#AB47BC'],
     legend: {
@@ -95,37 +106,40 @@ const Dashboard = () => {
         { formatter: (val) => `${val} folha(s)` },
         { formatter: (val) => `${val} folha(s)` },
         { formatter: (val) => formatCurrency(val) },
-      ]
-    }
+      ],
+    },
   }
 
-  const chartSeries = last6Months.length > 0 ? [
-    {
-      name: 'Rascunhos',
-      type: 'column',
-      data: last6Months.map(m => monthlyData[m]?.draft || 0)
-    },
-    {
-      name: 'Fechadas',
-      type: 'column',
-      data: last6Months.map(m => monthlyData[m]?.closed || 0)
-    },
-    {
-      name: 'Pagas',
-      type: 'column',
-      data: last6Months.map(m => monthlyData[m]?.paid || 0)
-    },
-    {
-      name: 'Valor Total',
-      type: 'line',
-      data: last6Months.map(m => monthlyData[m]?.total || 0)
-    },
-  ] : [
-    { name: 'Rascunhos', type: 'column', data: [0] },
-    { name: 'Fechadas', type: 'column', data: [0] },
-    { name: 'Pagas', type: 'column', data: [0] },
-    { name: 'Valor Total', type: 'line', data: [0] },
-  ]
+  const chartSeries =
+    last6Months.length > 0
+      ? [
+          {
+            name: 'Rascunhos',
+            type: 'column',
+            data: last6Months.map((m) => monthlyData[m]?.draft || 0),
+          },
+          {
+            name: 'Fechadas',
+            type: 'column',
+            data: last6Months.map((m) => monthlyData[m]?.closed || 0),
+          },
+          {
+            name: 'Pagas',
+            type: 'column',
+            data: last6Months.map((m) => monthlyData[m]?.paid || 0),
+          },
+          {
+            name: 'Valor Total',
+            type: 'line',
+            data: last6Months.map((m) => monthlyData[m]?.total || 0),
+          },
+        ]
+      : [
+          { name: 'Rascunhos', type: 'column', data: [0] },
+          { name: 'Fechadas', type: 'column', data: [0] },
+          { name: 'Pagas', type: 'column', data: [0] },
+          { name: 'Valor Total', type: 'line', data: [0] },
+        ]
 
   if (isLoading) {
     return (
@@ -138,7 +152,12 @@ const Dashboard = () => {
             <Grid key={i} size={{ xs: 12, sm: 6, md: 3 }}>
               <Card sx={{ p: 3 }}>
                 <Skeleton variant="text" width={100} />
-                <Skeleton variant="rectangular" height={40} width={150} sx={{ mt: 2 }} />
+                <Skeleton
+                  variant="rectangular"
+                  height={40}
+                  width={150}
+                  sx={{ mt: 2 }}
+                />
               </Card>
             </Grid>
           ))}
@@ -155,11 +174,15 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ maxWidth: '100%', width: '100%', mt: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 4,
+        }}
+      >
         <Typography variant="h4">Dashboard</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Visão geral do sistema
-        </Typography>
       </Box>
 
       <Grid container spacing={3}>
@@ -269,7 +292,9 @@ const Dashboard = () => {
                 }}
               >
                 <Box>
-                  <Typography variant="subtitle2">{payment.provider_name}</Typography>
+                  <Typography variant="subtitle2">
+                    {payment.provider_name}
+                  </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {payment.reference}
                   </Typography>
@@ -282,8 +307,12 @@ const Dashboard = () => {
                 </Box>
               </Box>
             ))}
-            {(!dashboardData?.recent_activity || dashboardData.recent_activity.length === 0) && (
-              <Typography color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+            {(!dashboardData?.recent_activity ||
+              dashboardData.recent_activity.length === 0) && (
+              <Typography
+                color="text.secondary"
+                sx={{ textAlign: 'center', py: 3 }}
+              >
                 Nenhuma atividade recente
               </Typography>
             )}
@@ -305,10 +334,16 @@ const Dashboard = () => {
                     p: 2,
                     minWidth: 200,
                     flex: '1 1 calc(20% - 16px)',
-                    '&:hover': { boxShadow: 2, borderColor: 'primary.main' }
+                    '&:hover': { boxShadow: 2, borderColor: 'primary.main' },
                   }}
                 >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                    }}
+                  >
                     <Typography variant="caption" color="text.secondary">
                       {payroll.reference_month}
                     </Typography>
@@ -323,7 +358,10 @@ const Dashboard = () => {
                 </Card>
               ))}
               {(!payrolls || payrolls.length === 0) && (
-                <Typography color="text.secondary" sx={{ textAlign: 'center', width: '100%', py: 3 }}>
+                <Typography
+                  color="text.secondary"
+                  sx={{ textAlign: 'center', width: '100%', py: 3 }}
+                >
                   Nenhuma folha cadastrada ainda
                 </Typography>
               )}

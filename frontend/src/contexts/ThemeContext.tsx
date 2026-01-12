@@ -1,5 +1,14 @@
-import { createContext, useContext, useState, useMemo, type ReactNode } from 'react'
-import { ThemeProvider as MUIThemeProvider, type PaletteMode } from '@mui/material'
+import {
+  createContext,
+  useContext,
+  useState,
+  useMemo,
+  type ReactNode,
+} from 'react'
+import {
+  ThemeProvider as MUIThemeProvider,
+  type PaletteMode,
+} from '@mui/material'
 import { getTheme } from '../theme'
 
 interface ThemeContextType {

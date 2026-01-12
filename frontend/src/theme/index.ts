@@ -9,6 +9,9 @@ export const getTheme = (mode: PaletteMode) => {
       primary: {
         main: isLight ? '#4F46E5' : '#6366F1', // Indigo 600 / 500
       },
+      secondary: {
+        main: isLight ? '#1E293B' : '#F8FAFC', // Slate 900 / 50
+      },
       background: {
         default: isLight ? '#F8FAFC' : '#020617', // Slate 50 / 950
         paper: isLight ? '#FFFFFF' : '#0F172A', // White / Slate 900
@@ -21,14 +24,45 @@ export const getTheme = (mode: PaletteMode) => {
     },
     typography: {
       fontFamily: "'Inter', 'Public Sans', 'Roboto', sans-serif", // Added Inter as it matches the modern look
-      h1: { fontSize: '2.5rem', fontWeight: 700, color: isLight ? '#0F172A' : '#F8FAFC' },
-      h2: { fontSize: '2rem', fontWeight: 700, color: isLight ? '#0F172A' : '#F8FAFC' },
-      h3: { fontSize: '1.75rem', fontWeight: 600, color: isLight ? '#0F172A' : '#F8FAFC' },
-      h4: { fontSize: '1.5rem', fontWeight: 600, color: isLight ? '#0F172A' : '#F8FAFC' },
-      h5: { fontSize: '1.25rem', fontWeight: 600, color: isLight ? '#0F172A' : '#F8FAFC' },
-      h6: { fontSize: '1rem', fontWeight: 600, color: isLight ? '#0F172A' : '#F8FAFC' },
-      subtitle1: { fontSize: '0.875rem', color: isLight ? '#64748B' : '#94A3B8' },
-      subtitle2: { fontSize: '0.75rem', fontWeight: 500, color: isLight ? '#64748B' : '#94A3B8' },
+      h1: {
+        fontSize: '2.5rem',
+        fontWeight: 700,
+        color: isLight ? '#0F172A' : '#F8FAFC',
+      },
+      h2: {
+        fontSize: '2rem',
+        fontWeight: 700,
+        color: isLight ? '#0F172A' : '#F8FAFC',
+      },
+      h3: {
+        fontSize: '1.75rem',
+        fontWeight: 600,
+        color: isLight ? '#0F172A' : '#F8FAFC',
+      },
+      h4: {
+        fontSize: '1.5rem',
+        fontWeight: 600,
+        color: isLight ? '#0F172A' : '#F8FAFC',
+      },
+      h5: {
+        fontSize: '1.25rem',
+        fontWeight: 600,
+        color: isLight ? '#0F172A' : '#F8FAFC',
+      },
+      h6: {
+        fontSize: '1rem',
+        fontWeight: 600,
+        color: isLight ? '#0F172A' : '#F8FAFC',
+      },
+      subtitle1: {
+        fontSize: '0.875rem',
+        color: isLight ? '#64748B' : '#94A3B8',
+      },
+      subtitle2: {
+        fontSize: '0.75rem',
+        fontWeight: 500,
+        color: isLight ? '#64748B' : '#94A3B8',
+      },
     },
     shape: {
       borderRadius: 8,
@@ -57,7 +91,8 @@ export const getTheme = (mode: PaletteMode) => {
               mode === 'light'
                 ? '0px 1px 3px rgba(0, 0, 0, 0.1), 0px 1px 2px rgba(0, 0, 0, 0.06)' // Slate subtle shadow
                 : '0px 1px 3px rgba(0, 0, 0, 0.5), 0px 1px 2px rgba(0, 0, 0, 0.3)', // Darker shadow
-            border: mode === 'light' ? '1px solid #e2e8f0' : '1px solid #1e293b',
+            border:
+              mode === 'light' ? '1px solid #e2e8f0' : '1px solid #1e293b',
           },
         },
       },

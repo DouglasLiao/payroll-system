@@ -6,11 +6,16 @@ import type {
   PaginatedResponse,
   Payroll,
   PayrollDetail,
-  PayrollCreateData
+  PayrollCreateData,
 } from '../types'
 
+// Get API base URL from environment variables
+// Fallback to localhost for development if not set
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: API_BASE_URL,
 })
 
 // ==================== PROVIDERS ====================
@@ -25,7 +30,10 @@ export const createProvider = async (provider: Omit<Provider, 'id'>) => {
   return data
 }
 
-export const updateProvider = async (id: number, provider: Partial<Provider>) => {
+export const updateProvider = async (
+  id: number,
+  provider: Partial<Provider>
+) => {
   const { data } = await api.patch<Provider>(`/providers/${id}/`, provider)
   return data
 }
@@ -41,7 +49,9 @@ export const getPayments = async () => {
   return data.results
 }
 
-export const createPayment = async (payment: Omit<Payment, 'id' | 'total_calculated'>) => {
+export const createPayment = async (
+  payment: Omit<Payment, 'id' | 'total_calculated'>
+) => {
   const { data } = await api.post<Payment>('/payments/', payment)
   return data
 }
@@ -85,7 +95,10 @@ export const getPayrollDetail = async (id: number) => {
 }
 
 export const createPayroll = async (payrollData: PayrollCreateData) => {
-  const { data } = await api.post<PayrollDetail>('/payrolls/calculate/', payrollData)
+  const { data } = await api.post<PayrollDetail>(
+    '/payrolls/calculate/',
+    payrollData
+  )
   return data
 }
 
@@ -99,8 +112,14 @@ export const markPayrollAsPaid = async (id: number) => {
   return data
 }
 
-export const recalculatePayroll = async (id: number, updates: Partial<PayrollCreateData>) => {
-  const { data } = await api.put<PayrollDetail>(`/payrolls/${id}/recalculate/`, updates)
+export const recalculatePayroll = async (
+  id: number,
+  updates: Partial<PayrollCreateData>
+) => {
+  const { data } = await api.put<PayrollDetail>(
+    `/payrolls/${id}/recalculate/`,
+    updates
+  )
   return data
 }
 

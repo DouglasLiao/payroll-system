@@ -13,7 +13,13 @@ import {
   Card,
   Container,
 } from '@mui/material'
-import { Add, Edit, Delete } from '@mui/icons-material'
+import {
+  Add,
+  Edit,
+  Delete,
+  CheckCircle,
+  Error as ErrorIcon,
+} from '@mui/icons-material'
 import { GenericTable } from '../components/GenericTable'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
@@ -22,29 +28,83 @@ import { z } from 'zod'
 import { useSnackbar } from 'notistack'
 import { getProviders, createProvider, deleteProvider } from '../services/api'
 import type { Provider } from '../types'
+import {
+  validateCPF,
+  validateCNPJ,
+  onlyLetters,
+  validateEmail,
+  isPositiveNumber,
+} from '../utils/validators'
+import { CPFInput } from '../components/InputMasks'
 
 const providerSchema = z
   .object({
-    name: z.string().min(3, 'Name is required'),
-    role: z.string().min(2, 'Role is required'),
-    salary_base: z.string().min(1, 'Salary is required'), // Decimal as string input
-    payment_method: z.enum(['PIX', 'TED', 'TRANSFER']),
+    name: z
+      .string()
+      .min(3, 'Nome deve ter pelo menos 3 caracteres')
+      .max(100, 'Nome muito longo')
+      .refine(onlyLetters, 'Nome deve conter apenas letras e espaços'),
+
+    document: z
+      .string()
+      .min(1, 'CPF ou CNPJ é obrigatório')
+      .refine((val) => {
+        const cleaned = val.replace(/\D/g, '')
+        return cleaned.length === 11 || cleaned.length === 14
+      }, 'CPF deve ter 11 dígitos ou CNPJ 14 dígitos')
+      .refine((val) => {
+        const cleaned = val.replace(/\D/g, '')
+        if (cleaned.length === 11) return validateCPF(val)
+        if (cleaned.length === 14) return validateCNPJ(val)
+        return false
+      }, 'CPF ou CNPJ inválido'),
+
+    role: z.string().min(2, 'Cargo é obrigatório').max(50, 'Cargo muito longo'),
+
+    monthly_value: z
+      .string()
+      .min(1, 'Valor mensal é obrigatório')
+      .refine((val) => isPositiveNumber(val), 'Valor deve ser maior que zero'),
+
+    payment_method: z.enum(['PIX', 'TED', 'TRANSFER'], {
+      message: 'Selecione um método de pagamento válido',
+    }),
+
     pix_key: z.string().optional(),
     bank_name: z.string().optional(),
     bank_agency: z.string().optional(),
     bank_account: z.string().optional(),
-    email: z.string().email().optional().or(z.literal('')),
-    description: z.string().optional(),
+
+    email: z
+      .string()
+      .optional()
+      .refine((val) => !val || validateEmail(val), 'Email inválido')
+      .or(z.literal('')),
+
+    description: z.string().max(500, 'Descrição muito longa').optional(),
   })
   .refine(
     (data) => {
       if (data.payment_method === 'PIX' && !data.pix_key) return false
-      if (data.payment_method !== 'PIX' && (!data.bank_name || !data.bank_account)) return false
       return true
     },
     {
-      message: 'Banking details are required for the selected method',
-      path: ['payment_method'], // Attach error to payment_method or specific fields ideally
+      message: 'Chave PIX é obrigatória para pagamento via PIX',
+      path: ['pix_key'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (
+        data.payment_method !== 'PIX' &&
+        (!data.bank_name || !data.bank_account)
+      )
+        return false
+      return true
+    },
+    {
+      message: 'Dados bancários são obrigatórios para TED/Transferência',
+      path: ['bank_name'],
     }
   )
 
@@ -68,7 +128,8 @@ const Providers = () => {
       enqueueSnackbar('Provider created successfully', { variant: 'success' })
       reset()
     },
-    onError: () => enqueueSnackbar('Error creating provider', { variant: 'error' }),
+    onError: () =>
+      enqueueSnackbar('Error creating provider', { variant: 'error' }),
   })
 
   // Placeholder mutations for actions
@@ -90,8 +151,9 @@ const Providers = () => {
     resolver: zodResolver(providerSchema),
     defaultValues: {
       name: '',
+      document: '',
       role: '',
-      salary_base: '',
+      monthly_value: '',
       payment_method: 'PIX',
       pix_key: '',
       bank_name: '',
@@ -121,9 +183,21 @@ const Providers = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          mb: 3,
+          flexWrap: 'wrap',
+          gap: 2,
+        }}
+      >
         <Typography variant="h4">Providers</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => setOpen(true)}>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => setOpen(true)}
+        >
           Add Provider
         </Button>
       </Box>
@@ -151,7 +225,11 @@ const Providers = () => {
                   <IconButton size="small" onClick={() => handleEdit(p)}>
                     <Edit />
                   </IconButton>
-                  <IconButton size="small" color="error" onClick={() => handleDelete(p.id)}>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDelete(p.id)}
+                  >
                     <Delete />
                   </IconButton>
                 </>
@@ -161,7 +239,12 @@ const Providers = () => {
         />
       </Card>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>New Provider</DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent>
@@ -181,6 +264,31 @@ const Providers = () => {
                   )}
                 />
               </Grid>
+
+              <Grid size={{ xs: 12 }}>
+                <Controller
+                  name="document"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <CPFInput
+                      {...field}
+                      label="CPF/CNPJ"
+                      fullWidth
+                      required
+                      error={!!fieldState.error}
+                      helperText={fieldState.error?.message}
+                      InputProps={{
+                        endAdornment: fieldState.error ? (
+                          <ErrorIcon color="error" fontSize="small" />
+                        ) : field.value && !fieldState.error ? (
+                          <CheckCircle color="success" fontSize="small" />
+                        ) : null,
+                      }}
+                    />
+                  )}
+                />
+              </Grid>
+
               <Grid size={{ xs: 6 }}>
                 <Controller
                   name="role"
@@ -198,15 +306,15 @@ const Providers = () => {
               </Grid>
               <Grid size={{ xs: 6 }}>
                 <Controller
-                  name="salary_base"
+                  name="monthly_value"
                   control={control}
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      label="Base Salary"
+                      label="Valor Mensal (R$)"
                       fullWidth
-                      error={!!errors.salary_base}
-                      helperText={errors.salary_base?.message}
+                      error={!!errors.monthly_value}
+                      helperText={errors.monthly_value?.message}
                     />
                   )}
                 />
@@ -217,7 +325,12 @@ const Providers = () => {
                   name="payment_method"
                   control={control}
                   render={({ field }) => (
-                    <TextField {...field} select label="Payment Method" fullWidth>
+                    <TextField
+                      {...field}
+                      select
+                      label="Payment Method"
+                      fullWidth
+                    >
                       <MenuItem value="PIX">PIX</MenuItem>
                       <MenuItem value="TED">TED</MenuItem>
                       <MenuItem value="TRANSFER">Bank Transfer</MenuItem>
@@ -263,7 +376,9 @@ const Providers = () => {
                     <Controller
                       name="bank_agency"
                       control={control}
-                      render={({ field }) => <TextField {...field} label="Agency" fullWidth />}
+                      render={({ field }) => (
+                        <TextField {...field} label="Agency" fullWidth />
+                      )}
                     />
                   </Grid>
                   <Grid size={{ xs: 6 }}>
@@ -301,7 +416,9 @@ const Providers = () => {
               </Grid>
             </Grid>
           </DialogContent>
-          <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+          <Box
+            sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}
+          >
             <Button onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" variant="contained">
               Create
