@@ -54,15 +54,24 @@ const Dashboard = () => {
 
   // Group payrolls by month for chart
   const monthlyData = payrolls
-    ? payrolls.reduce((acc: any, p: Payroll) => {
-        const month = p.reference_month
-        if (!acc[month]) {
-          acc[month] = { draft: 0, closed: 0, paid: 0, total: 0 }
-        }
-        acc[month][p.status.toLowerCase() as 'draft' | 'closed' | 'paid']++
-        acc[month].total += parseFloat(p.net_value)
-        return acc
-      }, {})
+    ? payrolls.reduce(
+        (
+          acc: Record<
+            string,
+            { draft: number; closed: number; paid: number; total: number }
+          >,
+          p: Payroll
+        ) => {
+          const month = p.reference_month
+          if (!acc[month]) {
+            acc[month] = { draft: 0, closed: 0, paid: 0, total: 0 }
+          }
+          acc[month][p.status.toLowerCase() as 'draft' | 'closed' | 'paid']++
+          acc[month].total += parseFloat(p.net_value)
+          return acc
+        },
+        {}
+      )
     : {}
 
   const sortedMonths = Object.keys(monthlyData).sort()
@@ -347,7 +356,9 @@ const Dashboard = () => {
                     <Typography variant="caption" color="text.secondary">
                       {payroll.reference_month}
                     </Typography>
-                    <StatusChip status={payroll.status as any} />
+                    <StatusChip
+                      status={payroll.status as 'DRAFT' | 'CLOSED' | 'PAID'}
+                    />
                   </Box>
                   <Typography variant="subtitle2" noWrap>
                     {payroll.provider_name}
