@@ -234,7 +234,7 @@ const Payrolls = () => {
 
             {/* Filters */}
             <Card sx={{ mb: 3, p: 2 }}>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                     <FilterList />
                     <TextField
                         select
@@ -250,14 +250,24 @@ const Payrolls = () => {
                         <MenuItem value="PAID">Paga</MenuItem>
                     </TextField>
                     <TextField
-                        label="Mês (MM/YYYY)"
+                        label="Mês de Referência"
+                        type="month"
                         value={filters.reference_month}
                         onChange={(e) =>
                             setFilters({ ...filters, reference_month: e.target.value })
                         }
-                        placeholder="01/2026"
                         size="small"
+                        InputLabelProps={{ shrink: true }}
+                        sx={{ minWidth: 180 }}
                     />
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => setFilters({ status: 'all', reference_month: '', provider: undefined })}
+                        sx={{ ml: 'auto' }}
+                    >
+                        Limpar Filtros
+                    </Button>
                 </Box>
             </Card>
 
