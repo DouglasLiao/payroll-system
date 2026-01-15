@@ -29,3 +29,4 @@ weasyprint==67.0
 webencodings==0.5.1
 zopfli==0.4.0
 psycopg2-binary>=2.9
+workalendar==17.0.0

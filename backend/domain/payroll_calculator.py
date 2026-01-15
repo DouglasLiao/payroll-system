@@ -22,7 +22,7 @@ CARGA_HORARIA_PADRAO = 220  # horas/mês
 PERCENTUAL_ADIANTAMENTO_PADRAO = Decimal('40.00')  # 40%
 MULTIPLICADOR_HORA_EXTRA_50 = Decimal('1.5')
 MULTIPLICADOR_FERIADO = Decimal('2.0')
-PERCENTUAL_DSR = Decimal('0.166667')  # 1/6 = 16,67%
+# DSR não usa percentual fixo - calculado dinamicamente por mês
 PERCENTUAL_ADICIONAL_NOTURNO = Decimal('0.20')  # 20%
 
 
@@ -181,26 +181,42 @@ def calcular_adicional_noturno(
 
 
 def calcular_dsr(
-    total_horas_extras: Decimal,
-    percentual: Decimal = PERCENTUAL_DSR
+    valor_horas_extras: Decimal,
+    valor_feriados: Decimal,
+    dias_uteis: int,
+    domingos_e_feriados: int
 ) -> Decimal:
     """
-    Calcula o DSR (Descanso Semanal Remunerado) sobre horas extras.
+    Calcula o DSR (Descanso Semanal Remunerado) sobre horas extras e feriados.
     
     ATENÇÃO: DSR não é obrigação legal para PJ, tratado aqui como regra contratual.
     
+    Fórmula: (Horas Extras + Feriados) / Dias Úteis * (Domingos + Feriados)
+    
     Args:
-        total_horas_extras: Valor total das horas extras (não quantidade, mas valor em R$)
-        percentual: Percentual de DSR (padrão 16.67% = 1/6)
+        valor_horas_extras: Valor total das horas extras em R$
+        valor_feriados: Valor total dos feriados trabalhados em R$
+        dias_uteis: Número de dias úteis no mês
+        domingos_e_feriados: Número de domingos + feriados no mês
     
     Returns:
-        Valor do DSR sobre as horas extras
+        Valor do DSR
         
     Exemplo:
-        >>> calcular_dsr(Decimal('150'))
-        Decimal('25.00')
+        >>> calcular_dsr(Decimal('220'), Decimal('160'), 25, 6)
+        Decimal('91.20')
     """
-    return (total_horas_extras * percentual).quantize(Decimal('0.01'))
+    if dias_uteis <= 0:
+        raise ValueError("Dias úteis deve ser maior que zero")
+    
+    total_extras = valor_horas_extras + valor_feriados
+    if total_extras == 0:
+        return Decimal('0.00')
+    
+    dsr_diario = total_extras / Decimal(dias_uteis)
+    dsr_total = dsr_diario * Decimal(domingos_e_feriados)
+    
+    return dsr_total.quantize(Decimal('0.01'))
 
 
 def calcular_total_proventos(
@@ -293,41 +309,24 @@ def calcular_desconto_falta(
     return (horas_falta * valor_hora).quantize(Decimal('0.01'))
 
 
-def calcular_dsr_sobre_faltas(
-    valor_desconto_falta: Decimal,
-    percentual: Decimal = PERCENTUAL_DSR
-) -> Decimal:
-    """
-    Calcula o DSR sobre faltas (desconto adicional).
-    
-    Args:
-        valor_desconto_falta: Valor já calculado do desconto de falta
-        percentual: Percentual de DSR (padrão 16.67%)
-    
-    Returns:
-        Valor do DSR a descontar sobre as faltas
-        
-    Exemplo:
-        >>> calcular_dsr_sobre_faltas(Decimal('80'))
-        Decimal('13.33')
-    """
-    return (valor_desconto_falta * percentual).quantize(Decimal('0.01'))
+# DSR sobre faltas REMOVIDO - conceito CLT, não aplicável para PJ
+# Sistema é PJ-only e não implementa regras trabalhistas CLT
 
 
 def calcular_total_descontos(
     desconto_atraso: Decimal,
     desconto_falta: Decimal,
-    dsr_sobre_faltas: Decimal,
     vale_transporte: Decimal,
     descontos_manuais: Decimal
 ) -> Decimal:
     """
     Calcula o total de descontos.
     
+    IMPORTANTE: DSR sobre faltas NÃO é aplicado (conceito CLT, sistema é PJ-only).
+    
     Args:
         desconto_atraso: Desconto por atrasos
         desconto_falta: Desconto por faltas
-        dsr_sobre_faltas: DSR sobre faltas
         vale_transporte: Valor do VT a descontar
         descontos_manuais: Outros descontos manuais
     
@@ -336,15 +335,14 @@ def calcular_total_descontos(
         
     Exemplo:
         >>> calcular_total_descontos(
-        ...     Decimal('5'), Decimal('80'), Decimal('13.33'),
+        ...     Decimal('5'), Decimal('80'),
         ...     Decimal('202.40'), Decimal('0')
         ... )
-        Decimal('300.73')
+        Decimal('287.40')
     """
     total = (
         desconto_atraso +
         desconto_falta +
-        dsr_sobre_faltas +
         vale_transporte +
         descontos_manuais
     )
@@ -447,10 +445,15 @@ def calcular_folha_completa(
     horas_falta: Decimal = Decimal('0'),
     vale_transporte: Decimal = Decimal('0'),
     descontos_manuais: Decimal = Decimal('0'),
-    carga_horaria_mensal: int = CARGA_HORARIA_PADRAO
+    carga_horaria_mensal: int = CARGA_HORARIA_PADRAO,
+    dias_uteis_mes: int = 22,
+    domingos_e_feriados_mes: int = 8
 ) -> Dict[str, Decimal]:
     """
     Calcula todos os valores da folha de pagamento PJ de uma só vez.
+    
+    IMPORTANTE: Sistema exclusivo para PJ (Pessoa Jurídica).
+    Não implementa regras CLT.
     
     Args:
         valor_contrato_mensal: Valor mensal do contrato
@@ -463,6 +466,8 @@ def calcular_folha_completa(
         vale_transporte: Valor do VT
         descontos_manuais: Outros descontos
         carga_horaria_mensal: Carga horária (padrão 220h)
+        dias_uteis_mes: Dias úteis no mês (padrão 22)
+        domingos_e_feriados_mes: Domingos + feriados no mês (padrão 8)
     
     Returns:
         Dicionário completo com todos os valores calculados
@@ -491,19 +496,23 @@ def calcular_folha_completa(
     hora_extra_valor = calcular_hora_extra_50(horas_extras, valor_hora)
     feriado_valor = calcular_hora_feriado(horas_feriado, valor_hora)
     noturno_valor = calcular_adicional_noturno(horas_noturnas, valor_hora)
-    dsr_valor = calcular_dsr(hora_extra_valor)
+    dsr_valor = calcular_dsr(
+        hora_extra_valor,
+        feriado_valor,
+        dias_uteis_mes,
+        domingos_e_feriados_mes
+    )
     
     total_proventos = calcular_total_proventos(
         saldo, hora_extra_valor, feriado_valor, dsr_valor, noturno_valor
     )
     
-    # Descontos
+    # Descontos (SEM DSR sobre faltas - conceito CLT)
     atraso_desconto = calcular_desconto_atraso(minutos_atraso, valor_hora)
     falta_desconto = calcular_desconto_falta(horas_falta, valor_hora)
-    dsr_falta = calcular_dsr_sobre_faltas(falta_desconto)
     
     total_descontos_calc = calcular_total_descontos(
-        atraso_desconto, falta_desconto, dsr_falta, vale_transporte, descontos_manuais
+        atraso_desconto, falta_desconto, vale_transporte, descontos_manuais
     )
     
     # Valor final
@@ -525,7 +534,7 @@ def calcular_folha_completa(
         # Descontos
         'desconto_atraso': atraso_desconto,
         'desconto_falta': falta_desconto,
-        'dsr_sobre_faltas': dsr_falta,
+        # 'dsr_sobre_faltas': REMOVIDO - conceito CLT
         'vale_transporte': vale_transporte,
         'descontos_manuais': descontos_manuais,
         'total_descontos': total_descontos_calc,

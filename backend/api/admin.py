@@ -58,7 +58,7 @@ class PayrollAdmin(admin.ModelAdmin):
         'total_earnings',
         'late_discount',
         'absence_discount',
-        'dsr_on_absences',
+        # 'dsr_on_absences', # REMOVIDO - conceito CLT
         'total_discounts',
         'gross_value',
         'net_value',
@@ -94,7 +94,7 @@ class PayrollAdmin(admin.ModelAdmin):
             'fields': (
                 'late_discount',
                 'absence_discount',
-                'dsr_on_absences',
+                # 'dsr_on_absences', # REMOVIDO - conceito CLT
                 'total_discounts'
             ),
             'classes': ('collapse',)

@@ -290,13 +290,7 @@ class Payroll(models.Model):
         editable=False,
         verbose_name="Desconto Faltas"
     )
-    dsr_on_absences = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2,
-        default=Decimal('0.00'),
-        editable=False,
-        verbose_name="DSR sobre Faltas"
-    )
+    # dsr_on_absences REMOVIDO - conceito CLT, não aplicável para PJ
     total_discounts = models.DecimalField(
         max_digits=10, 
         decimal_places=2,
@@ -372,7 +366,13 @@ class Payroll(models.Model):
         """
         from domain.payroll_calculator import calcular_folha_completa
         
-        # Calcular todos os valores usando a função de domínio
+        # Importar função de cálculo de dias
+        from services.payroll_service import calcular_dias_mes
+        
+        # Calcular dias úteis e domingos/feriados do mês
+        dias_uteis, domingos_feriados = calcular_dias_mes(self.reference_month)
+        
+        # Calcular todos os valores usando a função do domínio
         calculated = calcular_folha_completa(
             valor_contrato_mensal=self.base_value,
             percentual_adiantamento=(self.advance_value / self.base_value * 100) if self.base_value > 0 else Decimal('0'),
@@ -383,7 +383,9 @@ class Payroll(models.Model):
             horas_falta=self.absence_hours,
             vale_transporte=self.vt_discount,
             descontos_manuais=self.manual_discounts,
-            carga_horaria_mensal=self.provider.monthly_hours if self.provider_id else 220
+            carga_horaria_mensal=self.provider.monthly_hours if self.provider_id else 220,
+            dias_uteis_mes=dias_uteis,
+            domingos_e_feriados_mes=domingos_feriados
         )
         
         # Atribuir valores calculados
@@ -396,7 +398,7 @@ class Payroll(models.Model):
         self.total_earnings = calculated['total_proventos']
         self.late_discount = calculated['desconto_atraso']
         self.absence_discount = calculated['desconto_falta']
-        self.dsr_on_absences = calculated['dsr_sobre_faltas']
+        # dsr_on_absences REMOVIDO - conceito CLT
         self.total_discounts = calculated['total_descontos']
         self.gross_value = calculated['valor_bruto']
         self.net_value = calculated['valor_liquido']

@@ -9,7 +9,56 @@ from decimal import Decimal
 from typing import Dict, Optional
 from django.db import transaction
 from django.utils import timezone
+from workalendar.america import Brazil
+import calendar
+from datetime import datetime
 from api.models import Provider, Payroll, PayrollItem, PayrollStatus, ItemType
+
+
+def calcular_dias_mes(reference_month: str) -> tuple[int, int]:
+    """
+    Calcula dias úteis e domingos+feriados de um mês usando calendário brasileiro oficial.
+    
+    IMPORTANTE: Sistema exclusivo para PJ. Feriados são considerados apenas para
+    cálculo do DSR contratual, não para obrigações trabalhistas CLT.
+    
+    Args:
+        reference_month: Mês no formato YYYY-MM
+        
+    Returns:
+        (dias_uteis, domingos_e_feriados)
+        
+    Exemplo:
+        >>> calcular_dias_mes('2026-01')
+        (25, 6)  # 25 dias úteis, 6 domingos+feriados
+    """
+    year, month = map(int, reference_month.split('-'))
+    cal = Brazil()
+    
+    # Total de dias no mês
+    _, num_days = calendar.monthrange(year, month)
+    
+    # Contar dias úteis (workalendar já considera feriados brasileiros)
+    dias_uteis = 0
+    domingos = 0
+    feriados = 0
+    
+    for day in range(1, num_days + 1):
+        date = datetime(year, month, day).date()
+        
+        # Verificar se é domingo
+        if date.weekday() == 6:  # 6 = domingo
+            domingos += 1
+        # Verificar se é feriado (e não é domingo)
+        elif cal.is_holiday(date):
+            feriados += 1
+        # Se não é domingo nem feriado, é dia útil
+        else:
+            dias_uteis += 1
+    
+    domingos_e_feriados = domingos + feriados
+    
+    return dias_uteis, domingos_e_feriados
 
 
 class PayrollService:
@@ -186,15 +235,6 @@ class PayrollService:
                 type=ItemType.DEBIT,
                 description=f"Faltas ({payroll.absence_hours}h)",
                 amount=payroll.absence_discount
-            ))
-        
-        # DSR sobre faltas
-        if payroll.dsr_on_absences > 0:
-            items.append(PayrollItem(
-                payroll=payroll,
-                type=ItemType.DEBIT,
-                description="DSR sobre faltas",
-                amount=payroll.dsr_on_absences
             ))
         
         # Vale transporte
@@ -388,7 +428,7 @@ class PayrollService:
             'discounts': {
                 'late': payroll.late_discount,
                 'absence': payroll.absence_discount,
-                'dsr_on_absences': payroll.dsr_on_absences,
+                # 'dsr_on_absences': REMOVIDO - conceito CLT
                 'vt': payroll.vt_discount,
                 'manual': payroll.manual_discounts,
                 'total': payroll.total_discounts,
