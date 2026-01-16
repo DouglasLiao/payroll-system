@@ -580,10 +580,7 @@ export const PayrollFormDialog = ({
                       <Typography variant="caption" sx={{ opacity: 0.8 }}>
                         Total Adicionais
                       </Typography>
-                      <Typography
-                        variant="h6"
-                        sx={{ color: 'success.light' }}
-                      >
+                      <Typography variant="h6" sx={{ color: 'success.light' }}>
                         + {formatCurrency(totalAdditionals)}
                       </Typography>
                     </Grid>
@@ -634,9 +631,7 @@ export const PayrollFormDialog = ({
             </Grid>
           </Grid>
         </DialogContent>
-        <Box
-          sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}
-        >
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
           <Button onClick={handleFormClose}>Cancelar</Button>
           <Button
             type="submit"
