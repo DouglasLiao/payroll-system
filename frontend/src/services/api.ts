@@ -76,7 +76,10 @@ export const getPayrolls = async (params?: PayrollFilters) => {
     searchParams.append('status', params.status)
   }
   if (params?.reference_month) {
-    searchParams.append('reference_month', params.reference_month)
+    // Convert from YYYY-MM (HTML5 month input) to MM/YYYY (backend format)
+    const [year, month] = params.reference_month.split('-')
+    const formattedMonth = `${month}/${year}`
+    searchParams.append('reference_month', formattedMonth)
   }
   if (params?.provider) {
     searchParams.append('provider', params.provider.toString())
@@ -126,6 +129,30 @@ export const recalculatePayroll = async (
 export const reopenPayroll = async (id: number) => {
   const { data } = await api.post<Payroll>(`/payrolls/${id}/reopen/`)
   return data
+}
+
+export const downloadPayrollExcel = async (
+  payrollId: number
+): Promise<void> => {
+  const response = await api.get(`/payrolls/${payrollId}/export-excel/`, {
+    responseType: 'blob',
+  })
+
+  // Extract filename from Content-Disposition header
+  const contentDisposition = response.headers['content-disposition']
+  const filename = contentDisposition
+    ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+    : `folha_${payrollId}.xlsx`
+
+  // Create download link
+  const url = window.URL.createObjectURL(new Blob([response.data]))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', filename)
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
 }
 
 // ==================== DASHBOARD ====================

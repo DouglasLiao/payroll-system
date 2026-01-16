@@ -3,6 +3,7 @@ import {
   CardContent,
   Typography,
   Box,
+  Skeleton,
   type SxProps,
   type Theme,
 } from '@mui/material'
@@ -14,6 +15,7 @@ interface StatCardProps {
   color?: string
   icon?: ReactNode
   subtitle?: string
+  loading?: boolean
   sx?: SxProps<Theme>
 }
 
@@ -25,6 +27,7 @@ interface StatCardProps {
  *   title="Total de Folhas"
  *   value={42}
  *   icon={<ReceiptIcon />}
+ *   loading={isLoading}
  * />
  */
 export const StatCard = ({
@@ -33,6 +36,7 @@ export const StatCard = ({
   color = 'text.primary',
   icon,
   subtitle,
+  loading = false,
   sx = {},
 }: StatCardProps) => {
   return (
@@ -44,9 +48,13 @@ export const StatCard = ({
           {title}
         </Typography>
 
-        <Typography variant="h3" sx={{ color, fontWeight: 700 }}>
-          {value}
-        </Typography>
+        {loading ? (
+          <Skeleton variant="text" height={48} width="60%" />
+        ) : (
+          <Typography variant="h3" sx={{ color, fontWeight: 700 }}>
+            {value}
+          </Typography>
+        )}
 
         {subtitle && (
           <Typography
@@ -54,7 +62,7 @@ export const StatCard = ({
             color="text.secondary"
             sx={{ mt: 0.5, display: 'block' }}
           >
-            {subtitle}
+            {loading ? <Skeleton variant="text" width="80%" /> : subtitle}
           </Typography>
         )}
       </CardContent>

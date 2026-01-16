@@ -18,7 +18,6 @@ import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
   People as PeopleIcon,
-  Payment as PaymentIcon,
   Receipt as ReceiptIcon,
   Logout as LogoutIcon,
   Brightness4 as MoonIcon,
@@ -39,7 +38,6 @@ const MainLayout = () => {
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
     { text: 'Providers', icon: <PeopleIcon />, path: '/admin/providers' },
-    { text: 'Payments', icon: <PaymentIcon />, path: '/admin/payments' },
     { text: 'Payrolls', icon: <ReceiptIcon />, path: '/admin/payrolls' },
   ]
 

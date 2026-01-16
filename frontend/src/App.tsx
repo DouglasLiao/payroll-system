@@ -8,7 +8,6 @@ import { ThemeContextProvider } from './contexts/ThemeContext'
 import MainLayout from './layouts/MainLayout'
 import Dashboard from './pages/Dashboard'
 import Providers from './pages/Providers'
-import Payments from './pages/Payments'
 import Payrolls from './pages/Payrolls'
 const EmployeeView = () => <div>Employee View (Coming Soon)</div>
 
@@ -29,7 +28,6 @@ function App() {
               <Route path="/" element={<MainLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="admin/providers" element={<Providers />} />
-                <Route path="admin/payments" element={<Payments />} />
                 <Route path="admin/payrolls" element={<Payrolls />} />
               </Route>
 

@@ -90,7 +90,6 @@ class PayrollSerializer(serializers.ModelSerializer):
             # Valores calculados - Descontos
             'late_discount',
             'absence_discount',
-            'dsr_on_absences',
             'total_discounts',
             
             # Totais
@@ -116,7 +115,6 @@ class PayrollSerializer(serializers.ModelSerializer):
             'total_earnings',
             'late_discount',
             'absence_discount',
-            'dsr_on_absences',
             'total_discounts',
             'gross_value',
             'net_value',

@@ -53,7 +53,7 @@ export function GenericTable<T>({
               <TableRow key={index}>
                 {columns.map((col) => (
                   <TableCell key={col.id}>
-                    <Skeleton animation="wave" />
+                    <Skeleton animation="wave" height={30} variant="text" />
                   </TableCell>
                 ))}
               </TableRow>

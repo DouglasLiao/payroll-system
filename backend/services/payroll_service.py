@@ -23,7 +23,7 @@ def calcular_dias_mes(reference_month: str) -> tuple[int, int]:
     cálculo do DSR contratual, não para obrigações trabalhistas CLT.
     
     Args:
-        reference_month: Mês no formato YYYY-MM
+        reference_month: Mês no formato YYYY-MM ou MM/YYYY
         
     Returns:
         (dias_uteis, domingos_e_feriados)
@@ -31,8 +31,17 @@ def calcular_dias_mes(reference_month: str) -> tuple[int, int]:
     Exemplo:
         >>> calcular_dias_mes('2026-01')
         (25, 6)  # 25 dias úteis, 6 domingos+feriados
+        >>> calcular_dias_mes('01/2026')
+        (25, 6)  # mesmo resultado
     """
-    year, month = map(int, reference_month.split('-'))
+    # Detectar formato e converter para ano e mês
+    if '/' in reference_month:
+        # Formato MM/YYYY
+        month, year = map(int, reference_month.split('/'))
+    else:
+        # Formato YYYY-MM
+        year, month = map(int, reference_month.split('-'))
+    
     cal = Brazil()
     
     # Total de dias no mês

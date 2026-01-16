@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
     'corsheaders',
+    'django_filters',
     'api',
 ]
 
@@ -138,7 +139,11 @@ CORS_ALLOWED_ORIGINS = [
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 100
+    'PAGE_SIZE': 100,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+    ],
 }
 
 # drf-spectacular Configuration
@@ -220,10 +225,6 @@ Por enquanto, todos os endpoints estão abertos para desenvolvimento.
         {
             'name': 'payrolls',
             'description': 'Folhas de pagamento com cálculos automáticos'
-        },
-        {
-            'name': 'payments',
-            'description': 'Pagamentos (sistema legado)'
         },
     ],
     'COMPONENT_SPLIT_REQUEST': True,

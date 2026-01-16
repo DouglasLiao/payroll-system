@@ -19,12 +19,16 @@ import {
 import {
   Add,
   Visibility,
-  FilterList,
   Info as InfoIcon,
+  FileDownload,
 } from '@mui/icons-material'
 import { GenericTable } from '../components/GenericTable'
 import { StatusChip } from '../components/StatusChip'
 import { StatCard } from '../components/StatCard'
+import {
+  PayrollFiltersComponent,
+  type PayrollFilters,
+} from '../components/PayrollFilters'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -39,6 +43,7 @@ import {
   getPayrollDetail,
   closePayroll,
   markPayrollAsPaid,
+  downloadPayrollExcel,
 } from '../services/api'
 
 // Schema de validação
@@ -62,10 +67,9 @@ const Payrolls = () => {
   const [openForm, setOpenForm] = useState(false)
   const [openDetail, setOpenDetail] = useState(false)
   const [selectedPayroll, setSelectedPayroll] = useState<number | null>(null)
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<PayrollFilters>({
     status: 'all',
     reference_month: '',
-    provider: undefined as number | undefined,
   })
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
     null
@@ -194,6 +198,15 @@ const Payrolls = () => {
     setOpenDetail(true)
   }
 
+  const handleDownloadExcel = async (payrollId: number) => {
+    try {
+      await downloadPayrollExcel(payrollId)
+      enqueueSnackbar('Excel baixado com sucesso!', { variant: 'success' })
+    } catch {
+      enqueueSnackbar('Erro ao baixar Excel', { variant: 'error' })
+    }
+  }
+
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>
       {/* Header */}
@@ -211,7 +224,11 @@ const Payrolls = () => {
       {/* Stats Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 4 }}>
-          <StatCard title="Total de Folhas" value={payrolls?.length || 0} />
+          <StatCard
+            title="Total de Folhas"
+            value={payrolls?.length || 0}
+            loading={isLoading}
+          />
         </Grid>
         <Grid size={{ xs: 4 }}>
           <StatCard
@@ -219,6 +236,7 @@ const Payrolls = () => {
             value={
               payrolls?.filter((p: Payroll) => p.status === 'DRAFT').length || 0
             }
+            loading={isLoading}
           />
         </Grid>
         <Grid size={{ xs: 4 }}>
@@ -228,61 +246,17 @@ const Payrolls = () => {
               payrolls?.filter((p: Payroll) => p.status === 'PAID').length || 0
             }
             color="success.main"
+            loading={isLoading}
           />
         </Grid>
       </Grid>
 
       {/* Filters */}
-      <Card sx={{ mb: 3, p: 2 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            alignItems: 'center',
-            flexWrap: 'wrap',
-          }}
-        >
-          <FilterList />
-          <TextField
-            select
-            label="Status"
-            value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            sx={{ minWidth: 150 }}
-            size="small"
-          >
-            <MenuItem value="all">Todos</MenuItem>
-            <MenuItem value="DRAFT">Rascunho</MenuItem>
-            <MenuItem value="CLOSED">Fechada</MenuItem>
-            <MenuItem value="PAID">Paga</MenuItem>
-          </TextField>
-          <TextField
-            label="Mês de Referência"
-            type="month"
-            value={filters.reference_month}
-            onChange={(e) =>
-              setFilters({ ...filters, reference_month: e.target.value })
-            }
-            size="small"
-            InputLabelProps={{ shrink: true }}
-            sx={{ minWidth: 180 }}
-          />
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() =>
-              setFilters({
-                status: 'all',
-                reference_month: '',
-                provider: undefined,
-              })
-            }
-            sx={{ ml: 'auto' }}
-          >
-            Limpar Filtros
-          </Button>
-        </Box>
-      </Card>
+      <PayrollFiltersComponent
+        filters={filters}
+        onFiltersChange={setFilters}
+        providers={providers}
+      />
 
       {/* Table */}
       <GenericTable<Payroll>
@@ -900,6 +874,14 @@ const Payrolls = () => {
                     label={payrollDetail.status_display}
                   />
                   <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      startIcon={<FileDownload />}
+                      onClick={() => handleDownloadExcel(payrollDetail.id)}
+                    >
+                      Download Excel
+                    </Button>
                     {payrollDetail.status === 'DRAFT' && (
                       <Button
                         variant="outlined"

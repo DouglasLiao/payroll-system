@@ -251,6 +251,45 @@ class PayrollViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
+    @action(detail=True, methods=['get'], url_path='export-excel')
+    def export_excel(self, request, pk=None):
+        """
+        Exporta a folha de pagamento em formato Excel (.xlsx).
+        
+        GET /api/payrolls/{id}/export-excel/
+        
+        Returns:
+            Arquivo Excel formatado com todos os detalhes da folha
+        """
+        from services.excel_service import ExcelService
+        from django.http import Http404
+        
+        try:
+            payroll = self.get_object()
+            
+            # Gerar arquivo Excel
+            excel_service = ExcelService()
+            excel_file = excel_service.generate_payroll_excel(payroll)
+            filename = excel_service.get_filename(payroll)
+            
+            # Criar resposta HTTP com arquivo
+            response = HttpResponse(
+                excel_file.getvalue(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+            
+        except Http404:
+            # Re-raise Http404 para retornar 404 corretamente
+            raise
+        except Exception as e:
+            return Response(
+                {'error': f'Erro ao gerar Excel: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def destroy(self, request, *args, **kwargs):
         """
         Sobrescreve delete para permitir apenas para folhas DRAFT.
