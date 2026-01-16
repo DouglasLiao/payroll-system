@@ -216,8 +216,10 @@ export const PayrollDetailDialog = ({
                     alignItems: 'center',
                   }}
                 >
-                  <Typography variant="h5">Valor Líquido</Typography>
-                  <Typography variant="h3" fontWeight={700}>
+                  <Typography variant="h5" color="inherit">
+                    Valor Líquido
+                  </Typography>
+                  <Typography variant="h3" fontWeight={700} color="inherit">
                     {formatCurrency(payrollDetail.net_value)}
                   </Typography>
                 </Box>

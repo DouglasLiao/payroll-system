@@ -37,8 +37,8 @@ const MainLayout = () => {
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'Providers', icon: <PeopleIcon />, path: '/admin/providers' },
-    { text: 'Payrolls', icon: <ReceiptIcon />, path: '/admin/payrolls' },
+    { text: 'Colaboradores', icon: <PeopleIcon />, path: '/admin/providers' },
+    { text: 'Pagamentos', icon: <ReceiptIcon />, path: '/admin/payrolls' },
   ]
 
   const drawerContent = (

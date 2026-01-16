@@ -8,6 +8,7 @@ export const getTheme = (mode: PaletteMode) => {
       mode,
       primary: {
         main: isLight ? '#4F46E5' : '#6366F1', // Indigo 600 / 500
+        contrastText: '#FFFFFF',
       },
       secondary: {
         main: isLight ? '#1E293B' : '#F8FAFC', // Slate 900 / 50
