@@ -28,6 +28,8 @@ const Payrolls = () => {
   const [openForm, setOpenForm] = useState(false)
   const [openDetail, setOpenDetail] = useState(false)
   const [selectedPayroll, setSelectedPayroll] = useState<number | null>(null)
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const [filters, setFilters] = useState<PayrollFilters>({
     status: 'all',
     reference_month: '',
@@ -36,14 +38,15 @@ const Payrolls = () => {
   const queryClient = useQueryClient()
   const { enqueueSnackbar } = useSnackbar()
 
-  const { data: payrolls, isLoading } = useQuery({
-    queryKey: ['payrolls', filters],
-    queryFn: () => getPayrolls(filters),
+  const { data: payrollsData, isLoading } = useQuery({
+    queryKey: ['payrolls', filters, page, rowsPerPage],
+    queryFn: () =>
+      getPayrolls({ ...filters, page: page + 1, page_size: rowsPerPage }),
   })
 
-  const { data: providers } = useQuery({
+  const { data: providersData } = useQuery({
     queryKey: ['providers'],
-    queryFn: getProviders,
+    queryFn: () => getProviders({ page_size: 1000 }),
   })
 
   const { data: payrollDetail } = useQuery({
@@ -85,6 +88,15 @@ const Payrolls = () => {
     createMutation.mutate(data)
   }
 
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+  }
+
+  const handleRowsPerPageChange = (newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage)
+    setPage(0)
+  }
+
   const handleViewDetails = (payroll: Payroll) => {
     setSelectedPayroll(payroll.id)
     setOpenDetail(true)
@@ -114,18 +126,18 @@ const Payrolls = () => {
       </Box>
 
       {/* Stats Cards */}
-      <PayrollStats payrolls={payrolls} isLoading={isLoading} />
+      <PayrollStats data={payrollsData} isLoading={isLoading} />
 
       {/* Filters */}
       <PayrollFiltersComponent
         filters={filters}
         onFiltersChange={setFilters}
-        providers={providers}
+        providers={providersData?.results}
       />
 
       {/* Table */}
       <GenericTable<Payroll>
-        data={payrolls}
+        data={payrollsData?.results}
         loading={isLoading}
         keyExtractor={(p) => p.id}
         columns={[
@@ -192,6 +204,11 @@ const Payrolls = () => {
             ),
           },
         ]}
+        totalCount={payrollsData?.count}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={handlePageChange}
+        onRowsPerPageChange={handleRowsPerPageChange}
       />
 
       {/* Form Dialog */}
@@ -199,7 +216,7 @@ const Payrolls = () => {
         open={openForm}
         onClose={() => setOpenForm(false)}
         onSubmit={handleCreateSubmit}
-        providers={providers}
+        providers={providersData?.results}
         isPending={createMutation.isPending}
       />
 

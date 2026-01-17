@@ -21,12 +21,12 @@ const Dashboard = () => {
 
   const { data: payrolls, isLoading: payrollsLoading } = useQuery({
     queryKey: ['payrolls-dashboard'],
-    queryFn: () => getPayrolls({}),
+    queryFn: () => getPayrolls({ page_size: 1000 }), // Fetch all payrolls for dashboard stats
   })
 
   const { data: providers, isLoading: providersLoading } = useQuery({
     queryKey: ['providers-dashboard'],
-    queryFn: getProviders,
+    queryFn: () => getProviders({ page_size: 1000 }),
   })
 
   const isLoading = dashboardLoading || payrollsLoading || providersLoading
@@ -34,27 +34,30 @@ const Dashboard = () => {
   // Calculate payroll metrics
   const payrollStats = payrolls
     ? {
-        total: payrolls.length,
-        drafts: payrolls.filter((p: Payroll) => p.status === 'DRAFT').length,
-        closed: payrolls.filter((p: Payroll) => p.status === 'CLOSED').length,
-        paid: payrolls.filter((p: Payroll) => p.status === 'PAID').length,
-        totalValue: payrolls.reduce(
+        total: payrolls.count,
+        drafts: payrolls.results.filter((p: Payroll) => p.status === 'DRAFT')
+          .length,
+        closed: payrolls.results.filter((p: Payroll) => p.status === 'CLOSED')
+          .length,
+        paid: payrolls.results.filter((p: Payroll) => p.status === 'PAID')
+          .length,
+        totalValue: payrolls.results.reduce(
           (sum: number, p: Payroll) => sum + parseFloat(p.net_value),
           0
         ),
         avgValue:
-          payrolls.length > 0
-            ? payrolls.reduce(
+          payrolls.results.length > 0
+            ? payrolls.results.reduce(
                 (sum: number, p: Payroll) => sum + parseFloat(p.net_value),
                 0
-              ) / payrolls.length
+              ) / payrolls.results.length
             : 0,
       }
     : { total: 0, drafts: 0, closed: 0, paid: 0, totalValue: 0, avgValue: 0 }
 
   // Group payrolls by month for chart
   const monthlyData = payrolls
-    ? payrolls.reduce(
+    ? payrolls.results.reduce(
         (
           acc: Record<
             string,
@@ -195,11 +198,15 @@ const Dashboard = () => {
       </Box>
 
       <Grid container spacing={3}>
-        {/* Payments Stats Legacy */}
+        {/* Payment Stats - Calculated from Payrolls */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Pagamentos Pendentes"
-            value={formatCurrency(dashboardData?.stats.pending || 0)}
+            value={formatCurrency(
+              payrolls?.results
+                .filter((p: Payroll) => p.status === 'CLOSED')
+                .reduce((sum: number, p: Payroll) => sum + parseFloat(p.net_value), 0) || 0
+            )}
             icon={<MoneyIcon />}
             color="warning.main"
           />
@@ -207,7 +214,11 @@ const Dashboard = () => {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Pagamentos Realizados"
-            value={formatCurrency(dashboardData?.stats.paid || 0)}
+            value={formatCurrency(
+              payrolls?.results
+                .filter((p: Payroll) => p.status === 'PAID')
+                .reduce((sum: number, p: Payroll) => sum + parseFloat(p.net_value), 0) || 0
+            )}
             icon={<TrendingUpIcon />}
             color="success.main"
           />
@@ -226,7 +237,7 @@ const Dashboard = () => {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             title="Total Prestadores"
-            value={providers?.length || 0}
+            value={providers?.count || 0}
             icon={<PeopleIcon />}
             color="info.main"
           />
@@ -335,7 +346,7 @@ const Dashboard = () => {
               🧾 Últimas Folhas de Pagamento
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              {payrolls?.slice(0, 5).map((payroll: Payroll) => (
+              {payrolls?.results.slice(0, 5).map((payroll: Payroll) => (
                 <Card
                   key={payroll.id}
                   variant="outlined"
@@ -368,7 +379,7 @@ const Dashboard = () => {
                   </Typography>
                 </Card>
               ))}
-              {(!payrolls || payrolls.length === 0) && (
+              {(!payrolls || payrolls.results.length === 0) && (
                 <Typography
                   color="text.secondary"
                   sx={{ textAlign: 'center', width: '100%', py: 3 }}

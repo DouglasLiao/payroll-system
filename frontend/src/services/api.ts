@@ -20,9 +20,26 @@ const api = axios.create({
 
 // ==================== PROVIDERS ====================
 
-export const getProviders = async () => {
-  const { data } = await api.get<PaginatedResponse<Provider>>('/providers/')
-  return data.results
+export interface ProviderFilters {
+  page?: number
+  page_size?: number
+}
+
+export const getProviders = async (params?: ProviderFilters) => {
+  const searchParams = new URLSearchParams()
+
+  if (params?.page) {
+    searchParams.append('page', params.page.toString())
+  }
+  if (params?.page_size) {
+    searchParams.append('page_size', params.page_size.toString())
+  }
+
+  const queryString = searchParams.toString()
+  const url = `/providers/${queryString ? '?' + queryString : ''}`
+
+  const { data } = await api.get<PaginatedResponse<Provider>>(url)
+  return data
 }
 
 export const createProvider = async (provider: Omit<Provider, 'id'>) => {
@@ -67,6 +84,8 @@ export interface PayrollFilters {
   status?: string
   reference_month?: string
   provider?: number
+  page?: number
+  page_size?: number
 }
 
 export const getPayrolls = async (params?: PayrollFilters) => {
@@ -84,12 +103,18 @@ export const getPayrolls = async (params?: PayrollFilters) => {
   if (params?.provider) {
     searchParams.append('provider', params.provider.toString())
   }
+  if (params?.page) {
+    searchParams.append('page', params.page.toString())
+  }
+  if (params?.page_size) {
+    searchParams.append('page_size', params.page_size.toString())
+  }
 
   const queryString = searchParams.toString()
   const url = `/payrolls/${queryString ? '?' + queryString : ''}`
 
   const { data } = await api.get<PaginatedResponse<Payroll>>(url)
-  return data.results
+  return data
 }
 
 export const getPayrollDetail = async (id: number) => {

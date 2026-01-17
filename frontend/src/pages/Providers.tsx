@@ -112,12 +112,14 @@ type ProviderFormInputs = z.infer<typeof providerSchema>
 
 const Providers = () => {
   const [open, setOpen] = useState(false)
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
   const queryClient = useQueryClient()
   const { enqueueSnackbar } = useSnackbar()
 
-  const { data: providers, isLoading } = useQuery({
-    queryKey: ['providers'],
-    queryFn: getProviders,
+  const { data: providersData, isLoading } = useQuery({
+    queryKey: ['providers', page, rowsPerPage],
+    queryFn: () => getProviders({ page: page + 1, page_size: rowsPerPage }),
   })
 
   const createMutation = useMutation({
@@ -181,6 +183,15 @@ const Providers = () => {
     // TODO: Implement Edit logic (populate form, set edit mode)
   }
 
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+  }
+
+  const handleRowsPerPageChange = (newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage)
+    setPage(0)
+  }
+
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>
       <Box
@@ -204,9 +215,14 @@ const Providers = () => {
 
       <Card sx={{ p: 2 }}>
         <GenericTable
-          data={providers}
+          data={providersData?.results}
           loading={isLoading}
           keyExtractor={(p) => p.id}
+          totalCount={providersData?.count}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
           columns={[
             { id: 'name', label: 'Name', accessor: 'name' },
             { id: 'role', label: 'Role', accessor: 'role' },
