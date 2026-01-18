@@ -14,6 +14,7 @@ import {
   formatCompactCurrency,
 } from '../../utils/chartHelpers'
 import { formatCurrency } from '../../utils/formatters'
+import { sortMonthsChronologically } from '../../utils/dashboardCalculations'
 import type { MonthlyData, ChartPeriod } from '../../types'
 
 interface FinancialChartProps {
@@ -40,9 +41,10 @@ export const FinancialChart = ({
 
   const colors = getChartColors(theme)
 
-  // Memoize selected months based on period
+  // Memoize selected months based on period with proper chronological sorting
   const selectedMonths = useMemo(() => {
-    const sortedMonths = Object.keys(monthlyData).sort()
+    const allMonths = Object.keys(monthlyData)
+    const sortedMonths = sortMonthsChronologically(allMonths)
     return sortedMonths.slice(-period)
   }, [monthlyData, period])
 

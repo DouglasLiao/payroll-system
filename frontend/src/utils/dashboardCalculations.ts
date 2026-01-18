@@ -75,13 +75,29 @@ export const aggregateMonthlyData = (payrolls: Payroll[]): MonthlyData => {
 }
 
 /**
+ * Sort months in MM/YYYY format chronologically
+ * Converts MM/YYYY to YYYY-MM for sorting, then returns sorted MM/YYYY
+ */
+export const sortMonthsChronologically = (months: string[]): string[] => {
+  return months.sort((a, b) => {
+    // Convert MM/YYYY to YYYY-MM for proper date comparison
+    const [monthA, yearA] = a.split('/')
+    const [monthB, yearB] = b.split('/')
+    const dateA = `${yearA}-${monthA.padStart(2, '0')}`
+    const dateB = `${yearB}-${monthB.padStart(2, '0')}`
+    return dateA.localeCompare(dateB)
+  })
+}
+
+/**
  * Calculate financial metrics from monthly data
  */
 export const calculateFinancialMetrics = (
   monthlyData: MonthlyData,
   payrolls: Payroll[]
 ): FinancialMetrics => {
-  const months = Object.keys(monthlyData).sort()
+  const allMonths = Object.keys(monthlyData)
+  const months = sortMonthsChronologically(allMonths)
   const monthlyValues = months.map((m) => monthlyData[m].total)
 
   // Calculate average monthly value
@@ -130,7 +146,8 @@ export const calculateFinancialMetrics = (
  * Uses simple moving average for projection
  */
 export const projectNextMonth = (monthlyData: MonthlyData): number => {
-  const months = Object.keys(monthlyData).sort()
+  const allMonths = Object.keys(monthlyData)
+  const months = sortMonthsChronologically(allMonths)
   const last3Months = months.slice(-3)
 
   if (last3Months.length === 0) return 0

@@ -26,7 +26,12 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useSnackbar } from 'notistack'
-import { getProviders, createProvider, deleteProvider } from '../services/api'
+import {
+  getProviders,
+  createProvider,
+  deleteProvider,
+  updateProvider,
+} from '../services/api'
 import type { Provider } from '../types'
 import {
   validateCPF,
@@ -112,10 +117,13 @@ type ProviderFormInputs = z.infer<typeof providerSchema>
 
 const Providers = () => {
   const [open, setOpen] = useState(false)
+  const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const queryClient = useQueryClient()
   const { enqueueSnackbar } = useSnackbar()
+
+  const isEditMode = editingProvider !== null
 
   const { data: providersData, isLoading } = useQuery({
     queryKey: ['providers', page, rowsPerPage],
@@ -126,12 +134,23 @@ const Providers = () => {
     mutationFn: createProvider,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] })
-      setOpen(false)
+      handleCloseDialog()
       enqueueSnackbar('Provider created successfully', { variant: 'success' })
-      reset()
     },
     onError: () =>
       enqueueSnackbar('Error creating provider', { variant: 'error' }),
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Provider> }) =>
+      updateProvider(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['providers'] })
+      handleCloseDialog()
+      enqueueSnackbar('Provider updated successfully', { variant: 'success' })
+    },
+    onError: () =>
+      enqueueSnackbar('Error updating provider', { variant: 'error' }),
   })
 
   // Placeholder mutations for actions
@@ -169,18 +188,49 @@ const Providers = () => {
   const paymentMethod = watch('payment_method')
 
   const onSubmit = (data: ProviderFormInputs) => {
-    createMutation.mutate(data as unknown as Omit<Provider, 'id'>)
+    if (isEditMode) {
+      updateMutation.mutate({
+        id: editingProvider.id,
+        data: data as unknown as Partial<Provider>,
+      })
+    } else {
+      createMutation.mutate(data as unknown as Omit<Provider, 'id'>)
+    }
   }
 
   const handleDelete = (id: number) => {
-    if (confirm('Are you sure?')) {
+    if (confirm('Are you sure you want to delete this provider?')) {
       deleteMutation.mutate(id)
     }
   }
 
   const handleEdit = (provider: Provider) => {
-    console.log('Edit', provider)
-    // TODO: Implement Edit logic (populate form, set edit mode)
+    setEditingProvider(provider)
+    reset({
+      name: provider.name,
+      role: provider.role,
+      monthly_value: provider.monthly_value,
+      payment_method: provider.payment_method,
+      pix_key: provider.pix_key || '',
+      bank_name: provider.bank_name || '',
+      bank_agency: provider.bank_agency || '',
+      bank_account: provider.bank_account || '',
+      email: provider.email || '',
+      description: provider.description || '',
+    })
+    setOpen(true)
+  }
+
+  const handleCloseDialog = () => {
+    setOpen(false)
+    setEditingProvider(null)
+    reset()
+  }
+
+  const handleOpenCreateDialog = () => {
+    setEditingProvider(null)
+    reset()
+    setOpen(true)
   }
 
   const handlePageChange = (newPage: number) => {
@@ -207,7 +257,7 @@ const Providers = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setOpen(true)}
+          onClick={handleOpenCreateDialog}
         >
           Add Provider
         </Button>
@@ -255,13 +305,10 @@ const Providers = () => {
         />
       </Card>
 
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>New Provider</DialogTitle>
+      <Dialog open={open} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {isEditMode ? 'Edit Provider' : 'New Provider'}
+        </DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent>
             <Grid container spacing={2}>
@@ -291,8 +338,13 @@ const Providers = () => {
                       label="CPF/CNPJ"
                       fullWidth
                       required
+                      disabled={isEditMode}
                       error={!!fieldState.error}
-                      helperText={fieldState.error?.message}
+                      helperText={
+                        isEditMode
+                          ? 'CPF/CNPJ cannot be changed'
+                          : fieldState.error?.message
+                      }
                       InputProps={{
                         endAdornment: fieldState.error ? (
                           <ErrorIcon color="error" fontSize="small" />
@@ -435,9 +487,9 @@ const Providers = () => {
           <Box
             sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}
           >
-            <Button onClick={() => setOpen(false)}>Cancel</Button>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
             <Button type="submit" variant="contained">
-              Create
+              {isEditMode ? 'Update' : 'Create'}
             </Button>
           </Box>
         </form>

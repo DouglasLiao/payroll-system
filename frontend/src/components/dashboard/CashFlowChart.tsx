@@ -1,4 +1,4 @@
-import { Card, Typography, Box, useTheme, Alert } from '@mui/material'
+import { Card, Typography, Box, Alert, useTheme } from '@mui/material'
 import ReactApexChart from 'react-apexcharts'
 import {
   getChartColors,
@@ -6,27 +6,28 @@ import {
   formatCompactCurrency,
 } from '../../utils/chartHelpers'
 import { formatCurrency } from '../../utils/formatters'
+import { sortMonthsChronologically } from '../../utils/dashboardCalculations'
 import type { MonthlyData } from '../../types'
 
 interface CashFlowChartProps {
   monthlyData: MonthlyData
-  period?: 3 | 6 | 12
   loading?: boolean
 }
 
 /**
- * Cash flow chart showing income (paid) vs expenses (closed) over time
+ * Cash flow chart showing income vs expenses with accumulated balance
  */
 export const CashFlowChart = ({
   monthlyData,
-  period = 6,
   loading = false,
 }: CashFlowChartProps) => {
   const theme = useTheme()
   const colors = getChartColors(theme)
 
-  const sortedMonths = Object.keys(monthlyData).sort()
-  const selectedMonths = sortedMonths.slice(-period)
+  // Get last 6 months with proper chronological sorting
+  const allMonths = Object.keys(monthlyData)
+  const sortedMonths = sortMonthsChronologically(allMonths)
+  const selectedMonths = sortedMonths.slice(-6)
 
   // Calculate income (paid payrolls) and expenses (closed payrolls)
   const incomeData = selectedMonths.map((m) => monthlyData[m]?.paidValue || 0)
