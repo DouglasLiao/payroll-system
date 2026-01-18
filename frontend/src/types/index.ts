@@ -130,3 +130,39 @@ export interface DashboardStats {
   }
   recent_activity: Payment[]
 }
+
+// Dashboard component types
+export interface PayrollStats {
+  total: number
+  drafts: number
+  closed: number
+  paid: number
+  totalValue: number
+  avgValue: number
+}
+
+export interface MonthlyData {
+  [month: string]: {
+    draft: number
+    closed: number
+    paid: number
+    total: number
+    draftValue: number
+    closedValue: number
+    paidValue: number
+  }
+}
+
+export interface FinancialMetrics {
+  monthlyGrowth: number
+  avgMonthlyValue: number
+  projectedNextMonth: number
+  totalPending: number
+  totalPaid: number
+  cashFlow: number
+}
+
+export interface ChartPeriod {
+  value: 3 | 6 | 12
+  label: string
+}

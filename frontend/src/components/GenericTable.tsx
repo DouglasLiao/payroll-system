@@ -85,7 +85,11 @@ export function GenericTable<T>({
               ))
             ) : !data || data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} align="center" sx={{ py: 3 }}>
+                <TableCell
+                  colSpan={columns.length}
+                  align="center"
+                  sx={{ py: 3 }}
+                >
                   <Typography color="textSecondary">{emptyMessage}</Typography>
                 </TableCell>
               </TableRow>

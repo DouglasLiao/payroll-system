@@ -1,157 +1,24 @@
-import { Grid, Card, Typography, Box, Skeleton } from '@mui/material'
-import { useQuery } from '@tanstack/react-query'
-import ReactApexChart from 'react-apexcharts'
+import { Grid, Box, Typography, Skeleton, Card } from '@mui/material'
+import { useDashboardData } from '../hooks/useDashboardData'
 import {
-  TrendingUp as TrendingUpIcon,
-  Receipt as ReceiptIcon,
-  AttachMoney as MoneyIcon,
-  People as PeopleIcon,
-} from '@mui/icons-material'
-import { getDashboardStats, getPayrolls, getProviders } from '../services/api'
-import { formatCurrency } from '../utils/formatters'
-import { StatusChip } from '../components/StatusChip'
-import { StatCard } from '../components/StatCard'
-import type { Payroll } from '../types'
+  DashboardMetricsGrid,
+  FinancialChart,
+  FinancialSummaryCard,
+  CashFlowChart,
+  RecentActivityCard,
+  RecentPayrollsCard,
+} from '../components/dashboard'
 
 const Dashboard = () => {
-  const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
-    queryKey: ['dashboard'],
-    queryFn: getDashboardStats,
-  })
-
-  const { data: payrolls, isLoading: payrollsLoading } = useQuery({
-    queryKey: ['payrolls-dashboard'],
-    queryFn: () => getPayrolls({ page_size: 1000 }), // Fetch all payrolls for dashboard stats
-  })
-
-  const { data: providers, isLoading: providersLoading } = useQuery({
-    queryKey: ['providers-dashboard'],
-    queryFn: () => getProviders({ page_size: 1000 }),
-  })
-
-  const isLoading = dashboardLoading || payrollsLoading || providersLoading
-
-  // Calculate payroll metrics
-  const payrollStats = payrolls
-    ? {
-        total: payrolls.count,
-        drafts: payrolls.results.filter((p: Payroll) => p.status === 'DRAFT')
-          .length,
-        closed: payrolls.results.filter((p: Payroll) => p.status === 'CLOSED')
-          .length,
-        paid: payrolls.results.filter((p: Payroll) => p.status === 'PAID')
-          .length,
-        totalValue: payrolls.results.reduce(
-          (sum: number, p: Payroll) => sum + parseFloat(p.net_value),
-          0
-        ),
-        avgValue:
-          payrolls.results.length > 0
-            ? payrolls.results.reduce(
-                (sum: number, p: Payroll) => sum + parseFloat(p.net_value),
-                0
-              ) / payrolls.results.length
-            : 0,
-      }
-    : { total: 0, drafts: 0, closed: 0, paid: 0, totalValue: 0, avgValue: 0 }
-
-  // Group payrolls by month for chart
-  const monthlyData = payrolls
-    ? payrolls.results.reduce(
-        (
-          acc: Record<
-            string,
-            { draft: number; closed: number; paid: number; total: number }
-          >,
-          p: Payroll
-        ) => {
-          const month = p.reference_month
-          if (!acc[month]) {
-            acc[month] = { draft: 0, closed: 0, paid: 0, total: 0 }
-          }
-          acc[month][p.status.toLowerCase() as 'draft' | 'closed' | 'paid']++
-          acc[month].total += parseFloat(p.net_value)
-          return acc
-        },
-        {}
-      )
-    : {}
-
-  const sortedMonths = Object.keys(monthlyData).sort()
-  const last6Months = sortedMonths.slice(-6)
-
-  const chartOptions: ApexCharts.ApexOptions = {
-    chart: {
-      type: 'bar',
-      toolbar: { show: false },
-      stacked: false,
-    },
-    dataLabels: { enabled: false },
-    stroke: { curve: 'smooth', width: 2 },
-    xaxis: {
-      categories: last6Months.length > 0 ? last6Months : ['N/A'],
-      labels: { style: { fontSize: '12px' } },
-    },
-    yaxis: [
-      {
-        title: { text: 'Quantidade' },
-        labels: { formatter: (val) => Math.round(val).toString() },
-      },
-      {
-        opposite: true,
-        title: { text: 'Valor (R$)' },
-        labels: {
-          formatter: (val) => `R$ ${(val / 1000).toFixed(1)}k`,
-        },
-      },
-    ],
-    colors: ['#FFA726', '#42A5F5', '#66BB6A', '#AB47BC'],
-    legend: {
-      position: 'top',
-      horizontalAlign: 'center',
-    },
-    tooltip: {
-      shared: true,
-      intersect: false,
-      y: [
-        { formatter: (val) => `${val} folha(s)` },
-        { formatter: (val) => `${val} folha(s)` },
-        { formatter: (val) => `${val} folha(s)` },
-        { formatter: (val) => formatCurrency(val) },
-      ],
-    },
-  }
-
-  const chartSeries =
-    last6Months.length > 0
-      ? [
-          {
-            name: 'Rascunhos',
-            type: 'column',
-            data: last6Months.map((m) => monthlyData[m]?.draft || 0),
-          },
-          {
-            name: 'Fechadas',
-            type: 'column',
-            data: last6Months.map((m) => monthlyData[m]?.closed || 0),
-          },
-          {
-            name: 'Pagas',
-            type: 'column',
-            data: last6Months.map((m) => monthlyData[m]?.paid || 0),
-          },
-          {
-            name: 'Valor Total',
-            type: 'line',
-            data: last6Months.map((m) => monthlyData[m]?.total || 0),
-          },
-        ]
-      : [
-          { name: 'Rascunhos', type: 'column', data: [0] },
-          { name: 'Fechadas', type: 'column', data: [0] },
-          { name: 'Pagas', type: 'column', data: [0] },
-          { name: 'Valor Total', type: 'line', data: [0] },
-        ]
+  const {
+    payrollStats,
+    monthlyData,
+    financialMetrics,
+    payrolls,
+    providers,
+    dashboardData,
+    isLoading,
+  } = useDashboardData()
 
   if (isLoading) {
     return (
@@ -186,6 +53,7 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ maxWidth: '100%', width: '100%', mt: 4 }}>
+      {/* Header */}
       <Box
         sx={{
           display: 'flex',
@@ -198,197 +66,47 @@ const Dashboard = () => {
       </Box>
 
       <Grid container spacing={3}>
-        {/* Payment Stats - Calculated from Payrolls */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Pagamentos Pendentes"
-            value={formatCurrency(
-              payrolls?.results
-                .filter((p: Payroll) => p.status === 'CLOSED')
-                .reduce((sum: number, p: Payroll) => sum + parseFloat(p.net_value), 0) || 0
-            )}
-            icon={<MoneyIcon />}
-            color="warning.main"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Pagamentos Realizados"
-            value={formatCurrency(
-              payrolls?.results
-                .filter((p: Payroll) => p.status === 'PAID')
-                .reduce((sum: number, p: Payroll) => sum + parseFloat(p.net_value), 0) || 0
-            )}
-            icon={<TrendingUpIcon />}
-            color="success.main"
-          />
-        </Grid>
+        {/* Metrics Grid - 8 cards */}
+        <DashboardMetricsGrid
+          payrollStats={payrollStats}
+          providers={providers}
+          payrolls={payrolls}
+          loading={isLoading}
+        />
 
-        {/* Payroll Stats */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Total de Folhas"
-            value={payrollStats.total}
-            icon={<ReceiptIcon />}
-            color="primary.main"
-            subtitle={`${payrollStats.drafts} rascunhos, ${payrollStats.paid} pagas`}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Total Prestadores"
-            value={providers?.count || 0}
-            icon={<PeopleIcon />}
-            color="info.main"
-          />
-        </Grid>
-
-        {/* Second row - Payroll detailed metrics */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Valor Total Folhas"
-            value={formatCurrency(payrollStats.totalValue)}
-            subtitle="Soma de todas as folhas"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Média por Folha"
-            value={formatCurrency(payrollStats.avgValue)}
-            subtitle="Valor médio calculado"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Folhas Fechadas"
-            value={payrollStats.closed}
-            color="info.main"
-            subtitle="Aguardando pagamento"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Folhas Pagas"
-            value={payrollStats.paid}
-            color="success.main"
-            subtitle="Finalizadas no mês"
-          />
-        </Grid>
-
-        {/* Payroll Trends Chart */}
+        {/* Financial Chart */}
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Card sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              📊 Tendências de Folhas de Pagamento
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Evolução mensal das folhas por status e valor total
-            </Typography>
-            <ReactApexChart
-              options={chartOptions}
-              series={chartSeries}
-              type="line"
-              height={350}
-            />
-          </Card>
+          <FinancialChart monthlyData={monthlyData} loading={isLoading} />
+        </Grid>
+
+        {/* Financial Summary */}
+        <Grid size={{ xs: 12, lg: 4 }}>
+          <FinancialSummaryCard
+            payrollStats={payrollStats}
+            financialMetrics={financialMetrics}
+            loading={isLoading}
+          />
+        </Grid>
+
+        {/* Cash Flow Analysis */}
+        <Grid size={{ xs: 12, lg: 6 }}>
+          <CashFlowChart monthlyData={monthlyData} loading={isLoading} />
         </Grid>
 
         {/* Recent Activity */}
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <Card sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              🕐 Atividade Recente
-            </Typography>
-            {dashboardData?.recent_activity.map((payment) => (
-              <Box
-                key={payment.id}
-                sx={{
-                  mb: 2,
-                  pb: 2,
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Box>
-                  <Typography variant="subtitle2">
-                    {payment.provider_name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {payment.reference}
-                  </Typography>
-                </Box>
-                <Box sx={{ textAlign: 'right' }}>
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    {formatCurrency(payment.total_calculated)}
-                  </Typography>
-                  <StatusChip status={payment.status} />
-                </Box>
-              </Box>
-            ))}
-            {(!dashboardData?.recent_activity ||
-              dashboardData.recent_activity.length === 0) && (
-              <Typography
-                color="text.secondary"
-                sx={{ textAlign: 'center', py: 3 }}
-              >
-                Nenhuma atividade recente
-              </Typography>
-            )}
-          </Card>
+        <Grid size={{ xs: 12, lg: 6 }}>
+          <RecentActivityCard
+            activities={dashboardData?.recent_activity || []}
+            loading={isLoading}
+          />
         </Grid>
 
         {/* Recent Payrolls */}
         <Grid size={{ xs: 12 }}>
-          <Card sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              🧾 Últimas Folhas de Pagamento
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              {payrolls?.results.slice(0, 5).map((payroll: Payroll) => (
-                <Card
-                  key={payroll.id}
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    minWidth: 200,
-                    flex: '1 1 calc(20% - 16px)',
-                    '&:hover': { boxShadow: 2, borderColor: 'primary.main' },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      mb: 1,
-                    }}
-                  >
-                    <Typography variant="caption" color="text.secondary">
-                      {payroll.reference_month}
-                    </Typography>
-                    <StatusChip
-                      status={payroll.status as 'DRAFT' | 'CLOSED' | 'PAID'}
-                    />
-                  </Box>
-                  <Typography variant="subtitle2" noWrap>
-                    {payroll.provider_name}
-                  </Typography>
-                  <Typography variant="h6" color="primary.main" sx={{ mt: 1 }}>
-                    {formatCurrency(payroll.net_value)}
-                  </Typography>
-                </Card>
-              ))}
-              {(!payrolls || payrolls.results.length === 0) && (
-                <Typography
-                  color="text.secondary"
-                  sx={{ textAlign: 'center', width: '100%', py: 3 }}
-                >
-                  Nenhuma folha cadastrada ainda
-                </Typography>
-              )}
-            </Box>
-          </Card>
+          <RecentPayrollsCard
+            payrolls={payrolls?.results || []}
+            loading={isLoading}
+          />
         </Grid>
       </Grid>
     </Box>

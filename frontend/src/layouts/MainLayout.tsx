@@ -43,22 +43,7 @@ const MainLayout = () => {
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Brand Title */}
-      <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Typography
-          variant="h6"
-          noWrap
-          component="div"
-          sx={{ fontWeight: 'bold', color: 'primary.main' }}
-        >
-          💼 Payroll System
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Gestão de Pagamentos PJ
-        </Typography>
-      </Box>
-
-      <List sx={{ px: 2, py: 2, flexGrow: 1 }}>
+      <List sx={{ px: 1, py: 10, flexGrow: 1, borderBottom: 1 }}>
         {menuItems.map((item) => (
           <ListItemButton
             key={item.text}
