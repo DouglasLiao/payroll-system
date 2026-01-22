@@ -14,7 +14,10 @@ import {
   formatCompactCurrency,
 } from '../../utils/chartHelpers'
 import { formatCurrency } from '../../utils/formatters'
-import { sortMonthsChronologically } from '../../utils/dashboardCalculations'
+import {
+  sortMonthsChronologically,
+  getLastNMonths,
+} from '../../utils/dashboardCalculations'
 import type { MonthlyData, ChartPeriod } from '../../types'
 
 interface FinancialChartProps {
@@ -41,12 +44,10 @@ export const FinancialChart = ({
 
   const colors = getChartColors(theme)
 
-  // Memoize selected months based on period with proper chronological sorting
+  // Get continuous list of months for the selected period
   const selectedMonths = useMemo(() => {
-    const allMonths = Object.keys(monthlyData)
-    const sortedMonths = sortMonthsChronologically(allMonths)
-    return sortedMonths.slice(-period)
-  }, [monthlyData, period])
+    return getLastNMonths(period)
+  }, [period])
 
   // Memoize chart series based on selected months
   const chartSeries: ApexAxisChartSeries = useMemo(
@@ -106,7 +107,9 @@ export const FinancialChart = ({
         enabled: false,
       },
       xaxis: {
+        type: 'category',
         categories: selectedMonths.length > 0 ? selectedMonths : ['N/A'],
+        tickPlacement: 'on',
         labels: {
           ...getBaseChartOptions(theme).xaxis?.labels,
           style: {

@@ -6,7 +6,10 @@ import {
   formatCompactCurrency,
 } from '../../utils/chartHelpers'
 import { formatCurrency } from '../../utils/formatters'
-import { sortMonthsChronologically } from '../../utils/dashboardCalculations'
+import {
+  sortMonthsChronologically,
+  getLastNMonths,
+} from '../../utils/dashboardCalculations'
 import type { MonthlyData } from '../../types'
 
 interface CashFlowChartProps {
@@ -24,10 +27,8 @@ export const CashFlowChart = ({
   const theme = useTheme()
   const colors = getChartColors(theme)
 
-  // Get last 6 months with proper chronological sorting
-  const allMonths = Object.keys(monthlyData)
-  const sortedMonths = sortMonthsChronologically(allMonths)
-  const selectedMonths = sortedMonths.slice(-6)
+  // Get last 6 months continuous
+  const selectedMonths = getLastNMonths(6)
 
   // Calculate income (paid payrolls) and expenses (closed payrolls)
   const incomeData = selectedMonths.map((m) => monthlyData[m]?.paidValue || 0)
@@ -86,7 +87,9 @@ export const CashFlowChart = ({
       enabled: false,
     },
     xaxis: {
+      type: 'category',
       categories: selectedMonths.length > 0 ? selectedMonths : ['N/A'],
+      tickPlacement: 'on',
       labels: {
         ...getBaseChartOptions(theme).xaxis?.labels,
       },

@@ -158,3 +158,20 @@ export const projectNextMonth = (monthlyData: MonthlyData): number => {
   )
   return sum / last3Months.length
 }
+/**
+ * Get list of last N months in MM/YYYY format
+ * Returns months in chronological order (oldest to newest)
+ */
+export const getLastNMonths = (n: number): string[] => {
+  const months: string[] = []
+  const today = new Date()
+
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+    const month = (d.getMonth() + 1).toString().padStart(2, '0')
+    const year = d.getFullYear()
+    months.push(`${month}/${year}`)
+  }
+
+  return months
+}

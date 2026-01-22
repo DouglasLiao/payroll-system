@@ -15,7 +15,8 @@ services:
       - DB_HOST=db
       - DB_PORT=5432
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     command: python manage.py runserver 0.0.0.0:8000
 
   frontend:
@@ -42,8 +43,11 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
-
-
