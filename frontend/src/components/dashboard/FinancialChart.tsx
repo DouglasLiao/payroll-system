@@ -14,10 +14,7 @@ import {
   formatCompactCurrency,
 } from '../../utils/chartHelpers'
 import { formatCurrency } from '../../utils/formatters'
-import {
-  sortMonthsChronologically,
-  getLastNMonths,
-} from '../../utils/dashboardCalculations'
+import { getLastNMonths } from '../../utils/dashboardCalculations'
 import type { MonthlyData, ChartPeriod } from '../../types'
 
 interface FinancialChartProps {

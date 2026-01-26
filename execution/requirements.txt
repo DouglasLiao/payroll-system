@@ -1,0 +1,12 @@
+# Python dependencies for execution scripts
+# Add packages as needed
+
+# Common utilities
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# SSH and remote execution
+paramiko>=3.4.0
+
+# YAML parsing
+pyyaml>=6.0.1

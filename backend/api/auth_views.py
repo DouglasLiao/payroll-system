@@ -20,20 +20,47 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         # Permitir login com email ou username
-        # Se 'email' foi enviado, tentar encontrar o username correspondente
-        if "email" in request.data and "username" not in request.data:
+        # Se 'email' foi enviado OU 'username' parece um email, tentar resolver para username real
+        data = request.data
+        username = data.get("username")
+        email = data.get("email")
+
+        target_email = None
+        authenticated_user = None  # Armazenar usuário encontrado
+
+        if email:
+            target_email = email
+        elif username and "@" in str(username):
+            target_email = username
+
+        if target_email:
             from .models import User
 
             try:
-                user = User.objects.get(email=request.data["email"])
-                request.data._mutable = True
-                request.data["username"] = user.username
-                request.data._mutable = False
+                # Tentar encontrar o usuário pelo email
+                user = User.objects.get(email=target_email)
+                authenticated_user = user
+
+                # Atualizar username no request.data de forma segura para o serializer do simplejwt usar
+                if hasattr(data, "_mutable"):
+                    data._mutable = True
+
+                data["username"] = user.username
+
+                if hasattr(data, "_mutable"):
+                    data._mutable = False
+
             except User.DoesNotExist:
-                return Response(
-                    {"detail": "Email ou senha inválidos"},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+                pass
+
+        # Se não logou por email, tentar achar o usuário pelo username enviado normalmente
+        if not authenticated_user and username:
+            from .models import User
+
+            try:
+                authenticated_user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                pass
 
         response = super().post(request, *args, **kwargs)
 
@@ -62,14 +89,21 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 max_age=604800,  # 7 dias
             )
 
-            # Adicionar informações do usuário
-            from .models import User
+            # Adicionar informações do usuário na resposta (para o frontend usar)
+            if authenticated_user:
+                response.data["user"] = UserSerializer(authenticated_user).data
+            else:
+                # Fallback caso authenticated_user não tenha sido capturado acima (ex: login direto por username)
+                from .models import User
 
-            try:
-                user = User.objects.get(username=request.data.get("username"))
-                response.data["user"] = UserSerializer(user).data
-            except User.DoesNotExist:
-                pass
+                try:
+                    # Se request.data["username"] foi alterado, pegamos o novo. Se não, o original.
+                    final_username = request.data.get("username")
+                    if final_username:
+                        u = User.objects.get(username=final_username)
+                        response.data["user"] = UserSerializer(u).data
+                except User.DoesNotExist:
+                    pass
 
         return response
 

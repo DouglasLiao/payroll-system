@@ -87,13 +87,23 @@ export const getTheme = (mode: PaletteMode) => {
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
+            borderRadius: 16, // Increased from 12 for a softer look
             boxShadow:
               mode === 'light'
-                ? '0px 1px 3px rgba(0, 0, 0, 0.1), 0px 1px 2px rgba(0, 0, 0, 0.06)' // Slate subtle shadow
-                : '0px 1px 3px rgba(0, 0, 0, 0.5), 0px 1px 2px rgba(0, 0, 0, 0.3)', // Darker shadow
+                ? '0px 4px 6px -1px rgba(0, 0, 0, 0.1), 0px 2px 4px -1px rgba(0, 0, 0, 0.06)' // Softer, more diffuse shadow
+                : '0px 4px 6px -1px rgba(0, 0, 0, 0.5), 0px 2px 4px -1px rgba(0, 0, 0, 0.3)',
             border:
               mode === 'light' ? '1px solid #e2e8f0' : '1px solid #1e293b',
+            backgroundImage: 'none', // Prevent default MUI elevation overlay in dark mode
+            transition:
+              'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow:
+                mode === 'light'
+                  ? '0px 10px 15px -3px rgba(0, 0, 0, 0.1), 0px 4px 6px -2px rgba(0, 0, 0, 0.05)'
+                  : '0px 10px 15px -3px rgba(0, 0, 0, 0.5), 0px 4px 6px -2px rgba(0, 0, 0, 0.3)',
+            },
           },
         },
       },

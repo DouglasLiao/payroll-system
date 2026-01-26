@@ -67,3 +67,64 @@ docker-compose.override.yml
 backend/venv/
 backend/.env
 frontend/.env
+
+# ============================================================================
+# AGENT ARCHITECTURE & AI TOOLS
+# ============================================================================
+.agent/
+brain/
+.gemini/
+.cursor/
+.aider/
+.continue/
+.copilot/
+.tmp/
+
+# ============================================================================
+# SENSITIVE DATA & CREDENTIALS
+# ============================================================================
+.env
+.env.*
+!.env.example
+credentials.json
+token.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+
+# SSH Keys
+id_rsa*
+id_ed25519*
+saas_node_key*
+*.pub
+
+# ============================================================================
+# DEPLOYMENT & AUTOMATION ARTIFACTS
+# ============================================================================
+deployments/
+reports/
+*.deployment.json
+*_deployment_plan.txt
+npm_config_*.txt
+*_env_template.txt
+
+# Health Check Reports
+health_*.json
+health_*.txt
+diagnostic_*.json
+
+# ============================================================================
+# EXECUTION SCRIPTS OUTPUT
+# ============================================================================
+execution/output/
+execution/logs/
+*.execution.log
+
+# ============================================================================
+# DIRECTIVES & WORKFLOWS (Keep templates, exclude instances)
+# ============================================================================
+# Uncomment these if you want to exclude directive instances
+# directives/*.instance.md
+# .agent/workflows/*.instance.md
