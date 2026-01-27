@@ -1,11 +1,11 @@
 services:
   backend:
-    build: ./backend
+    build: ./payroll-backend
     container_name: payroll_backend
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - ./payroll-backend:/app
     environment:
       - DEBUG=1
       - DB_ENGINE=django.db.backends.postgresql
@@ -20,12 +20,12 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
 
   frontend:
-    build: ./frontend
+    build: ./payroll-frontend
     container_name: payroll_frontend
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app
+      - ./payroll-frontend:/app
       - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true # Often needed for hot reload in docker

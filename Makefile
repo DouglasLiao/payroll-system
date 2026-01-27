@@ -4,6 +4,9 @@
 up:
 	docker compose up --build
 
+run:
+	docker compose up
+
 down:
 	docker compose down
 
@@ -14,20 +17,20 @@ logs:
 	docker compose logs -f
 
 docker-lint:
-	docker compose exec backend ruff check .
-	docker compose exec frontend npm run lint
+	docker compose exec payroll-backend ruff check .
+	docker compose exec payroll-frontend npm run lint
 
 # Local Commands (Legacy)
 local-install:
-	cd backend && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
-	cd frontend && npm install
+	cd payroll-backend && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
+	cd payroll-frontend && npm install
 
 local-backend:
-	cd backend && ./venv/bin/python3 manage.py runserver 0.0.0.0:8000
+	cd payroll-backend && ./venv/bin/python3 manage.py runserver 0.0.0.0:8000
 
 local-frontend:
-	cd frontend && npm run dev
+	cd payroll-frontend && npm run dev
 
 lint:
-	cd backend && ./venv/bin/ruff check .
-	cd frontend && npm run lint
+	cd payroll-backend && ./venv/bin/ruff check .
+	cd payroll-frontend && npm run lint
