@@ -551,7 +551,7 @@ export const PayrollFormDialog = ({
                   <Typography
                     variant="h6"
                     gutterBottom
-                    sx={{ fontWeight: 600 }}
+                    sx={{ fontWeight: 600, color: 'primary.contrastText' }}
                   >
                     ⭐ Resumo do Pagamento
                   </Typography>
@@ -562,7 +562,10 @@ export const PayrollFormDialog = ({
                       <Typography variant="caption" sx={{ opacity: 0.8 }}>
                         Valor do Contrato
                       </Typography>
-                      <Typography variant="h6">
+                      <Typography
+                        variant="h6"
+                        sx={{ color: 'primary.contrastText' }}
+                      >
                         {selectedProvider
                           ? formatCurrency(selectedProvider.monthly_value)
                           : '-'}
@@ -572,7 +575,10 @@ export const PayrollFormDialog = ({
                       <Typography variant="caption" sx={{ opacity: 0.8 }}>
                         Adiantamento
                       </Typography>
-                      <Typography variant="h6">
+                      <Typography
+                        variant="h6"
+                        sx={{ color: 'primary.contrastText' }}
+                      >
                         - {formatCurrency(advanceValue)}
                       </Typography>
                     </Grid>
@@ -601,10 +607,22 @@ export const PayrollFormDialog = ({
                           alignItems: 'center',
                         }}
                       >
-                        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                        <Typography
+                          variant="h5"
+                          sx={{
+                            fontWeight: 700,
+                            color: 'primary.contrastText',
+                          }}
+                        >
                           Valor Final a Pagar:
                         </Typography>
-                        <Typography variant="h3" sx={{ fontWeight: 700 }}>
+                        <Typography
+                          variant="h3"
+                          sx={{
+                            fontWeight: 700,
+                            color: 'primary.contrastText',
+                          }}
+                        >
                           {formatCurrency(finalValue)}
                         </Typography>
                       </Box>

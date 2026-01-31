@@ -204,5 +204,3 @@ GET /payrolls/?provider=1
 ✅ Validação de campos em tempo real  
 ✅ Exportável para outras ferramentas  
 ✅ Atualização automática com o código
-
-**Nenhum funcionário terá dúvidas sobre os cálculos!** 🎉

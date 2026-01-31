@@ -2,7 +2,6 @@ import { useState } from 'react'
 import {
   Card,
   CardContent,
-  TextField,
   MenuItem,
   Button,
   Box,
@@ -23,6 +22,8 @@ import {
   Clear,
   Search,
 } from '@mui/icons-material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import dayjs from 'dayjs'
 import type { Provider } from '../types'
 
 export interface PayrollFilters {
@@ -43,36 +44,46 @@ export const PayrollFiltersComponent = ({
   providers = [],
 }: PayrollFiltersComponentProps) => {
   const [expanded, setExpanded] = useState(true)
+  const [localFilters, setLocalFilters] = useState<PayrollFilters>(filters)
+
+  const handleApplyFilters = () => {
+    onFiltersChange(localFilters)
+  }
 
   const handleClearFilters = () => {
-    onFiltersChange({
+    const emptyFilters = {
       status: 'all',
       reference_month: '',
       provider: undefined,
-    })
+    }
+    setLocalFilters(emptyFilters)
+    onFiltersChange(emptyFilters)
   }
 
   const handleStatusChange = (event: SelectChangeEvent) => {
-    onFiltersChange({ ...filters, status: event.target.value })
+    setLocalFilters({ ...localFilters, status: event.target.value })
   }
 
-  const handleMonthChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onFiltersChange({ ...filters, reference_month: event.target.value })
+  const handleMonthChange = (newValue: dayjs.Dayjs | null) => {
+    setLocalFilters({
+      ...localFilters,
+      reference_month: newValue ? newValue.format('YYYY-MM') : '',
+    })
   }
 
   const handleProviderChange = (event: SelectChangeEvent<number | string>) => {
     const value = event.target.value
-    onFiltersChange({
-      ...filters,
+    setLocalFilters({
+      ...localFilters,
       provider: value === '' ? undefined : Number(value),
     })
   }
 
-  // Conta quantos filtros estão ativos
+  // Conta quantos filtros estão ativos (baseado no localFilters)
   const activeFiltersCount =
-    (filters.status !== 'all' ? 1 : 0) +
-    (filters.reference_month ? 1 : 0) +
-    (filters.provider ? 1 : 0)
+    (localFilters.status !== 'all' ? 1 : 0) +
+    (localFilters.reference_month ? 1 : 0) +
+    (localFilters.provider ? 1 : 0)
 
   return (
     <Card
@@ -143,7 +154,7 @@ export const PayrollFiltersComponent = ({
             <FormControl fullWidth size="small">
               <InputLabel>Status</InputLabel>
               <Select
-                value={filters.status}
+                value={localFilters.status}
                 label="Status"
                 onChange={handleStatusChange}
               >
@@ -184,27 +195,42 @@ export const PayrollFiltersComponent = ({
             </FormControl>
 
             {/* Mês de Referência */}
-            <TextField
+            {/* Mês de Referência */}
+            {/* Mês de Referência */}
+            <DatePicker
               label="Mês de Referência"
-              type="month"
-              value={filters.reference_month}
+              format="MM/YYYY"
+              views={['month', 'year']}
+              value={
+                localFilters.reference_month
+                  ? dayjs(localFilters.reference_month)
+                  : null
+              }
               onChange={handleMonthChange}
-              size="small"
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              InputProps={{
-                endAdornment: filters.reference_month && (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() =>
-                        onFiltersChange({ ...filters, reference_month: '' })
-                      }
-                    >
-                      <Clear fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ),
+              slotProps={{
+                textField: {
+                  size: 'small',
+                  fullWidth: true,
+                  InputProps: {
+                    endAdornment: localFilters.reference_month && (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setLocalFilters({
+                              ...localFilters,
+                              reference_month: '',
+                            })
+                          }}
+                          edge="end"
+                        >
+                          <Clear fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                },
               }}
             />
 
@@ -212,7 +238,7 @@ export const PayrollFiltersComponent = ({
             <FormControl fullWidth size="small">
               <InputLabel>Prestador</InputLabel>
               <Select
-                value={filters.provider || ''}
+                value={localFilters.provider || ''}
                 label="Prestador"
                 onChange={handleProviderChange}
                 startAdornment={
@@ -232,7 +258,7 @@ export const PayrollFiltersComponent = ({
               </Select>
             </FormControl>
 
-            {/* Espaço para mais filtros futuros */}
+            {/* Espaço para Botão Filtrar */}
             <Box
               sx={{
                 display: 'flex',
@@ -240,16 +266,14 @@ export const PayrollFiltersComponent = ({
                 justifyContent: 'flex-end',
               }}
             >
-              {activeFiltersCount > 0 && (
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: { xs: 'none', md: 'block' } }}
-                >
-                  {activeFiltersCount} filtro{activeFiltersCount > 1 ? 's' : ''}{' '}
-                  aplicado{activeFiltersCount > 1 ? 's' : ''}
-                </Typography>
-              )}
+              <Button
+                variant="contained"
+                onClick={handleApplyFilters}
+                fullWidth
+                sx={{ height: 40 }}
+              >
+                Filtrar
+              </Button>
             </Box>
           </Box>
         </Collapse>

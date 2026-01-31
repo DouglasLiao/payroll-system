@@ -11,7 +11,13 @@ down:
 	docker compose down
 
 build:
-	docker compose build && docker compose up
+	docker compose build
+	docker compose up -d
+	docker compose exec backend python manage.py migrate
+	docker compose logs -f
+
+migrate:
+	docker compose exec backend python manage.py migrate
 
 logs:
 	docker compose logs -f
