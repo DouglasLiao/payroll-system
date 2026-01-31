@@ -3,8 +3,8 @@ import {
   Grid,
   Box,
   Typography,
-  ToggleButtonGroup,
-  ToggleButton,
+  // ToggleButtonGroup,
+  // ToggleButton,
 } from '@mui/material'
 import { useDashboardData } from '../hooks/useDashboardData'
 import type { DashboardFilters } from '../services/api'
@@ -17,19 +17,18 @@ import {
   RecentPayrollsCard,
 } from '../components/dashboard'
 
-const PERIOD_OPTIONS: Array<{
-  value: DashboardFilters['period']
-  label: string
-}> = [
-  { value: '7d', label: '7 dias' },
-  { value: '30d', label: '30 dias' },
-  { value: '90d', label: '90 dias' },
-  { value: '1y', label: '1 ano' },
-  { value: 'all', label: 'Tudo' },
-]
+// const PERIOD_OPTIONS: Array<{
+//   value: DashboardFilters['period']
+//   label: string
+// }> = [
+//   { value: '30d', label: '1 Mês' },
+//   { value: '90d', label: '3 Meses' },
+//   { value: '1y', label: '1 Ano' },
+//   { value: 'all', label: 'Todo o Período' },
+// ]
 
 const Dashboard = () => {
-  const [period, setPeriod] = useState<DashboardFilters['period']>('30d')
+  const [period, _setPeriod] = useState<DashboardFilters['period']>('30d')
 
   const { stats, monthlyData, trends, recentActivity, isLoading } =
     useDashboardData({ period })
@@ -49,7 +48,7 @@ const Dashboard = () => {
       >
         <Typography variant="h4">Dashboard</Typography>
 
-        <ToggleButtonGroup
+        {/* <ToggleButtonGroup
           value={period}
           exclusive
           onChange={(_, newPeriod) => {
@@ -63,7 +62,7 @@ const Dashboard = () => {
               {option.label}
             </ToggleButton>
           ))}
-        </ToggleButtonGroup>
+        </ToggleButtonGroup> */}
       </Box>
 
       <Grid container spacing={3}>

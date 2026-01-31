@@ -42,38 +42,38 @@ export const FinancialChart = ({
     () =>
       selectedMonths.length > 0
         ? [
-            {
-              name: 'Rascunhos',
-              type: 'column',
-              data: selectedMonths.map((m) => monthlyData[m]?.draft.count || 0),
-            },
-            {
-              name: 'Fechadas',
-              type: 'column',
-              data: selectedMonths.map(
-                (m) => monthlyData[m]?.closed.count || 0
-              ),
-            },
-            {
-              name: 'Pagas',
-              type: 'column',
-              data: selectedMonths.map((m) => monthlyData[m]?.paid.count || 0),
-            },
-            {
-              name: 'Valor Total',
-              type: 'line',
-              yAxisIndex: 1, // 🔑 associação explícita ao Y2
-              data: selectedMonths.map(
-                (m) => (monthlyData[m]?.total_value || 0) / 1000
-              ), // milhares
-            },
-          ]
+          {
+            name: 'Rascunhos',
+            type: 'column',
+            data: selectedMonths.map((m) => monthlyData[m]?.draft.count || 0),
+          },
+          {
+            name: 'Fechadas',
+            type: 'column',
+            data: selectedMonths.map(
+              (m) => monthlyData[m]?.closed.count || 0
+            ),
+          },
+          {
+            name: 'Pagas',
+            type: 'column',
+            data: selectedMonths.map((m) => monthlyData[m]?.paid.count || 0),
+          },
+          {
+            name: 'Valor Total',
+            type: 'line',
+            yAxisIndex: 2, // 🔑 associação explícita ao Y2
+            data: selectedMonths.map(
+              (m) => (monthlyData[m]?.total_value || 0) / 1000
+            ), // milhares
+          },
+        ]
         : [
-            { name: 'Rascunhos', type: 'column', data: [0] },
-            { name: 'Fechadas', type: 'column', data: [0] },
-            { name: 'Pagas', type: 'column', data: [0] },
-            { name: 'Valor Total', type: 'line', yAxisIndex: 1, data: [0] },
-          ],
+          { name: 'Rascunhos', type: 'column', data: [0] },
+          { name: 'Fechadas', type: 'column', data: [0] },
+          { name: 'Pagas', type: 'column', data: [0] },
+          { name: 'Valor Total', type: 'line', yAxisIndex: 2, data: [0] },
+        ],
     [selectedMonths, monthlyData]
   )
 
@@ -215,7 +215,7 @@ export const FinancialChart = ({
         </Box>
       ) : (
         <ReactApexChart
-          key={`chart-${period}-${selectedMonths.length}`}
+          key={`chart-${selectedMonths.length}`}
           options={chartOptions}
           series={chartSeries}
           type="line"

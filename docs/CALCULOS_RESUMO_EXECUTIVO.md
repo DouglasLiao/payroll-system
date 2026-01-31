@@ -39,6 +39,8 @@ Carga Horária Mensal:     220 horas
 Saldo = Valor Mensal - Adiantamento
       = R$ 2.200,00 - R$ 880,00
       = R$ 1.320,00
+
+      //valor da hora é 10 reais
 ```
 
 ### 2. Horas Extras (50% adicional)
@@ -78,9 +80,9 @@ Exemplo Janeiro/2026:
 ### 5. Adicional Noturno (20%)
 
 ```
-Valor Noturno = Horas × Valor/Hora × 0.20
-              = 20h × R$ 10,00 × 0.20
-              = R$ 40,00
+Valor Noturno = Horas × Valor/Hora × 1.20
+              = 20h × R$ 10,00 × 1.20
+              = R$ 240,00
 ```
 
 ### 📊 Total de Proventos
@@ -90,10 +92,11 @@ Salário Base:          R$ 1.320,00
 + Horas Extras 50%:    R$   150,00
 + Feriados:            R$   160,00
 + DSR:                 R$    74,40
-+ Adicional Noturno:   R$    40,00
++ Adicional Noturno:   R$   240,00
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TOTAL PROVENTOS:       R$ 1.744,40
+TOTAL PROVENTOS:       R$ 2.034,40
 ```
+// 1944,40
 
 ---
 
@@ -121,23 +124,59 @@ Desconto = Horas × Valor/Hora
          = R$ 80,00
 ```
 
+
+Novo desconto das faltas = (Salario Base) / (numero total de dias do mês, é sempre 30)  * (numero de faltas)
+1 dia /30 = 73,33
+
+2.200,00/30 = 73,33
+
+
+
+
 ### 4. Vale Transporte
 
 ```
 Valor fixo mensal:       R$ 202,40
 ```
 
+Calculados no dia do mês trabalhados no mês
+4,60 em Belem
+
+2 onibus * passagem * dias que ele foi para o trabalho.
+
+184,00
+
+----
+
+4 onibus (ida e volta) * dias que ele foi para o trabalho
+368,00 
+
+20 dias.
+
+Tambeḿ é considerado o dia que ele vai para o escritorio.
+
+ex.
+ele foi 20 dias para o escritorio. (na teoria)
+mas ele faltas 1 dia
+
+então é 19* a passagem
+
+EnTão é descontado no final do mês.
+
 ### 📊 Total de Descontos
 
 ```
-Adiantamento:          R$   880,00
+<!-- Adiantamento:          R$   880,00 -->
 + Atrasos:             R$     5,00
-+ Faltas:              R$    80,00
-+ Vale Transporte:     R$   202,40
++ Faltas (Linkar com o vale trasporte):              R$    73,33
++ Desconto do vale transporte que faltou 1 dia 4,60*2 = 9,20
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TOTAL DESCONTOS:       R$ 1.167,40
+TOTAL DESCONTOS:       R$ 87,53
+
 ```
 
+
+<!-- + Vale Transporte:     R$   19*4,60*2 = 174,80 -->
 ---
 
 ## 💵 VALOR LÍQUIDO FINAL
@@ -146,11 +185,17 @@ TOTAL DESCONTOS:       R$ 1.167,40
 ┌─────────────────────────────────────┐
 │  CÁLCULO DO PAGAMENTO FINAL         │
 ├─────────────────────────────────────┤
-│  Total Proventos:    R$ 1.744,40    │
-│  (-) Total Descontos: R$ 1.167,40   │
+│  Total Proventos:    R$ 1944,40     │
+│  (-) Total Descontos: R$ 87,53      │
 │  ═══════════════════════════════════│
-│  VALOR A PAGAR:      R$   577,00 ✅ │
+│  VALOR A PAGAR:     R$   1.856,87 ✅│
 └─────────────────────────────────────┘
+
+Vale transporte fazer uma nova parte do cálculo. Pois o pagamento é feito separado.
+Nova pagina também. // Pagina do vale transporte
+// Corrigir.
+
+
 ```
 
 > **Observação:** Adiantamento de R$ 880,00 já foi pago anteriormente
