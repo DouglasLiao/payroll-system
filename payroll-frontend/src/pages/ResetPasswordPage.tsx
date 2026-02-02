@@ -176,9 +176,7 @@ const ResetPasswordPage = () => {
 
                 {resetMutation.isError && (
                   <Alert severity="error" sx={{ mb: 2 }}>
-                    {/* @ts-ignore */}
                     {resetMutation.error?.response?.data?.message ||
-                      // @ts-ignore
                       Object.values(
                         resetMutation.error?.response?.data || {}
                       )[0] ||

@@ -111,7 +111,7 @@ const RegisterPage = () => {
 
             {registerMutation.isError && (
               <Alert severity="error" sx={{ mb: 2 }}>
-                {(registerMutation.error as any)?.response?.data?.message ||
+                {(registerMutation.error as Error)?.message ||
                   'Erro ao criar conta'}
               </Alert>
             )}

@@ -19,31 +19,33 @@ from typing import Dict
 # ==============================================================================
 
 CARGA_HORARIA_PADRAO = 220  # horas/mês
-PERCENTUAL_ADIANTAMENTO_PADRAO = Decimal('40.00')  # 40%
-MULTIPLICADOR_HORA_EXTRA_50 = Decimal('1.5')
-MULTIPLICADOR_FERIADO = Decimal('2.0')
+PERCENTUAL_ADIANTAMENTO_PADRAO = Decimal("40.00")  # 40%
+MULTIPLICADOR_HORA_EXTRA_50 = Decimal("1.5")
+MULTIPLICADOR_FERIADO = Decimal("2.0")
 # DSR não usa percentual fixo - calculado dinamicamente por mês
-PERCENTUAL_ADICIONAL_NOTURNO = Decimal('0.20')  # 20%
+MULTIPLICADOR_ADICIONAL_NOTURNO = Decimal(
+    "1.20"
+)  # 120% (hora completa + 20% adicional)
 
 
 # ==============================================================================
 # FUNÇÕES BASE
 # ==============================================================================
 
+
 def calcular_valor_hora(
-    valor_contrato_mensal: Decimal,
-    carga_horaria_mensal: int = CARGA_HORARIA_PADRAO
+    valor_contrato_mensal: Decimal, carga_horaria_mensal: int = CARGA_HORARIA_PADRAO
 ) -> Decimal:
     """
     Calcula o valor da hora contratual.
-    
+
     Args:
         valor_contrato_mensal: Valor mensal acordado no contrato PJ
         carga_horaria_mensal: Carga horária mensal de referência (padrão 220h)
-    
+
     Returns:
         Valor por hora trabalhada
-        
+
     Exemplo:
         >>> calcular_valor_hora(Decimal('2200'), 220)
         Decimal('10.00')
@@ -52,171 +54,165 @@ def calcular_valor_hora(
         raise ValueError("Valor do contrato deve ser maior que zero")
     if carga_horaria_mensal <= 0:
         raise ValueError("Carga horária deve ser maior que zero")
-    
-    return (valor_contrato_mensal / Decimal(carga_horaria_mensal)).quantize(Decimal('0.01'))
+
+    return (valor_contrato_mensal / Decimal(carga_horaria_mensal)).quantize(
+        Decimal("0.01")
+    )
 
 
 def calcular_adiantamento(
-    valor_contrato_mensal: Decimal,
-    percentual: Decimal = PERCENTUAL_ADIANTAMENTO_PADRAO
+    valor_contrato_mensal: Decimal, percentual: Decimal = PERCENTUAL_ADIANTAMENTO_PADRAO
 ) -> Decimal:
     """
     Calcula o valor do adiantamento quinzenal.
-    
+
     Args:
         valor_contrato_mensal: Valor mensal do contrato
         percentual: Percentual de adiantamento (padrão 40%)
-    
+
     Returns:
         Valor do adiantamento
-        
+
     Exemplo:
         >>> calcular_adiantamento(Decimal('2200'), Decimal('40'))
         Decimal('880.00')
     """
     if percentual < 0 or percentual > 100:
         raise ValueError("Percentual deve estar entre 0 e 100")
-    
-    return ((valor_contrato_mensal * percentual) / Decimal('100')).quantize(Decimal('0.01'))
+
+    return ((valor_contrato_mensal * percentual) / Decimal("100")).quantize(
+        Decimal("0.01")
+    )
 
 
 def calcular_saldo_pos_adiantamento(
-    valor_contrato_mensal: Decimal,
-    valor_adiantamento: Decimal
+    valor_contrato_mensal: Decimal, valor_adiantamento: Decimal
 ) -> Decimal:
     """
     Calcula o saldo a pagar após o adiantamento.
-    
+
     Args:
         valor_contrato_mensal: Valor mensal do contrato
         valor_adiantamento: Valor já pago como adiantamento
-    
+
     Returns:
         Saldo para pagamento final do mês
-        
+
     Exemplo:
         >>> calcular_saldo_pos_adiantamento(Decimal('2200'), Decimal('880'))
         Decimal('1320.00')
     """
-    return (valor_contrato_mensal - valor_adiantamento).quantize(Decimal('0.01'))
+    return (valor_contrato_mensal - valor_adiantamento).quantize(Decimal("0.01"))
 
 
 # ==============================================================================
 # PROVENTOS (VALORES A RECEBER)
 # ==============================================================================
 
-def calcular_hora_extra_50(
-    horas_extras: Decimal,
-    valor_hora: Decimal
-) -> Decimal:
+
+def calcular_hora_extra_50(horas_extras: Decimal, valor_hora: Decimal) -> Decimal:
     """
     Calcula o valor das horas extras com 50% de adicional (regra contratual).
-    
+
     Args:
         horas_extras: Quantidade de horas extras trabalhadas
         valor_hora: Valor da hora normal
-    
+
     Returns:
         Valor total das horas extras
-        
+
     Exemplo:
         >>> calcular_hora_extra_50(Decimal('10'), Decimal('10'))
         Decimal('150.00')
     """
     if horas_extras < 0:
         raise ValueError("Horas extras não podem ser negativas")
-    
+
     valor_hora_extra = valor_hora * MULTIPLICADOR_HORA_EXTRA_50
-    return (horas_extras * valor_hora_extra).quantize(Decimal('0.01'))
+    return (horas_extras * valor_hora_extra).quantize(Decimal("0.01"))
 
 
-def calcular_hora_feriado(
-    horas_feriado: Decimal,
-    valor_hora: Decimal
-) -> Decimal:
+def calcular_hora_feriado(horas_feriado: Decimal, valor_hora: Decimal) -> Decimal:
     """
     Calcula o valor das horas trabalhadas em feriados com 100% de adicional.
-    
+
     Args:
         horas_feriado: Quantidade de horas trabalhadas em feriados
         valor_hora: Valor da hora normal
-    
+
     Returns:
         Valor total das horas em feriados
-        
+
     Exemplo:
         >>> calcular_hora_feriado(Decimal('8'), Decimal('10'))
         Decimal('160.00')
     """
     if horas_feriado < 0:
         raise ValueError("Horas de feriado não podem ser negativas")
-    
+
     valor_hora_feriado = valor_hora * MULTIPLICADOR_FERIADO
-    return (horas_feriado * valor_hora_feriado).quantize(Decimal('0.01'))
+    return (horas_feriado * valor_hora_feriado).quantize(Decimal("0.01"))
 
 
-def calcular_adicional_noturno(
-    horas_noturnas: Decimal,
-    valor_hora: Decimal
-) -> Decimal:
+def calcular_adicional_noturno(horas_noturnas: Decimal, valor_hora: Decimal) -> Decimal:
     """
-    Calcula o adicional noturno (20% sobre a hora normal).
-    
+    Calcula o adicional noturno (hora completa + 20% adicional).
+
     Args:
         horas_noturnas: Quantidade de horas trabalhadas no período noturno
         valor_hora: Valor da hora normal
-    
+
     Returns:
         Valor total do adicional noturno
-        
+
     Exemplo:
         >>> calcular_adicional_noturno(Decimal('20'), Decimal('10'))
-        Decimal('40.00')
+        Decimal('240.00')  # 20h × R$ 10 × 1.20
     """
     if horas_noturnas < 0:
         raise ValueError("Horas noturnas não podem ser negativas")
-    
-    valor_adicional = valor_hora * PERCENTUAL_ADICIONAL_NOTURNO
-    return (horas_noturnas * valor_adicional).quantize(Decimal('0.01'))
+
+    valor_hora_noturna = valor_hora * MULTIPLICADOR_ADICIONAL_NOTURNO
+    return (horas_noturnas * valor_hora_noturna).quantize(Decimal("0.01"))
 
 
 def calcular_dsr(
     valor_horas_extras: Decimal,
     valor_feriados: Decimal,
     dias_uteis: int,
-    domingos_e_feriados: int
+    domingos_e_feriados: int,
 ) -> Decimal:
     """
     Calcula o DSR (Descanso Semanal Remunerado) sobre horas extras e feriados.
-    
+
     ATENÇÃO: DSR não é obrigação legal para PJ, tratado aqui como regra contratual.
-    
+
     Fórmula: (Horas Extras + Feriados) / Dias Úteis * (Domingos + Feriados)
-    
+
     Args:
         valor_horas_extras: Valor total das horas extras em R$
         valor_feriados: Valor total dos feriados trabalhados em R$
         dias_uteis: Número de dias úteis no mês
         domingos_e_feriados: Número de domingos + feriados no mês
-    
+
     Returns:
         Valor do DSR
-        
+
     Exemplo:
         >>> calcular_dsr(Decimal('220'), Decimal('160'), 25, 6)
         Decimal('91.20')
     """
     if dias_uteis <= 0:
         raise ValueError("Dias úteis deve ser maior que zero")
-    
+
     total_extras = valor_horas_extras + valor_feriados
     if total_extras == 0:
-        return Decimal('0.00')
-    
+        return Decimal("0.00")
+
     dsr_diario = total_extras / Decimal(dias_uteis)
     dsr_total = dsr_diario * Decimal(domingos_e_feriados)
-    
-    return dsr_total.quantize(Decimal('0.01'))
+
+    return dsr_total.quantize(Decimal("0.01"))
 
 
 def calcular_total_proventos(
@@ -224,21 +220,21 @@ def calcular_total_proventos(
     valor_hora_extra: Decimal,
     valor_feriado: Decimal,
     valor_dsr: Decimal,
-    valor_adicional_noturno: Decimal
+    valor_adicional_noturno: Decimal,
 ) -> Decimal:
     """
     Calcula o total de proventos (valores a receber).
-    
+
     Args:
         saldo_pos_adiantamento: Saldo do salário após adiantamento
         valor_hora_extra: Total de horas extras
         valor_feriado: Total de feriados trabalhados
         valor_dsr: Total de DSR
         valor_adicional_noturno: Total de adicional noturno
-    
+
     Returns:
         Soma de todos os proventos
-        
+
     Exemplo:
         >>> calcular_total_proventos(
         ...     Decimal('1320'), Decimal('150'), Decimal('160'),
@@ -247,66 +243,89 @@ def calcular_total_proventos(
         Decimal('1695.00')
     """
     total = (
-        saldo_pos_adiantamento +
-        valor_hora_extra +
-        valor_feriado +
-        valor_dsr +
-        valor_adicional_noturno
+        saldo_pos_adiantamento
+        + valor_hora_extra
+        + valor_feriado
+        + valor_dsr
+        + valor_adicional_noturno
     )
-    return total.quantize(Decimal('0.01'))
+    return total.quantize(Decimal("0.01"))
 
 
 # ==============================================================================
 # DESCONTOS (VALORES A DEDUZIR)
 # ==============================================================================
 
-def calcular_desconto_atraso(
-    minutos_atraso: int,
-    valor_hora: Decimal
-) -> Decimal:
+
+def calcular_desconto_atraso(minutos_atraso: int, valor_hora: Decimal) -> Decimal:
     """
     Calcula o desconto por atrasos (proporcional por minuto).
-    
+
     Args:
         minutos_atraso: Total de minutos de atraso no mês
         valor_hora: Valor da hora normal
-    
+
     Returns:
         Valor a descontar por atrasos
-        
+
     Exemplo:
         >>> calcular_desconto_atraso(30, Decimal('10'))
         Decimal('5.00')
     """
     if minutos_atraso < 0:
         raise ValueError("Minutos de atraso não podem ser negativos")
-    
-    horas_atraso = Decimal(minutos_atraso) / Decimal('60')
-    return (horas_atraso * valor_hora).quantize(Decimal('0.01'))
+
+    horas_atraso = Decimal(minutos_atraso) / Decimal("60")
+    return (horas_atraso * valor_hora).quantize(Decimal("0.01"))
 
 
-def calcular_desconto_falta(
-    horas_falta: Decimal,
-    valor_hora: Decimal
-) -> Decimal:
+def calcular_desconto_falta(horas_falta: Decimal, valor_hora: Decimal) -> Decimal:
     """
     Calcula o desconto por faltas.
-    
+
     Args:
         horas_falta: Total de horas de falta
         valor_hora: Valor da hora normal
-    
+
     Returns:
         Valor a descontar por faltas
-        
+
     Exemplo:
         >>> calcular_desconto_falta(Decimal('8'), Decimal('10'))
         Decimal('80.00')
     """
     if horas_falta < 0:
         raise ValueError("Horas de falta não podem ser negativas")
-    
-    return (horas_falta * valor_hora).quantize(Decimal('0.01'))
+
+    return (horas_falta * valor_hora).quantize(Decimal("0.01"))
+
+
+def calcular_desconto_falta_por_dia(
+    dias_falta: int, valor_base_mensal: Decimal
+) -> Decimal:
+    """
+    Calcula o desconto por faltas usando divisão por 30 dias FIXOS.
+
+    IMPORTANTE: Sempre divide por 30, independente do mês ter 28, 30 ou 31 dias.
+    Esta é a regra contratual definida pelo stakeholder.
+
+    Args:
+        dias_falta: Número de dias de falta
+        valor_base_mensal: Salário base mensal
+
+    Returns:
+        Valor a descontar por faltas
+
+    Exemplo:
+        >>> calcular_desconto_falta_por_dia(1, Decimal('2200'))
+        Decimal('73.33')  # R$ 2200 / 30 (sempre 30 dias)
+    """
+    if dias_falta < 0:
+        raise ValueError("Dias de falta não podem ser negativos")
+
+    # SEMPRE 30 dias, regra fixa
+    valor_por_dia = valor_base_mensal / Decimal("30")
+    return (valor_por_dia * Decimal(dias_falta)).quantize(Decimal("0.01"))
 
 
 # DSR sobre faltas REMOVIDO - conceito CLT, não aplicável para PJ
@@ -317,22 +336,22 @@ def calcular_total_descontos(
     desconto_atraso: Decimal,
     desconto_falta: Decimal,
     vale_transporte: Decimal,
-    descontos_manuais: Decimal
+    descontos_manuais: Decimal,
 ) -> Decimal:
     """
     Calcula o total de descontos.
-    
+
     IMPORTANTE: DSR sobre faltas NÃO é aplicado (conceito CLT, sistema é PJ-only).
-    
+
     Args:
         desconto_atraso: Desconto por atrasos
         desconto_falta: Desconto por faltas
         vale_transporte: Valor do VT a descontar
         descontos_manuais: Outros descontos manuais
-    
+
     Returns:
         Soma de todos os descontos
-        
+
     Exemplo:
         >>> calcular_total_descontos(
         ...     Decimal('5'), Decimal('80'),
@@ -340,54 +359,50 @@ def calcular_total_descontos(
         ... )
         Decimal('287.40')
     """
-    total = (
-        desconto_atraso +
-        desconto_falta +
-        vale_transporte +
-        descontos_manuais
-    )
-    return total.quantize(Decimal('0.01'))
+    total = desconto_atraso + desconto_falta + vale_transporte + descontos_manuais
+    return total.quantize(Decimal("0.01"))
 
 
 # ==============================================================================
 # VALOR FINAL
 # ==============================================================================
 
+
 def calcular_valor_liquido(
-    total_proventos: Decimal,
-    total_descontos: Decimal
+    total_proventos: Decimal, total_descontos: Decimal
 ) -> Decimal:
     """
     Calcula o valor líquido a pagar.
-    
+
     Args:
         total_proventos: Soma de todos os proventos
         total_descontos: Soma de todos os descontos
-    
+
     Returns:
         Valor líquido final (proventos - descontos)
-        
+
     Exemplo:
         >>> calcular_valor_liquido(Decimal('1695'), Decimal('300.73'))
         Decimal('1394.27')
     """
-    return (total_proventos - total_descontos).quantize(Decimal('0.01'))
+    return (total_proventos - total_descontos).quantize(Decimal("0.01"))
 
 
 # ==============================================================================
 # VALIDAÇÕES
 # ==============================================================================
 
+
 def validar_dados_entrada(dados: Dict) -> Dict[str, any]:
     """
     Valida os dados de entrada para cálculo da folha.
-    
+
     Args:
         dados: Dicionário com todos os dados de entrada
-    
+
     Returns:
         Dict com 'valido' (bool) e 'erros' (list)
-        
+
     Exemplo:
         >>> validar_dados_entrada({
         ...     'valor_contrato_mensal': Decimal('2200'),
@@ -397,64 +412,62 @@ def validar_dados_entrada(dados: Dict) -> Dict[str, any]:
         {'valido': True, 'erros': []}
     """
     erros = []
-    
+
     # Valores monetários
-    if dados.get('valor_contrato_mensal', 0) <= 0:
+    if dados.get("valor_contrato_mensal", 0) <= 0:
         erros.append("Valor do contrato deve ser maior que zero")
-    
+
     # Horas
-    if dados.get('horas_extras', 0) < 0:
+    if dados.get("horas_extras", 0) < 0:
         erros.append("Horas extras não podem ser negativas")
-    if dados.get('horas_feriado', 0) < 0:
+    if dados.get("horas_feriado", 0) < 0:
         erros.append("Horas de feriado não podem ser negativas")
-    if dados.get('horas_noturnas', 0) < 0:
+    if dados.get("horas_noturnas", 0) < 0:
         erros.append("Horas noturnas não podem ser negativas")
-    if dados.get('horas_falta', 0) < 0:
+    if dados.get("horas_falta", 0) < 0:
         erros.append("Horas de falta não podem ser negativas")
-    
+
     # Minutos
-    if dados.get('minutos_atraso', 0) < 0:
+    if dados.get("minutos_atraso", 0) < 0:
         erros.append("Minutos de atraso não podem ser negativos")
-    
+
     # Percentuais
-    percentual_adiantamento = dados.get('percentual_adiantamento', 40)
+    percentual_adiantamento = dados.get("percentual_adiantamento", 40)
     if percentual_adiantamento < 0 or percentual_adiantamento > 100:
         erros.append("Percentual de adiantamento deve estar entre 0 e 100")
-    
+
     # Adiantamento vs salário
-    if dados.get('valor_adiantamento', 0) > dados.get('valor_contrato_mensal', 0):
+    if dados.get("valor_adiantamento", 0) > dados.get("valor_contrato_mensal", 0):
         erros.append("Adiantamento não pode ser maior que o valor do contrato")
-    
-    return {
-        'valido': len(erros) == 0,
-        'erros': erros
-    }
+
+    return {"valido": len(erros) == 0, "erros": erros}
 
 
 # ==============================================================================
 # FUNÇÃO PRINCIPAL (CALCULA TUDO)
 # ==============================================================================
 
+
 def calcular_folha_completa(
     valor_contrato_mensal: Decimal,
     percentual_adiantamento: Decimal = PERCENTUAL_ADIANTAMENTO_PADRAO,
-    horas_extras: Decimal = Decimal('0'),
-    horas_feriado: Decimal = Decimal('0'),
-    horas_noturnas: Decimal = Decimal('0'),
+    horas_extras: Decimal = Decimal("0"),
+    horas_feriado: Decimal = Decimal("0"),
+    horas_noturnas: Decimal = Decimal("0"),
     minutos_atraso: int = 0,
-    horas_falta: Decimal = Decimal('0'),
-    vale_transporte: Decimal = Decimal('0'),
-    descontos_manuais: Decimal = Decimal('0'),
+    horas_falta: Decimal = Decimal("0"),
+    vale_transporte: Decimal = Decimal("0"),
+    descontos_manuais: Decimal = Decimal("0"),
     carga_horaria_mensal: int = CARGA_HORARIA_PADRAO,
     dias_uteis_mes: int = 22,
-    domingos_e_feriados_mes: int = 8
+    domingos_e_feriados_mes: int = 8,
 ) -> Dict[str, Decimal]:
     """
     Calcula todos os valores da folha de pagamento PJ de uma só vez.
-    
+
     IMPORTANTE: Sistema exclusivo para PJ (Pessoa Jurídica).
     Não implementa regras CLT.
-    
+
     Args:
         valor_contrato_mensal: Valor mensal do contrato
         percentual_adiantamento: % de adiantamento (padrão 40%)
@@ -468,78 +481,76 @@ def calcular_folha_completa(
         carga_horaria_mensal: Carga horária (padrão 220h)
         dias_uteis_mes: Dias úteis no mês (padrão 22)
         domingos_e_feriados_mes: Domingos + feriados no mês (padrão 8)
-    
+
     Returns:
         Dicionário completo com todos os valores calculados
     """
     # Validar dados
-    validacao = validar_dados_entrada({
-        'valor_contrato_mensal': valor_contrato_mensal,
-        'horas_extras': horas_extras,
-        'horas_feriado': horas_feriado,
-        'horas_noturnas': horas_noturnas,
-        'minutos_atraso': minutos_atraso,
-        'horas_falta': horas_falta,
-        'percentual_adiantamento': percentual_adiantamento,
-        'valor_adiantamento': calcular_adiantamento(valor_contrato_mensal, percentual_adiantamento)
-    })
-    
-    if not validacao['valido']:
+    validacao = validar_dados_entrada(
+        {
+            "valor_contrato_mensal": valor_contrato_mensal,
+            "horas_extras": horas_extras,
+            "horas_feriado": horas_feriado,
+            "horas_noturnas": horas_noturnas,
+            "minutos_atraso": minutos_atraso,
+            "horas_falta": horas_falta,
+            "percentual_adiantamento": percentual_adiantamento,
+            "valor_adiantamento": calcular_adiantamento(
+                valor_contrato_mensal, percentual_adiantamento
+            ),
+        }
+    )
+
+    if not validacao["valido"]:
         raise ValueError(f"Dados inválidos: {', '.join(validacao['erros'])}")
-    
+
     # Cálculos base
     valor_hora = calcular_valor_hora(valor_contrato_mensal, carga_horaria_mensal)
     adiantamento = calcular_adiantamento(valor_contrato_mensal, percentual_adiantamento)
     saldo = calcular_saldo_pos_adiantamento(valor_contrato_mensal, adiantamento)
-    
+
     # Proventos
     hora_extra_valor = calcular_hora_extra_50(horas_extras, valor_hora)
     feriado_valor = calcular_hora_feriado(horas_feriado, valor_hora)
     noturno_valor = calcular_adicional_noturno(horas_noturnas, valor_hora)
     dsr_valor = calcular_dsr(
-        hora_extra_valor,
-        feriado_valor,
-        dias_uteis_mes,
-        domingos_e_feriados_mes
+        hora_extra_valor, feriado_valor, dias_uteis_mes, domingos_e_feriados_mes
     )
-    
+
     total_proventos = calcular_total_proventos(
         saldo, hora_extra_valor, feriado_valor, dsr_valor, noturno_valor
     )
-    
+
     # Descontos (SEM DSR sobre faltas - conceito CLT)
     atraso_desconto = calcular_desconto_atraso(minutos_atraso, valor_hora)
     falta_desconto = calcular_desconto_falta(horas_falta, valor_hora)
-    
+
     total_descontos_calc = calcular_total_descontos(
         atraso_desconto, falta_desconto, vale_transporte, descontos_manuais
     )
-    
+
     # Valor final
     liquido = calcular_valor_liquido(total_proventos, total_descontos_calc)
-    
+
     return {
         # Base
-        'valor_hora': valor_hora,
-        'adiantamento': adiantamento,
-        'saldo_pos_adiantamento': saldo,
-        
+        "valor_hora": valor_hora,
+        "adiantamento": adiantamento,
+        "saldo_pos_adiantamento": saldo,
         # Proventos
-        'hora_extra_50': hora_extra_valor,
-        'feriado_trabalhado': feriado_valor,
-        'adicional_noturno': noturno_valor,
-        'dsr': dsr_valor,
-        'total_proventos': total_proventos,
-        
+        "hora_extra_50": hora_extra_valor,
+        "feriado_trabalhado": feriado_valor,
+        "adicional_noturno": noturno_valor,
+        "dsr": dsr_valor,
+        "total_proventos": total_proventos,
         # Descontos
-        'desconto_atraso': atraso_desconto,
-        'desconto_falta': falta_desconto,
+        "desconto_atraso": atraso_desconto,
+        "desconto_falta": falta_desconto,
         # 'dsr_sobre_faltas': REMOVIDO - conceito CLT
-        'vale_transporte': vale_transporte,
-        'descontos_manuais': descontos_manuais,
-        'total_descontos': total_descontos_calc,
-        
+        "vale_transporte": vale_transporte,
+        "descontos_manuais": descontos_manuais,
+        "total_descontos": total_descontos_calc,
         # Final
-        'valor_bruto': total_proventos,
-        'valor_liquido': liquido
+        "valor_bruto": total_proventos,
+        "valor_liquido": liquido,
     }

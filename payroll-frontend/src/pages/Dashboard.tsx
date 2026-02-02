@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   Grid,
   Box,
@@ -7,7 +6,6 @@ import {
   // ToggleButton,
 } from '@mui/material'
 import { useDashboardData } from '../hooks/useDashboardData'
-import type { DashboardFilters } from '../services/api'
 import {
   DashboardMetricsGrid,
   FinancialChart,
@@ -28,10 +26,8 @@ import {
 // ]
 
 const Dashboard = () => {
-  const [period, _setPeriod] = useState<DashboardFilters['period']>('30d')
-
   const { stats, monthlyData, trends, recentActivity, isLoading } =
-    useDashboardData({ period })
+    useDashboardData({ period: '30d' })
 
   return (
     <Box sx={{ maxWidth: '100%', width: '100%', mt: 4 }}>

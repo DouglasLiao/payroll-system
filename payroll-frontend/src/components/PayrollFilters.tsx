@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   Card,
   CardContent,
@@ -27,8 +27,6 @@ import {
   Clear,
   Search,
 } from '@mui/icons-material'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import dayjs from 'dayjs'
 import type { Provider } from '../types'
 
 export interface PayrollFilters {
@@ -49,67 +47,41 @@ export const PayrollFiltersComponent = ({
   providers = [],
 }: PayrollFiltersComponentProps) => {
   const [expanded, setExpanded] = useState(true)
-  const [localFilters, setLocalFilters] = useState<PayrollFilters>(filters)
+
+  // Initialize local state once from props - no need to sync via useEffect
+  // The "Apply Filters" button pattern means local state is independent until applied
+  const [localFilters, setLocalFilters] = useState<PayrollFilters>(
+    () => filters
+  )
+
+  // Local state for draft filters
+  const [selectedMonth, setSelectedMonth] = useState<Dayjs | null>(() => {
+    if (filters.reference_month) {
+      const [month, year] = filters.reference_month.split('/')
+      return dayjs(`${year}-${month}-01`)
+    }
+    return null
+  })
 
   const handleApplyFilters = () => {
     onFiltersChange(localFilters)
   }
 
-  // Local state for draft filters
-  const [localFilters, setLocalFilters] = useState<PayrollFilters>(filters)
-  const [selectedMonth, setSelectedMonth] = useState<Dayjs | null>(
-    filters.reference_month
-      ? (() => {
-          const [month, year] = filters.reference_month.split('/')
-          return dayjs(`${year}-${month}-01`)
-        })()
-      : null
-  )
-
-  // Sync local state when external filters change
-  useEffect(() => {
-    setLocalFilters(filters)
-
-    // Update selectedMonth when reference_month changes
-    if (filters.reference_month) {
-      const [month, year] = filters.reference_month.split('/')
-      setSelectedMonth(dayjs(`${year}-${month}-01`))
-    } else {
-      setSelectedMonth(null)
-    }
-  }, [filters])
-
   const handleClearFilters = () => {
-<<<<<<< Updated upstream
-    const emptyFilters = {
-=======
     const clearedFilters = {
->>>>>>> Stashed changes
       status: 'all',
       reference_month: '',
       provider: undefined,
     }
-<<<<<<< Updated upstream
-    setLocalFilters(emptyFilters)
-    onFiltersChange(emptyFilters)
-=======
     setLocalFilters(clearedFilters)
     setSelectedMonth(null)
     onFiltersChange(clearedFilters)
->>>>>>> Stashed changes
   }
 
   const handleStatusChange = (event: SelectChangeEvent) => {
     setLocalFilters({ ...localFilters, status: event.target.value })
   }
 
-<<<<<<< Updated upstream
-  const handleMonthChange = (newValue: dayjs.Dayjs | null) => {
-    setLocalFilters({
-      ...localFilters,
-      reference_month: newValue ? newValue.format('YYYY-MM') : '',
-    })
-=======
   const handleMonthChange = (value: Dayjs | null) => {
     setSelectedMonth(value)
     if (value) {
@@ -118,7 +90,6 @@ export const PayrollFiltersComponent = ({
     } else {
       setLocalFilters({ ...localFilters, reference_month: '' })
     }
->>>>>>> Stashed changes
   }
 
   const handleProviderChange = (event: SelectChangeEvent<number | string>) => {
@@ -129,28 +100,17 @@ export const PayrollFiltersComponent = ({
     })
   }
 
-<<<<<<< Updated upstream
-  // Conta quantos filtros estão ativos (baseado no localFilters)
-=======
-  const handleApplyFilters = () => {
-    onFiltersChange(localFilters)
-  }
-
   // Conta quantos filtros estão ativos (usando localFilters)
->>>>>>> Stashed changes
   const activeFiltersCount =
     (localFilters.status !== 'all' ? 1 : 0) +
     (localFilters.reference_month ? 1 : 0) +
     (localFilters.provider ? 1 : 0)
-<<<<<<< Updated upstream
-=======
 
   // Check if filters have changed
   const hasChanges =
     localFilters.status !== filters.status ||
     localFilters.reference_month !== filters.reference_month ||
     localFilters.provider !== filters.provider
->>>>>>> Stashed changes
 
   return (
     <Card
@@ -262,46 +222,6 @@ export const PayrollFiltersComponent = ({
             </FormControl>
 
             {/* Mês de Referência */}
-<<<<<<< Updated upstream
-            {/* Mês de Referência */}
-            {/* Mês de Referência */}
-            <DatePicker
-              label="Mês de Referência"
-              format="MM/YYYY"
-              views={['month', 'year']}
-              value={
-                localFilters.reference_month
-                  ? dayjs(localFilters.reference_month)
-                  : null
-              }
-              onChange={handleMonthChange}
-              slotProps={{
-                textField: {
-                  size: 'small',
-                  fullWidth: true,
-                  InputProps: {
-                    endAdornment: localFilters.reference_month && (
-                      <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setLocalFilters({
-                              ...localFilters,
-                              reference_month: '',
-                            })
-                          }}
-                          edge="end"
-                        >
-                          <Clear fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  },
-                },
-              }}
-            />
-=======
             <LocalizationProvider
               dateAdapter={AdapterDayjs}
               adapterLocale="pt-br"
@@ -338,7 +258,6 @@ export const PayrollFiltersComponent = ({
                 }}
               />
             </LocalizationProvider>
->>>>>>> Stashed changes
 
             {/* Prestador */}
             <FormControl fullWidth size="small">
@@ -364,11 +283,7 @@ export const PayrollFiltersComponent = ({
               </Select>
             </FormControl>
 
-<<<<<<< Updated upstream
-            {/* Espaço para Botão Filtrar */}
-=======
             {/* Apply Filters Button */}
->>>>>>> Stashed changes
             <Box
               sx={{
                 display: 'flex',
@@ -377,15 +292,6 @@ export const PayrollFiltersComponent = ({
                 gap: 1,
               }}
             >
-<<<<<<< Updated upstream
-              <Button
-                variant="contained"
-                onClick={handleApplyFilters}
-                fullWidth
-                sx={{ height: 40 }}
-              >
-                Filtrar
-=======
               {hasChanges && (
                 <Typography
                   variant="caption"
@@ -406,7 +312,6 @@ export const PayrollFiltersComponent = ({
                 }}
               >
                 Aplicar Filtros
->>>>>>> Stashed changes
               </Button>
             </Box>
           </Box>
