@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Card,
   CardContent,
@@ -15,6 +15,11 @@ import {
   InputLabel,
 } from '@mui/material'
 import type { SelectChangeEvent } from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import dayjs, { Dayjs } from 'dayjs'
+import 'dayjs/locale/pt-br'
 import {
   FilterList,
   ExpandMore,
@@ -50,25 +55,70 @@ export const PayrollFiltersComponent = ({
     onFiltersChange(localFilters)
   }
 
+  // Local state for draft filters
+  const [localFilters, setLocalFilters] = useState<PayrollFilters>(filters)
+  const [selectedMonth, setSelectedMonth] = useState<Dayjs | null>(
+    filters.reference_month
+      ? (() => {
+          const [month, year] = filters.reference_month.split('/')
+          return dayjs(`${year}-${month}-01`)
+        })()
+      : null
+  )
+
+  // Sync local state when external filters change
+  useEffect(() => {
+    setLocalFilters(filters)
+
+    // Update selectedMonth when reference_month changes
+    if (filters.reference_month) {
+      const [month, year] = filters.reference_month.split('/')
+      setSelectedMonth(dayjs(`${year}-${month}-01`))
+    } else {
+      setSelectedMonth(null)
+    }
+  }, [filters])
+
   const handleClearFilters = () => {
+<<<<<<< Updated upstream
     const emptyFilters = {
+=======
+    const clearedFilters = {
+>>>>>>> Stashed changes
       status: 'all',
       reference_month: '',
       provider: undefined,
     }
+<<<<<<< Updated upstream
     setLocalFilters(emptyFilters)
     onFiltersChange(emptyFilters)
+=======
+    setLocalFilters(clearedFilters)
+    setSelectedMonth(null)
+    onFiltersChange(clearedFilters)
+>>>>>>> Stashed changes
   }
 
   const handleStatusChange = (event: SelectChangeEvent) => {
     setLocalFilters({ ...localFilters, status: event.target.value })
   }
 
+<<<<<<< Updated upstream
   const handleMonthChange = (newValue: dayjs.Dayjs | null) => {
     setLocalFilters({
       ...localFilters,
       reference_month: newValue ? newValue.format('YYYY-MM') : '',
     })
+=======
+  const handleMonthChange = (value: Dayjs | null) => {
+    setSelectedMonth(value)
+    if (value) {
+      const formattedMonth = value.format('MM/YYYY')
+      setLocalFilters({ ...localFilters, reference_month: formattedMonth })
+    } else {
+      setLocalFilters({ ...localFilters, reference_month: '' })
+    }
+>>>>>>> Stashed changes
   }
 
   const handleProviderChange = (event: SelectChangeEvent<number | string>) => {
@@ -79,11 +129,28 @@ export const PayrollFiltersComponent = ({
     })
   }
 
+<<<<<<< Updated upstream
   // Conta quantos filtros estão ativos (baseado no localFilters)
+=======
+  const handleApplyFilters = () => {
+    onFiltersChange(localFilters)
+  }
+
+  // Conta quantos filtros estão ativos (usando localFilters)
+>>>>>>> Stashed changes
   const activeFiltersCount =
     (localFilters.status !== 'all' ? 1 : 0) +
     (localFilters.reference_month ? 1 : 0) +
     (localFilters.provider ? 1 : 0)
+<<<<<<< Updated upstream
+=======
+
+  // Check if filters have changed
+  const hasChanges =
+    localFilters.status !== filters.status ||
+    localFilters.reference_month !== filters.reference_month ||
+    localFilters.provider !== filters.provider
+>>>>>>> Stashed changes
 
   return (
     <Card
@@ -195,6 +262,7 @@ export const PayrollFiltersComponent = ({
             </FormControl>
 
             {/* Mês de Referência */}
+<<<<<<< Updated upstream
             {/* Mês de Referência */}
             {/* Mês de Referência */}
             <DatePicker
@@ -233,6 +301,44 @@ export const PayrollFiltersComponent = ({
                 },
               }}
             />
+=======
+            <LocalizationProvider
+              dateAdapter={AdapterDayjs}
+              adapterLocale="pt-br"
+            >
+              <DatePicker
+                label="Mês de Referência"
+                views={['month', 'year']}
+                value={selectedMonth}
+                onChange={handleMonthChange}
+                slotProps={{
+                  textField: {
+                    size: 'small',
+                    fullWidth: true,
+                    InputProps: {
+                      endAdornment: selectedMonth && (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            edge="end"
+                            onClick={() => {
+                              setSelectedMonth(null)
+                              setLocalFilters({
+                                ...localFilters,
+                                reference_month: '',
+                              })
+                            }}
+                          >
+                            <Clear fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  },
+                }}
+              />
+            </LocalizationProvider>
+>>>>>>> Stashed changes
 
             {/* Prestador */}
             <FormControl fullWidth size="small">
@@ -258,14 +364,20 @@ export const PayrollFiltersComponent = ({
               </Select>
             </FormControl>
 
+<<<<<<< Updated upstream
             {/* Espaço para Botão Filtrar */}
+=======
+            {/* Apply Filters Button */}
+>>>>>>> Stashed changes
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
+                gap: 1,
               }}
             >
+<<<<<<< Updated upstream
               <Button
                 variant="contained"
                 onClick={handleApplyFilters}
@@ -273,6 +385,28 @@ export const PayrollFiltersComponent = ({
                 sx={{ height: 40 }}
               >
                 Filtrar
+=======
+              {hasChanges && (
+                <Typography
+                  variant="caption"
+                  color="warning.main"
+                  sx={{ display: { xs: 'none', md: 'block' } }}
+                >
+                  Há alterações não aplicadas
+                </Typography>
+              )}
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleApplyFilters}
+                disabled={!hasChanges}
+                sx={{
+                  textTransform: 'none',
+                  minWidth: 120,
+                }}
+              >
+                Aplicar Filtros
+>>>>>>> Stashed changes
               </Button>
             </Box>
           </Box>

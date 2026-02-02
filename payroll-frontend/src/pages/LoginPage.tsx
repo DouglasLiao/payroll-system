@@ -12,8 +12,10 @@ import {
   CircularProgress,
   InputAdornment,
   IconButton,
+  Fade,
 } from '@mui/material'
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function LoginPage() {
@@ -72,181 +74,204 @@ export default function LoginPage() {
         },
       }}
     >
-      <Card
-        sx={{
-          maxWidth: 450,
-          width: '90%',
-          position: 'relative',
-          zIndex: 2,
-          backgroundColor: 'rgba(255, 255, 255, 0.9)', // Fundo translúcido
-          backdropFilter: 'blur(10px)', // Efeito de vidro
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-          borderRadius: 2,
-        }}
-      >
-        <CardContent sx={{ p: 4 }}>
-          {/* Logo/Título */}
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Box
-              component="img"
-              src="/logo.png"
-              alt="Payroll System Logo"
-              sx={{
-                width: 100,
-                height: 100,
-                mx: 'auto',
-                mb: 2,
-              }}
-            />
-            <Typography
-              variant="h4"
-              fontWeight="bold"
-              gutterBottom
-              color="primary"
-            >
-              Sistema de Payroll
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Faça login para continuar
-            </Typography>
-          </Box>
+      <Fade in timeout={800}>
+        <Card
+          sx={{
+            maxWidth: 450,
+            width: '90%',
+            position: 'relative',
+            zIndex: 2,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)', // Fundo translúcido
+            backdropFilter: 'blur(10px)', // Efeito de vidro
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+            borderRadius: 2,
+          }}
+        >
+          <CardContent sx={{ p: 4 }}>
+            {/* Logo/Título */}
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Box
+                component="img"
+                src="/logo.png"
+                alt="Payroll System Logo"
+                sx={{
+                  width: 100,
+                  height: 100,
+                  mx: 'auto',
+                  mb: 2,
+                }}
+              />
+              <Typography
+                variant="h4"
+                fontWeight="bold"
+                gutterBottom
+                color="primary"
+              >
+                Sistema de Payroll
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Faça login para continuar
+              </Typography>
+            </Box>
 
-          {/* Formulário */}
-          <form onSubmit={handleSubmit}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
-              </Alert>
-            )}
-
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              autoFocus
-              sx={{
-                mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  '& fieldset': {
-                    borderColor: 'rgba(0, 0, 0, 0.23)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(0, 0, 0, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#4F46E5',
-                  },
-                },
-                '& .MuiInputLabel-root': {
-                  color: 'rgba(0, 0, 0, 0.6)',
-                  '&.Mui-focused': {
-                    color: '#4F46E5',
-                  },
-                },
-                '& .MuiInputBase-input': {
-                  color: '#0F172A',
-                },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Email sx={{ color: 'rgba(0, 0, 0, 0.54)' }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            <TextField
-              fullWidth
-              label="Senha"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              sx={{
-                mb: 3,
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  '& fieldset': {
-                    borderColor: 'rgba(0, 0, 0, 0.23)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(0, 0, 0, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#4F46E5',
-                  },
-                },
-                '& .MuiInputLabel-root': {
-                  color: 'rgba(0, 0, 0, 0.6)',
-                  '&.Mui-focused': {
-                    color: '#4F46E5',
-                  },
-                },
-                '& .MuiInputBase-input': {
-                  color: '#0F172A',
-                },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock sx={{ color: 'rgba(0, 0, 0, 0.54)' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      sx={{ color: 'rgba(0, 0, 0, 0.54)' }}
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            <Button
-              fullWidth
-              type="submit"
-              variant="contained"
-              size="large"
-              disabled={loading}
-              sx={{
-                py: 1.5,
-                textTransform: 'none',
-                fontSize: '1rem',
-                fontWeight: 600,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                '&:hover': {
-                  background:
-                    'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-                },
-              }}
-            >
-              {loading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                'Entrar'
+            {/* Formulário */}
+            <form onSubmit={handleSubmit}>
+              {error && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                  {error}
+                </Alert>
               )}
-            </Button>
-          </form>
 
-          {/* Footer */}
-          <Box sx={{ mt: 3, textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              © 2026 Sistema de Payroll. Todos os direitos reservados.
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                autoFocus
+                sx={{
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    '& fieldset': {
+                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(0, 0, 0, 0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#4F46E5',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(0, 0, 0, 0.6)',
+                    '&.Mui-focused': {
+                      color: '#4F46E5',
+                    },
+                  },
+                  '& .MuiInputBase-input': {
+                    color: '#0F172A',
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email sx={{ color: 'rgba(0, 0, 0, 0.54)' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <TextField
+                fullWidth
+                label="Senha"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                sx={{
+                  mb: 3,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    '& fieldset': {
+                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(0, 0, 0, 0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#4F46E5',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(0, 0, 0, 0.6)',
+                    '&.Mui-focused': {
+                      color: '#4F46E5',
+                    },
+                  },
+                  '& .MuiInputBase-input': {
+                    color: '#0F172A',
+                  },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock sx={{ color: 'rgba(0, 0, 0, 0.54)' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                        sx={{ color: 'rgba(0, 0, 0, 0.54)' }}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                <Link
+                  to="/forgot-password"
+                  style={{
+                    color: '#4F46E5',
+                    textDecoration: 'none',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                  }}
+                >
+                  Esqueceu a senha?
+                </Link>
+              </Box>
+
+              <Button
+                fullWidth
+                type="submit"
+                variant="contained"
+                size="large"
+                disabled={loading}
+                sx={{
+                  py: 1.5,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  background:
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  '&:hover': {
+                    background:
+                      'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                  },
+                }}
+              >
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  'Entrar'
+                )}
+              </Button>
+            </form>
+
+            {/* Footer */}
+            <Box sx={{ mt: 3, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Não tem uma conta?{' '}
+                <Link to="/register" style={{ fontWeight: 600 }}>
+                  Cadastre-se
+                </Link>
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                © 2026 Sistema de Payroll. Todos os direitos reservados.
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Fade>
     </Box>
   )
 }

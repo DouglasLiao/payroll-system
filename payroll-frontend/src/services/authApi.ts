@@ -37,7 +37,7 @@ export const authApi = {
    * Cookies são definidos automaticamente pelo backend
    */
   login: async (username: string, password: string): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>('/auth/login/', {
+    const response = await api.post<LoginResponse>('/auth/token/', {
       username,
       password,
     })
@@ -82,6 +82,55 @@ export const authApi = {
       old_password: oldPassword,
       new_password: newPassword,
     })
+    return response.data
+  },
+
+  /**
+   * Solicita reset de senha
+   */
+  requestPasswordReset: async (email: string): Promise<{ message: string }> => {
+    const response = await api.post('/auth/password-reset/request/', { email })
+    return response.data
+  },
+
+  /**
+   * Confirma reset de senha com token
+   */
+  confirmPasswordReset: async (
+    token: string,
+    newPassword: string,
+    confirmPassword: string
+  ): Promise<{ message: string }> => {
+    const response = await api.post('/auth/password-reset/confirm/', {
+      token,
+      new_password: newPassword,
+      new_password_confirm: confirmPassword,
+    })
+    return response.data
+  },
+
+  /**
+   * Verifica se email está disponível
+   */
+  checkEmail: async (
+    email: string
+  ): Promise<{ email: string; exists: boolean; available: boolean }> => {
+    const response = await api.post('/auth/check-email/', { email })
+    return response.data
+  },
+
+  /**
+   * Registra novo usuário
+   */
+  register: async (data: {
+    email: string
+    username: string
+    password: string
+    password_confirm: string
+    first_name?: string
+    last_name?: string
+  }): Promise<{ message: string; user: any }> => {
+    const response = await api.post('/auth/register/', data)
     return response.data
   },
 }

@@ -15,6 +15,9 @@ import Dashboard from './pages/Dashboard'
 import Providers from './pages/Providers'
 import Payrolls from './pages/Payrolls'
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import UnauthorizedPage from './pages/UnauthorizedPage'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import ProviderPayments from './pages/ProviderPayments'
@@ -29,6 +32,7 @@ const loginTheme = getTheme('light')
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+<<<<<<< Updated upstream
       <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
         <SnackbarProvider
           maxSnack={3}
@@ -47,6 +51,52 @@ function App() {
                     </ThemeProvider>
                   }
                 />
+=======
+      <SnackbarProvider
+        maxSnack={3}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes - Auth pages with fixed light theme */}
+              <Route
+                path="/login"
+                element={
+                  <ThemeProvider theme={loginTheme}>
+                    <CssBaseline />
+                    <LoginPage />
+                  </ThemeProvider>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <ThemeProvider theme={loginTheme}>
+                    <CssBaseline />
+                    <RegisterPage />
+                  </ThemeProvider>
+                }
+              />
+              <Route
+                path="/forgot-password"
+                element={
+                  <ThemeProvider theme={loginTheme}>
+                    <CssBaseline />
+                    <ForgotPasswordPage />
+                  </ThemeProvider>
+                }
+              />
+              <Route
+                path="/reset-password"
+                element={
+                  <ThemeProvider theme={loginTheme}>
+                    <CssBaseline />
+                    <ResetPasswordPage />
+                  </ThemeProvider>
+                }
+              />
+>>>>>>> Stashed changes
 
                 {/* All other routes with dynamic theme */}
                 <Route

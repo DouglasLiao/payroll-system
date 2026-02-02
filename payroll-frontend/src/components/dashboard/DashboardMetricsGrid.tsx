@@ -30,7 +30,7 @@ export const DashboardMetricsGrid = ({
   }
 
   // Calculate trend indicator for value change
-  const valueChange = trends?.period_vs_previous.value_change || 0
+  const valueChange = trends?.period_vs_previous?.value_change || 0
   const TrendIcon = valueChange >= 0 ? TrendingUpIcon : TrendingDownIcon
   const trendColor = valueChange >= 0 ? 'success.main' : 'error.main'
 

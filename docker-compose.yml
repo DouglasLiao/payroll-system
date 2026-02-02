@@ -1,4 +1,17 @@
 services:
+  # API Gateway - Routes requests to appropriate services
+  api-gateway:
+    image: nginx:alpine
+    container_name: payroll_gateway
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - email-service
+      - frontend
+
   backend:
     build: ./payroll-backend
     container_name: payroll_backend
@@ -14,9 +27,13 @@ services:
       - DB_PASSWORD=postgres
       - DB_HOST=db
       - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - EMAIL_SERVICE_URL=http://email-service:8001
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     command: python manage.py runserver 0.0.0.0:8000
 
   frontend:
@@ -28,9 +45,36 @@ services:
       - ./payroll-frontend:/app
       - /app/node_modules
     environment:
-      - CHOKIDAR_USEPOLLING=true # Often needed for hot reload in docker
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
+
+  # Email Microservice
+  email-service:
+    build: ./payroll-email-service
+    container_name: payroll_email_service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./payroll-email-service:/app
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql://postgres:postgres@db_email:5432/email_db
+      - REDIS_URL=redis://redis:6379/0
+      - EMAIL_PROVIDER=smtp
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - FROM_EMAIL=${FROM_EMAIL:-noreply@payrollsystem.com}
+      - FROM_NAME=Payroll System
+      - FRONTEND_URL=http://localhost:5173
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_change_in_production}
+    depends_on:
+      db_email:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   db:
     image: postgres:15-alpine
@@ -49,5 +93,46 @@ services:
       timeout: 5s
       retries: 5
 
+  # Email Service Database
+  db_email:
+    image: postgres:15-alpine
+    container_name: payroll_email_db
+    volumes:
+      - postgres_email_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=email_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and pub/sub
+  redis:
+    image: redis:7-alpine
+    container_name: payroll_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # MailHog - Email testing tool (captures all outgoing emails)
+  # Access UI at http://localhost:8025
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: payroll_mailhog
+    ports:
+      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI
+    logging:
+      driver: none # Disable logs to reduce noise
+
 volumes:
   postgres_data:
+  postgres_email_data:
+  redis_data:

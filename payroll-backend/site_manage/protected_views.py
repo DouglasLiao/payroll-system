@@ -253,20 +253,29 @@ class ProtectedDashboardView(APIView):
         # Base queryset: Payrolls da empresa do usuário
         company_payrolls = Payroll.objects.filter(provider__company=user.company)
 
-        # Apply date filter if period is not 'all'
-        if start:
-            company_payrolls = company_payrolls.filter(created_at__date__gte=start)
-
-        # Calculate previous period for comparison
-        previous_period_payrolls = None
+        # Apply date filter using reference_month (MM/YYYY format)
+        # For period filters, convert to month comparison
         if start and period != "all":
-            period_days = (end - start).days
-            previous_start = start - timedelta(days=period_days)
-            previous_end = start - timedelta(days=1)
-            previous_period_payrolls = Payroll.objects.filter(
-                provider__company=user.company,
-                created_at__date__gte=previous_start,
-                created_at__date__lte=previous_end,
+            # Convert start date to MM/YYYY format
+            start_ref = start.strftime("%m/%Y")
+            end_ref = end.strftime("%m/%Y")
+
+            # Filter by reference_month range
+            # Note: This filters months lexicographically, which works for MM/YYYY
+            # Get all months in the date range
+            from datetime import date as dt_date
+            from dateutil.relativedelta import relativedelta
+
+            months_in_range = []
+            current = start.replace(day=1)
+            end_month = end.replace(day=1)
+
+            while current <= end_month:
+                months_in_range.append(current.strftime("%m/%Y"))
+                current = current + relativedelta(months=1)
+
+            company_payrolls = company_payrolls.filter(
+                reference_month__in=months_in_range
             )
 
         # Aggregate stats by status
@@ -351,28 +360,7 @@ class ProtectedDashboardView(APIView):
         # Calculate trends
         trends = {
             "monthly_growth_percentage": 0,
-            "period_vs_previous": {
-                "payrolls_change": 0,
-                "value_change": 0,
-            },
         }
-
-        # Compare with previous period
-        if previous_period_payrolls is not None:
-            previous_count = previous_period_payrolls.count()
-            previous_value = previous_period_payrolls.aggregate(Sum("net_value"))[
-                "net_value__sum"
-            ] or Decimal("0")
-
-            if previous_count > 0:
-                trends["period_vs_previous"]["payrolls_change"] = (
-                    (total_payrolls - previous_count) / previous_count
-                ) * 100
-
-            if previous_value > 0:
-                trends["period_vs_previous"]["value_change"] = float(
-                    (total_value - previous_value) / previous_value * 100
-                )
 
         # Calculate monthly growth (last month vs previous month)
         sorted_months = sorted(

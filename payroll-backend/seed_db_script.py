@@ -40,10 +40,31 @@ def main():
         return
 
     print("Cleaning database...")
-    Payroll.objects.all().delete()
-    Provider.objects.all().delete()
-    User.objects.all().delete()
-    Company.objects.all().delete()
+
+    # Safe cleanup - handles cases where tables might not exist yet
+    try:
+        Payroll.objects.all().delete()
+        print("  ✓ Payrolls deleted")
+    except Exception as e:
+        print(f"  ⚠ Payrolls: {e}")
+
+    try:
+        Provider.objects.all().delete()
+        print("  ✓ Providers deleted")
+    except Exception as e:
+        print(f"  ⚠ Providers: {e}")
+
+    try:
+        User.objects.all().delete()
+        print("  ✓ Users deleted")
+    except Exception as e:
+        print(f"  ⚠ Users: {e}")
+
+    try:
+        Company.objects.all().delete()
+        print("  ✓ Companies deleted")
+    except Exception as e:
+        print(f"  ⚠ Companies: {e}")
 
     print("Creating Company...")
     company = Company.objects.create(

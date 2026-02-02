@@ -118,18 +118,18 @@ export const FinancialSummaryCard = ({
       </Box>
 
       {/* Period Comparison */}
-      <Box>
+      {/* <Box>
         <Typography variant="caption" color="text.secondary">
           Variação vs Período Anterior
         </Typography>
         <Typography
           variant="h6"
           fontWeight="600"
-          color={
-            trends.period_vs_previous.value_change >= 0
-              ? 'success.main'
-              : 'error.main'
-          }
+          // color={
+          //   trends?.period_vs_previous?.value_change >= 0
+          //     ? 'success.main'
+          //     : 'error.main'
+          // }
         >
           {trends.period_vs_previous.value_change >= 0 ? '+' : ''}
           {trends.period_vs_previous.value_change.toFixed(1)}%
@@ -137,7 +137,7 @@ export const FinancialSummaryCard = ({
         <Typography variant="caption" color="text.secondary">
           em valor total
         </Typography>
-      </Box>
+      </Box> */}
     </Card>
   )
 }

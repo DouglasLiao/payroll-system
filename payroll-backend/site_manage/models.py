@@ -87,6 +87,40 @@ class User(AbstractUser):
         return f"{self.username} ({self.get_role_display()})"
 
 
+class PasswordResetToken(models.Model):
+    """Token para redefinição de senha"""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="password_reset_tokens",
+        verbose_name="Usuário",
+    )
+    token = models.CharField(max_length=255, unique=True, verbose_name="Token")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Criado em")
+    expires_at = models.DateTimeField(verbose_name="Expira em")
+    used = models.BooleanField(default=False, verbose_name="Usado")
+    used_at = models.DateTimeField(null=True, blank=True, verbose_name="Usado em")
+
+    class Meta:
+        verbose_name = "Token de Reset de Senha"
+        verbose_name_plural = "Tokens de Reset de Senha"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["token"]),
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"Reset token for {self.user.username}"
+
+    def is_valid(self):
+        """Verifica se o token ainda é válido"""
+        from django.utils import timezone
+
+        return not self.used and self.expires_at > timezone.now()
+
+
 # ==============================================================================
 # PAYMENT MODELS
 # ==============================================================================

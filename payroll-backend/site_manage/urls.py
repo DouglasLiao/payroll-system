@@ -17,20 +17,36 @@ from .auth_views import (
     logout,
 )
 from .company_views import CompanyViewSet
+from .views import password_reset_request, password_reset_confirm, check_email, register
 
 router = DefaultRouter()
-router.register(r"providers", ProviderViewSet)
-router.register(r"payrolls", PayrollViewSet)
-router.register(r"companies", CompanyViewSet)
+router.register(r"companies", CompanyViewSet, basename="company")
+
+# Rotas protegidas para Payrolls
+router.register(r"payrolls", PayrollViewSet, basename="payroll")
+router.register(r"providers", ProviderViewSet, basename="provider")
 
 urlpatterns = [
-    # Authentication endpoints
-    path("auth/login/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    # Auth endpoints
+    path("auth/token/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/me/", current_user, name="current_user"),
     path("auth/change-password/", change_password, name="change_password"),
     path("auth/update-timeout/", update_timeout_preference, name="update_timeout"),
     path("auth/logout/", logout, name="logout"),
+    # Registration endpoints
+    path("auth/check-email/", check_email, name="check_email"),
+    path("auth/register/", register, name="register"),
+    # Password reset endpoints
+    path(
+        "auth/password-reset/request/",
+        password_reset_request,
+        name="password_reset_request",
+    ),
+    path(
+        "auth/password-reset/confirm/",
+        password_reset_confirm,
+        name="password_reset_confirm",
+    ),
     # Existing routes
     path("", include(router.urls)),
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
