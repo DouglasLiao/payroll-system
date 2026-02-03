@@ -33,6 +33,68 @@ MULTIPLICADOR_ADICIONAL_NOTURNO = Decimal(
 # ==============================================================================
 
 
+def calcular_salario_proporcional(
+    salario_mensal: Decimal,
+    data_inicio,  # date object
+    reference_month: str,
+) -> tuple:
+    """
+    Calcula salário proporcional baseado na data de início do trabalho no mês.
+
+    Quando um funcionário inicia no meio do mês, o salário deve ser proporcional
+    aos dias efetivamente trabalhados.
+
+    Args:
+        salario_mensal: Salário mensal cheio contratado
+        data_inicio: Data que o funcionário começou (objeto date)
+        reference_month: Mês de referência (formato: MM/YYYY ou YYYY-MM)
+
+    Returns:
+        Tupla com (salario_proporcional, dias_trabalhados, dias_totais_mes)
+
+    Raises:
+        ValueError: Se a data de início não pertence ao mês de referência
+
+    Exemplo:
+        >>> from datetime import date
+        >>> # Funcionário iniciou dia 20/01, mês tem 31 dias
+        >>> calcular_salario_proporcional(Decimal('2200'), date(2026, 1, 20), '01/2026')
+        (Decimal('851.61'), 12, 31)  # 12 dias trabalhados de 31
+    """
+    from calendar import monthrange
+
+    # Parsear reference_month
+    if "/" in reference_month:
+        mes, ano = reference_month.split("/")
+        mes = int(mes)
+        ano = int(ano)
+    else:
+        ano, mes = reference_month.split("-")
+        ano = int(ano)
+        mes = int(mes)
+
+    # Verificar se a data de início está no mês correto
+    if data_inicio.month != mes or data_inicio.year != ano:
+        raise ValueError(
+            f"Data de início {data_inicio} não pertence ao mês {reference_month}"
+        )
+
+    # Calcular dias totais do mês
+    dias_totais_mes = monthrange(ano, mes)[1]
+
+    # Calcular dias trabalhados (do dia de início até o final do mês, inclusive)
+    # Exemplo: iniciou dia 20, mês tem 31 dias → trabalhou dias 20, 21, ..., 31 = 12 dias
+    dias_trabalhados = dias_totais_mes - data_inicio.day + 1
+
+    # Calcular salário proporcional
+    # Fórmula: (salário × dias_trabalhados) / dias_totais_mes
+    salario_proporcional = (
+        salario_mensal * Decimal(dias_trabalhados) / Decimal(dias_totais_mes)
+    ).quantize(Decimal("0.01"))
+
+    return salario_proporcional, dias_trabalhados, dias_totais_mes
+
+
 def calcular_valor_hora(
     valor_contrato_mensal: Decimal, carga_horaria_mensal: int = CARGA_HORARIA_PADRAO
 ) -> Decimal:

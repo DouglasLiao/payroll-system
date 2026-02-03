@@ -126,6 +126,10 @@ class PayrollSerializer(serializers.ModelSerializer):
             "provider",
             "provider_name",
             "reference_month",
+            # Salário proporcional
+            "hired_date",
+            "worked_days",
+            "proportional_base_value",
             "status",
             "status_display",
             # Valores base
@@ -165,6 +169,8 @@ class PayrollSerializer(serializers.ModelSerializer):
 
         # Todos os campos calculados são read-only
         read_only_fields = [
+            "worked_days",
+            "proportional_base_value",
             "hourly_rate",
             "remaining_value",
             "overtime_amount",

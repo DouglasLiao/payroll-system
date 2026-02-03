@@ -300,6 +300,28 @@ class Payroll(models.Model):
         help_text="Formato: MM/YYYY (ex: 01/2026)",
     )
 
+    # Salário Proporcional (opcional - para admissões no meio do mês)
+    hired_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Data de Admissão/Início no Mês",
+        help_text="Se preenchido, calcula salário proporcional aos dias trabalhados",
+    )
+    worked_days = models.IntegerField(
+        default=0,
+        editable=False,
+        verbose_name="Dias Trabalhados",
+        help_text="Calculado automaticamente se hired_date preenchido (0 = mês completo)",
+    )
+    proportional_base_value = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        editable=False,
+        verbose_name="Salário Base Proporcional",
+        help_text="Calculado automaticamente se hired_date preenchido",
+    )
+
     # Valores Base
     base_value = models.DecimalField(
         max_digits=10,
@@ -500,10 +522,32 @@ class Payroll(models.Model):
         Calcula automaticamente todos os valores antes de salvar.
         Usa as funções da camada de domínio para garantir consistência.
         """
-        from domain.payroll_calculator import calcular_folha_completa
+        from domain.payroll_calculator import (
+            calcular_folha_completa,
+            calcular_salario_proporcional,
+        )
 
         # Importar função de cálculo de dias
         from services.payroll_service import calcular_dias_mes
+
+        # NOVO: Calcular salário proporcional se hired_date preenchido
+        valor_base_atual = self.base_value
+
+        if self.hired_date:
+            # Funcionário começou no meio do mês - calcular proporcional
+            valor_proporcional, dias_trab, dias_totais = calcular_salario_proporcional(
+                self.provider.monthly_value, self.hired_date, self.reference_month
+            )
+            self.proportional_base_value = valor_proporcional
+            self.worked_days = dias_trab
+            valor_base_atual = valor_proporcional
+
+            # Atualizar base_value para refletir o valor proporcional
+            self.base_value = valor_proporcional
+        else:
+            # Mês completo - resetar campos proporcionais
+            self.worked_days = 0
+            self.proportional_base_value = Decimal("0.00")
 
         # Calcular dias úteis e domingos/feriados do mês
         dias_uteis, domingos_feriados = calcular_dias_mes(self.reference_month)

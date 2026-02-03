@@ -14,8 +14,15 @@ import {
   Divider,
   Tooltip,
   IconButton,
+  Alert,
+  Autocomplete,
 } from '@mui/material'
 import { Info as InfoIcon } from '@mui/icons-material'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { DatePicker as MonthPicker } from '@mui/x-date-pickers/DatePicker'
+import dayjs, { Dayjs } from 'dayjs'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -28,6 +35,7 @@ const payrollSchema = z.object({
   reference_month: z
     .string()
     .regex(/^\d{2}\/\d{4}$/, 'Formato deve ser MM/YYYY'),
+  hired_date: z.string().nullable().optional(), // NOVO: data de admissão
   overtime_hours_50: z.number().min(0).optional(),
   holiday_hours: z.number().min(0).optional(),
   night_hours: z.number().min(0).optional(),
@@ -57,18 +65,27 @@ export const PayrollFormDialog = ({
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
     null
   )
+  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null)
+  const [selectedMonth, setSelectedMonth] = useState<Dayjs | null>(null)
+  const [proportionalInfo, setProportionalInfo] = useState<{
+    workedDays: number
+    totalDays: number
+    proportionalValue: number
+  } | null>(null)
 
   const {
     control,
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<PayrollFormInputs>({
     resolver: zodResolver(payrollSchema),
     defaultValues: {
       provider_id: 0,
       reference_month: '',
+      hired_date: null,
       overtime_hours_50: 0,
       holiday_hours: 0,
       night_hours: 0,
@@ -123,9 +140,42 @@ export const PayrollFormDialog = ({
       field.onChange(val === '' ? 0 : parseFloat(val) || 0)
     }
 
+  // Calcular salário proporcional quando hired_date muda
+  useEffect(() => {
+    if (selectedDate && selectedProvider && watchedValues.reference_month) {
+      const [month, year] = watchedValues.reference_month.split('/')
+      const refMonth = parseInt(month)
+      const refYear = parseInt(year)
+
+      // Verificar se a data está no mês de referência
+      if (
+        selectedDate.month() + 1 === refMonth &&
+        selectedDate.year() === refYear
+      ) {
+        const totalDays = selectedDate.daysInMonth()
+        const workedDays = totalDays - selectedDate.date() + 1
+        const monthlyValue = Number(selectedProvider.monthly_value)
+        const proportionalValue = (monthlyValue * workedDays) / totalDays
+
+        setProportionalInfo({
+          workedDays,
+          totalDays,
+          proportionalValue,
+        })
+      } else {
+        setProportionalInfo(null)
+      }
+    } else {
+      setProportionalInfo(null)
+    }
+  }, [selectedDate, selectedProvider, watchedValues.reference_month])
+
   const handleFormClose = () => {
     reset()
     setSelectedProvider(null)
+    setSelectedDate(null)
+    setSelectedMonth(null)
+    setProportionalInfo(null)
     onClose()
   }
 
@@ -134,6 +184,9 @@ export const PayrollFormDialog = ({
     onSubmit(data)
     reset()
     setSelectedProvider(null)
+    setSelectedDate(null)
+    setSelectedMonth(null)
+    setProportionalInfo(null)
   }
 
   return (
@@ -165,48 +218,128 @@ export const PayrollFormDialog = ({
                   <Divider sx={{ mb: 2 }} />
 
                   <Grid container spacing={2}>
-                    <Grid size={{ xs: 6 }}>
+                    <Grid size={{ xs: 12 }}>
                       <Controller
                         name="provider_id"
                         control={control}
                         render={({ field }) => (
-                          <TextField
-                            {...field}
-                            select
-                            label="Prestador"
-                            fullWidth
-                            error={!!errors.provider_id}
-                            helperText={errors.provider_id?.message}
-                            onChange={(e) =>
-                              field.onChange(parseInt(e.target.value))
+                          <Autocomplete
+                            options={providers || []}
+                            getOptionLabel={(option) =>
+                              `${option.name} - ${option.role}`
                             }
-                          >
-                            <MenuItem value={0}>Selecione...</MenuItem>
-                            {providers?.map((p: Provider) => (
-                              <MenuItem key={p.id} value={p.id}>
-                                {p.name} - {p.role}
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                        )}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 6 }}>
-                      <Controller
-                        name="reference_month"
-                        control={control}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="Mês de Referência"
-                            placeholder="01/2026"
-                            fullWidth
-                            error={!!errors.reference_month}
-                            helperText={errors.reference_month?.message}
+                            value={
+                              providers?.find((p) => p.id === field.value) ||
+                              null
+                            }
+                            onChange={(_, newValue) => {
+                              field.onChange(newValue?.id || 0)
+                            }}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Prestador"
+                                error={!!errors.provider_id}
+                                helperText={
+                                  errors.provider_id?.message ||
+                                  'Selecione o colaborador para a folha de pagamento'
+                                }
+                                required
+                              />
+                            )}
+                            noOptionsText="Nenhum colaborador encontrado"
+                            loadingText="Carregando..."
                           />
                         )}
                       />
                     </Grid>
+                    <Grid size={{ xs: 6 }}>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <Controller
+                          name="reference_month"
+                          control={control}
+                          render={({ field }) => (
+                            <DatePicker
+                              label="Mês de Referência"
+                              views={['month', 'year']}
+                              format="MM/YYYY"
+                              value={selectedMonth}
+                              onChange={(newValue) => {
+                                setSelectedMonth(newValue)
+                                field.onChange(
+                                  newValue ? newValue.format('MM/YYYY') : ''
+                                )
+                              }}
+                              slotProps={{
+                                textField: {
+                                  fullWidth: true,
+                                  error: !!errors.reference_month,
+                                  helperText:
+                                    errors.reference_month?.message ||
+                                    'Selecione o mês da folha de pagamento',
+                                  required: true,
+                                },
+                              }}
+                            />
+                          )}
+                        />
+                      </LocalizationProvider>
+                    </Grid>
+
+                    {/* NOVO: Data de Admissão/Início */}
+                    <Grid size={{ xs: 6 }}>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <Controller
+                          name="hired_date"
+                          control={control}
+                          render={({ field }) => (
+                            <DatePicker
+                              label="Data de Admissão/Início (Opcional)"
+                              value={selectedDate}
+                              onChange={(newValue) => {
+                                setSelectedDate(newValue)
+                                field.onChange(
+                                  newValue
+                                    ? newValue.format('YYYY-MM-DD')
+                                    : null
+                                )
+                              }}
+                              slotProps={{
+                                textField: {
+                                  fullWidth: true,
+                                  helperText:
+                                    'Preencha se o funcionário começou no meio do mês',
+                                },
+                              }}
+                            />
+                          )}
+                        />
+                      </LocalizationProvider>
+                    </Grid>
+
+                    {/* Mostrar informação de salário proporcional */}
+                    {proportionalInfo && (
+                      <Grid size={{ xs: 12 }}>
+                        <Alert severity="info" sx={{ mt: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            📅 Salário Proporcional Calculado
+                          </Typography>
+                          <Typography variant="body2">
+                            Dias trabalhados:{' '}
+                            <strong>{proportionalInfo.workedDays}</strong> de{' '}
+                            <strong>{proportionalInfo.totalDays}</strong> dias
+                          </Typography>
+                          <Typography variant="body2">
+                            Valor proporcional:{' '}
+                            <strong>
+                              {formatCurrency(
+                                proportionalInfo.proportionalValue
+                              )}
+                            </strong>
+                          </Typography>
+                        </Alert>
+                      </Grid>
+                    )}
 
                     {selectedProvider && (
                       <>

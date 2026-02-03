@@ -120,6 +120,7 @@ const Providers = () => {
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [searchTerm, setSearchTerm] = useState('')
   const queryClient = useQueryClient()
   const { enqueueSnackbar } = useSnackbar()
 
@@ -242,6 +243,15 @@ const Providers = () => {
     setPage(0)
   }
 
+  // Filter providers based on search term
+  const filteredProviders = providersData?.results?.filter((provider) => {
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      provider.name.toLowerCase().includes(searchLower) ||
+      provider.role.toLowerCase().includes(searchLower)
+    )
+  })
+
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>
       <Box
@@ -263,28 +273,44 @@ const Providers = () => {
         </Button>
       </Box>
 
+      {/* Search Field */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          fullWidth
+          label="Buscar por nome ou cargo"
+          variant="outlined"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Digite o nome do colaborador ou cargo..."
+        />
+      </Box>
+
       <Card sx={{ p: 2 }}>
         <GenericTable
-          data={providersData?.results}
+          data={filteredProviders}
           loading={isLoading}
           keyExtractor={(p) => p.id}
-          totalCount={providersData?.count}
+          totalCount={filteredProviders?.length || 0}
           page={page}
           rowsPerPage={rowsPerPage}
           onPageChange={handlePageChange}
           onRowsPerPageChange={handleRowsPerPageChange}
           columns={[
-            { id: 'name', label: 'Name', accessor: 'name' },
-            { id: 'role', label: 'Role', accessor: 'role' },
+            { id: 'name', label: 'Nome', accessor: 'name' },
+            { id: 'role', label: 'Cargo', accessor: 'role' },
             {
               id: 'salary',
-              label: 'Base Salary',
+              label: 'Salário Base',
               render: (p) => `R$ ${p.monthly_value || '0.00'}`,
             },
-            { id: 'method', label: 'Method', accessor: 'payment_method' },
+            {
+              id: 'method',
+              label: 'Forma de Pagamento',
+              accessor: 'payment_method',
+            },
             {
               id: 'actions',
-              label: 'Actions',
+              label: 'Ações',
               align: 'right',
               render: (p) => (
                 <>

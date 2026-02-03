@@ -55,6 +55,12 @@ export interface Payroll {
   provider: number
   provider_name: string
   reference_month: string
+
+  // Salário proporcional
+  hired_date?: string | null
+  worked_days: number
+  proportional_base_value: string
+
   status: PayrollStatus
   status_display: string
 
@@ -113,6 +119,7 @@ export interface PayrollDetail extends Omit<Payroll, 'provider'> {
 export interface PayrollCreateData {
   provider_id: number
   reference_month: string
+  hired_date?: string | null // NOVO: data de admissão (formato YYYY-MM-DD)
   overtime_hours_50?: number
   holiday_hours?: number
   night_hours?: number
