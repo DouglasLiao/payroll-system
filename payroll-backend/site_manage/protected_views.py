@@ -184,6 +184,83 @@ class ProtectedPayrollViewSet(viewsets.ModelViewSet):
             }
         )
 
+    @action(detail=False, methods=["post"], url_path="calculate")
+    def calculate(self, request):
+        """
+        Cria e calcula uma nova folha de pagamento.
+
+        POST /payrolls/calculate/
+
+        Request Body:
+            {
+                "provider_id": int,
+                "reference_month": "MM/YYYY",
+                "overtime_hours_50": decimal (optional),
+                "holiday_hours": decimal (optional),
+                "night_hours": decimal (optional),
+                "late_minutes": int (optional),
+                "absence_hours": decimal (optional),
+                "manual_discounts": decimal (optional),
+                "notes": str (optional)
+            }
+
+        Returns:
+            201: Payroll detail with all calculated values
+            400: Validation errors
+            403: Permission denied
+        """
+        from .serializers import PayrollCreateSerializer, PayrollDetailSerializer
+
+        # Check permission - only Customer Admin can create payrolls
+        if request.user.role != "CUSTOMER_ADMIN":
+            return Response(
+                {"error": "Apenas Customer Admin pode criar folhas de pagamento."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = PayrollCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Get provider and verify it belongs to user's company
+        provider_id = serializer.validated_data["provider_id"]
+        try:
+            provider = Provider.objects.get(id=provider_id)
+
+            # Verify provider belongs to user's company
+            if provider.company != request.user.company:
+                return Response(
+                    {
+                        "error": "Você não tem permissão para criar folha para este prestador."
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        except Provider.DoesNotExist:
+            return Response(
+                {"error": "Prestador não encontrado."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Create payroll
+        payroll = Payroll(
+            provider=provider,
+            reference_month=serializer.validated_data["reference_month"],
+            base_value=provider.monthly_value,
+            advance_value=provider.monthly_value * (provider.advance_percentage / 100),
+            overtime_hours_50=serializer.validated_data.get("overtime_hours_50", 0),
+            holiday_hours=serializer.validated_data.get("holiday_hours", 0),
+            night_hours=serializer.validated_data.get("night_hours", 0),
+            late_minutes=serializer.validated_data.get("late_minutes", 0),
+            absence_hours=serializer.validated_data.get("absence_hours", 0),
+            manual_discounts=serializer.validated_data.get("manual_discounts", 0),
+            notes=serializer.validated_data.get("notes", ""),
+        )
+
+        # Save will trigger auto-calculation
+        payroll.save()
+
+        # Return detailed response
+        response_serializer = PayrollDetailSerializer(payroll)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
 
 # ==============================================================================
 # DASHBOARD VIEW PROTEGIDA

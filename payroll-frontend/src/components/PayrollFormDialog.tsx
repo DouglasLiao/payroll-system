@@ -130,6 +130,7 @@ export const PayrollFormDialog = ({
   }
 
   const handleFormSubmit = (data: PayrollFormInputs) => {
+    console.log('aqui?')
     onSubmit(data)
     reset()
     setSelectedProvider(null)
