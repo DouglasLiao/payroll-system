@@ -26,6 +26,7 @@ import {
   Brightness4 as MoonIcon,
   Brightness7 as SunIcon,
   Business as BusinessIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material'
 import { useThemeContext } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -46,6 +47,7 @@ const MainLayout = () => {
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
     { text: 'Colaboradores', icon: <PeopleIcon />, path: '/admin/providers' },
     { text: 'Pagamentos', icon: <ReceiptIcon />, path: '/admin/payrolls' },
+    { text: 'Configurações', icon: <SettingsIcon />, path: '/admin/settings' },
   ]
 
   const handleLogout = async () => {

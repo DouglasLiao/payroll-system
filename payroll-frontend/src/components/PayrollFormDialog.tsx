@@ -7,7 +7,6 @@ import {
   DialogTitle,
   DialogContent,
   TextField,
-  MenuItem,
   Grid,
   Card,
   CardContent,
@@ -21,8 +20,7 @@ import { Info as InfoIcon } from '@mui/icons-material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { DatePicker as MonthPicker } from '@mui/x-date-pickers/DatePicker'
-import dayjs, { Dayjs } from 'dayjs'
+import { Dayjs } from 'dayjs'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -40,7 +38,8 @@ const payrollSchema = z.object({
   holiday_hours: z.number().min(0).optional(),
   night_hours: z.number().min(0).optional(),
   late_minutes: z.number().min(0).optional(),
-  absence_hours: z.number().min(0).optional(),
+  absence_days: z.number().min(0).optional(), // NOVO: dias de falta
+  absence_hours: z.number().min(0).optional(), // DEPRECATED
   manual_discounts: z.number().min(0).optional(),
   notes: z.string().optional(),
 })
@@ -78,7 +77,6 @@ export const PayrollFormDialog = ({
     handleSubmit,
     reset,
     watch,
-    setValue,
     formState: { errors },
   } = useForm<PayrollFormInputs>({
     resolver: zodResolver(payrollSchema),
@@ -90,6 +88,7 @@ export const PayrollFormDialog = ({
       holiday_hours: 0,
       night_hours: 0,
       late_minutes: 0,
+      absence_days: 0, // NOVO
       absence_hours: 0,
       manual_discounts: 0,
       notes: '',
@@ -110,8 +109,17 @@ export const PayrollFormDialog = ({
   const dsrPercentage = 16.67
   const dsrValue = totalOvertime * (dsrPercentage / 100)
   const lateDiscount = ((watchedValues.late_minutes || 0) / 60) * hourlyRate
+
+  // Calculate VT automatically if provider has VT enabled
+  const calculatedVT = selectedProvider?.vt_enabled
+    ? selectedProvider.vt_trips_per_day *
+      parseFloat(selectedProvider.vt_fare) *
+      22 // Aproximado, o backend calculará exato
+    : 0
+
   const totalAdditionals = totalOvertime + totalHoliday + dsrValue
-  const totalDiscounts = lateDiscount + (watchedValues.manual_discounts || 0)
+  const totalDiscounts =
+    lateDiscount + calculatedVT + (watchedValues.manual_discounts || 0)
   const advanceValue = selectedProvider
     ? Number(selectedProvider.monthly_value) *
       (Number(selectedProvider.advance_percentage) / 100)
@@ -611,16 +619,36 @@ export const PayrollFormDialog = ({
                         }}
                       />
                     </Grid>
+                  </Grid>
 
+                  {/* Faltas */}
+                  <Grid container spacing={2}>
                     <Grid size={{ xs: 12 }}>
                       <Typography
                         variant="subtitle2"
                         sx={{ mt: 1, mb: 1, fontWeight: 600 }}
                       >
-                        Outros Descontos
+                        Faltas
                       </Typography>
                     </Grid>
-                    <Grid size={{ xs: 4 }}>
+                    <Grid size={{ xs: 6 }}>
+                      <Controller
+                        name="absence_days"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Dias de Falta"
+                            fullWidth
+                            value={field.value || ''}
+                            onChange={handleNumericChange(field)}
+                            placeholder="0"
+                            helperText="Número de dias de falta (usado para VT)"
+                          />
+                        )}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 6 }}>
                       <Controller
                         name="absence_hours"
                         control={control}
@@ -636,7 +664,64 @@ export const PayrollFormDialog = ({
                         )}
                       />
                     </Grid>
-                    <Grid size={{ xs: 4 }}>
+                  </Grid>
+
+                  {/* Vale Transporte Calculado */}
+                  {selectedProvider?.vt_enabled && (
+                    <Grid container spacing={2}>
+                      <Grid size={{ xs: 12 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ mt: 1, mb: 1, fontWeight: 600 }}
+                        >
+                          Vale Transporte (Calculado Automaticamente)
+                        </Typography>
+                      </Grid>
+                      <Grid size={{ xs: 6 }}>
+                        <TextField
+                          label="Valor Unitário VT/dia"
+                          value={`R$ ${(selectedProvider.vt_trips_per_day * parseFloat(selectedProvider.vt_fare)).toFixed(2)}`}
+                          fullWidth
+                          disabled
+                          helperText={`${selectedProvider.vt_trips_per_day}× R$ ${selectedProvider.vt_fare} por dia trabalhado`}
+                          sx={{
+                            '& .MuiInputBase-input.Mui-disabled': {
+                              color: 'info.main',
+                              fontWeight: 600,
+                            },
+                          }}
+                        />
+                      </Grid>
+                      <Grid size={{ xs: 6 }}>
+                        <TextField
+                          label="VT Total Estimado (mês completo)"
+                          value={formatCurrency(calculatedVT)}
+                          fullWidth
+                          disabled
+                          helperText="Valor final ajustado pelo sistema"
+                          sx={{
+                            bgcolor: 'info.50',
+                            '& .MuiInputBase-input.Mui-disabled': {
+                              color: 'info.dark',
+                              fontWeight: 600,
+                            },
+                          }}
+                        />
+                      </Grid>
+                    </Grid>
+                  )}
+
+                  {/* Descontos Manuais */}
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ mt: 1, mb: 1, fontWeight: 600 }}
+                      >
+                        Descontos Manuais
+                      </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 8 }}>
                       <Controller
                         name="manual_discounts"
                         control={control}

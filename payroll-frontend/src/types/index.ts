@@ -19,6 +19,11 @@ export interface Provider {
   monthly_hours: number
   advance_enabled: boolean
   advance_percentage: string
+  // VT (Vale Transporte) - Dynamic calculation
+  vt_enabled: boolean
+  vt_fare: string
+  vt_trips_per_day: number
+  // Deprecated VT field
   vt_value: string
   payment_method: PaymentMethod
   pix_key?: string
@@ -70,16 +75,18 @@ export interface Payroll {
   advance_value: string
   remaining_value: string
 
-  // Horas
+  // Horas e Faltas
   overtime_hours_50: string
   holiday_hours: string
   night_hours: string
   late_minutes: number
+  absence_days: number
   absence_hours: string
 
   // Descontos variáveis
   manual_discounts: string
-  vt_discount: string
+  vt_value: string // Calculado automaticamente
+  vt_discount: string // Deprecated
 
   // Valores calculados - Proventos
   overtime_amount: string
@@ -113,6 +120,9 @@ export interface PayrollDetail extends Omit<Payroll, 'provider'> {
     name: string
     role: string
     monthly_value: string
+    vt_enabled: boolean
+    vt_fare: string
+    vt_trips_per_day: number
   }
 }
 
@@ -124,7 +134,8 @@ export interface PayrollCreateData {
   holiday_hours?: number
   night_hours?: number
   late_minutes?: number
-  absence_hours?: number
+  absence_days?: number // NOVO: dias de falta
+  absence_hours?: number // Deprecated
   manual_discounts?: number
   advance_already_paid?: number
   notes?: string

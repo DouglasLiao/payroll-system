@@ -141,6 +141,11 @@ def main():
         role = random.choice(roles)
         monthly_value = Decimal(random.randint(5000, 15000))
 
+        # VT configuration (70% dos providers têm VT habilitado)
+        vt_enabled = random.random() < 0.7
+        # Variedade de viagens: maioria usa 4, alguns 2 ou 6
+        vt_trips = random.choices([2, 4, 6, 8], weights=[15, 60, 20, 5])[0]
+
         provider = Provider.objects.create(
             name=name,
             role=role,
@@ -148,7 +153,11 @@ def main():
             monthly_hours=168,
             advance_enabled=True,
             advance_percentage=Decimal("40.00"),
-            payment_method=PaymentMethod.PIX,
+            vt_enabled=vt_enabled,
+            vt_fare=Decimal("4.60"),  # Tarifa de Belém
+            vt_trips_per_day=vt_trips,
+            payment_method=random.choice(["PIX", "TED", "TRANSFER"]),
+            pix_key=f"+5591{random.randint(900000000, 999999999)}",
             company=company,
             email=f"{name.lower().replace(' ', '.')}@example.com",
             description=f"Consultor {role}",

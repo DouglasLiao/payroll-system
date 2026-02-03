@@ -87,6 +87,11 @@ const providerSchema = z
       .or(z.literal('')),
 
     description: z.string().max(500, 'Descrição muito longa').optional(),
+
+    // VT (Vale Transporte) fields
+    vt_enabled: z.boolean().optional(),
+    vt_fare: z.string().optional(),
+    vt_trips_per_day: z.number().min(0).optional(),
   })
   .refine(
     (data) => {
@@ -183,6 +188,9 @@ const Providers = () => {
       bank_account: '',
       email: '',
       description: '',
+      vt_enabled: false,
+      vt_fare: '4.60',
+      vt_trips_per_day: 4,
     },
   })
 
@@ -218,6 +226,9 @@ const Providers = () => {
       bank_account: provider.bank_account || '',
       email: provider.email || '',
       description: provider.description || '',
+      vt_enabled: provider.vt_enabled || false,
+      vt_fare: provider.vt_fare || '4.60',
+      vt_trips_per_day: provider.vt_trips_per_day || 4,
     })
     setOpen(true)
   }
@@ -307,6 +318,15 @@ const Providers = () => {
               id: 'method',
               label: 'Forma de Pagamento',
               accessor: 'payment_method',
+            },
+            {
+              id: 'vt',
+              label: 'Vale Transporte/dia ',
+              render: (p) => {
+                if (!p.vt_enabled) return '-'
+                const dailyVT = p.vt_trips_per_day * parseFloat(p.vt_fare)
+                return `${p.vt_trips_per_day}× R$ ${p.vt_fare} = R$ ${dailyVT.toFixed(2)}`
+              },
             },
             {
               id: 'actions',
@@ -508,6 +528,67 @@ const Providers = () => {
                   )}
                 />
               </Grid>
+
+              {/* VT Configuration */}
+              <Grid size={{ xs: 12 }}>
+                <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+                  🚌 Vale Transporte
+                </Typography>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Controller
+                  name="vt_enabled"
+                  control={control}
+                  render={({ field }) => (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                      />
+                      <Typography sx={{ ml: 1 }}>
+                        Recebe Vale Transporte
+                      </Typography>
+                    </Box>
+                  )}
+                />
+              </Grid>
+              {watch('vt_enabled') && (
+                <>
+                  <Grid size={{ xs: 6 }}>
+                    <Controller
+                      name="vt_fare"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Tarifa (R$)"
+                          fullWidth
+                          placeholder="4.60"
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <Controller
+                      name="vt_trips_per_day"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Viagens/Dia"
+                          type="number"
+                          fullWidth
+                          value={field.value || ''}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
+                        />
+                      )}
+                    />
+                  </Grid>
+                </>
+              )}
             </Grid>
           </DialogContent>
           <Box

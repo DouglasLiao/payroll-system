@@ -129,7 +129,7 @@ export const authApi = {
     password_confirm: string
     first_name?: string
     last_name?: string
-  }): Promise<{ message: string; user: any }> => {
+  }): Promise<{ message: string; user: User }> => {
     const response = await api.post('/auth/register/', data)
     return response.data
   },

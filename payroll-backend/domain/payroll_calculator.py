@@ -95,6 +95,141 @@ def calcular_salario_proporcional(
     return salario_proporcional, dias_trabalhados, dias_totais_mes
 
 
+def calcular_dias_trabalhados(
+    reference_month: str,
+    absence_days: int = 0,
+    hired_date=None,
+) -> int:
+    """
+    Calcula dias efetivamente trabalhados considerando faltas e admissão mid-month.
+
+    Esta função integra-se com o cálculo de Vale Transporte, pois o VT deve ser
+    proporcional aos dias que o colaborador efetivamente compareceu ao trabalho.
+
+    Args:
+        reference_month: Mês de referência (MM/YYYY ou YYYY-MM)
+        absence_days: Número de dias de falta no mês
+        hired_date: Data de admissão (date object), se admitido no meio do mês
+
+    Returns:
+        Número de dias efetivamente trabalhados (para fins de VT)
+
+    Raises:
+        ValueError: Se dados inválidos
+
+    Exemplo:
+        >>> # Mês normal, sem faltas, sem admissão mid-month
+        >>> calcular_dias_trabalhados('01/2026')
+        25  # 25 dias úteis em janeiro/2026
+
+        >>> # Mês com 1 falta
+        >>> calcular_dias_trabalhados('01/2026', absence_days=1)
+        24  # 25 - 1 = 24 dias
+
+        >>> # Admitido dia 20 (12 dias restantes)
+        >>> from datetime import date
+        >>> calcular_dias_trabalhados('01/2026', hired_date=date(2026, 1, 20))
+        12  # Trabalhou apenas de 20 a 31
+    """
+    from calendar import monthrange
+
+    if absence_days < 0:
+        raise ValueError("Dias de falta não podem ser negativos")
+
+    # Parse reference month
+    if "/" in reference_month:
+        mes, ano = reference_month.split("/")
+        mes, ano = int(mes), int(ano)
+    else:
+        ano, mes = reference_month.split("-")
+        ano, mes = int(ano), int(mes)
+
+    # Get total business days in month
+    # Import here to avoid circular dependency
+    from services.payroll_service import calcular_dias_mes
+
+    # calcular_dias_mes returns (dias_uteis, domingos_e_feriados)
+    # We need format as string for the function
+    reference_str = f"{mes:02d}/{ano}" if "/" in reference_month else f"{ano}-{mes:02d}"
+    dias_uteis, _ = calcular_dias_mes(reference_str)
+
+    # If hired mid-month, calculate proportional worked days
+    if hired_date:
+        # Use proportional salary function to get worked calendar days
+        _, worked_calendar_days, total_calendar_days = calcular_salario_proporcional(
+            Decimal("0"),  # Dummy value
+            hired_date,
+            reference_month,
+        )
+
+        # Convert to proportional business days
+        # Example: worked 12 of 31 calendar days → ~10 of 25 business days
+        dias_uteis = int((worked_calendar_days / total_calendar_days) * dias_uteis)
+
+    # Subtract absences
+    dias_trabalhados = max(0, dias_uteis - absence_days)
+
+    return dias_trabalhados
+
+
+def calcular_vale_transporte(
+    viagens_por_dia: int,
+    tarifa_passagem: Decimal,
+    dias_trabalhados: int,
+) -> Decimal:
+    """
+    Calcula o valor do Vale Transporte baseado em dias efetivamente trabalhados.
+
+    Fórmula: VT = viagens_por_dia × tarifa × dias_trabalhados
+
+    Esta é a nova lógica dinâmica que substitui o valor fixo mensal.
+    O VT é automaticamente ajustado quando há faltas ou admissão mid-month.
+
+    Args:
+        viagens_por_dia: Número de viagens por dia (2, 4, ou 6)
+            - 2: Apenas ida OU volta (casos especiais)
+            - 4: Ida e volta, 2 transportes cada (padrão)
+            - 6: Casos especiais (integração, 3 transportes)
+        tarifa_passagem: Valor da passagem de ônibus (ex: R$ 4,60 em Belém)
+        dias_trabalhados: Dias que o colaborador efetivamente compareceu
+
+    Returns:
+        Valor total do VT a ser descontado
+
+    Raises:
+        ValueError: Se parâmetros inválidos
+
+    Exemplos:
+        >>> # Mês completo, 4 viagens/dia (ida e volta)
+        >>> calcular_vale_transporte(4, Decimal('4.60'), 22)
+        Decimal('404.80')  # 4 × 4.60 × 22
+
+        >>> # Com 1 falta
+        >>> calcular_vale_transporte(4, Decimal('4.60'), 21)
+        Decimal('386.40')  # 4 × 4.60 × 21
+
+        >>> # Admissão mid-month (11 dias)
+        >>> calcular_vale_transporte(4, Decimal('4.60'), 11)
+        Dec imal('202.40')  # 4 × 4.60 × 11
+    """
+    # Validations
+    if viagens_por_dia <= 0:
+        raise ValueError("viagens_por_dia must be a positive integer")
+
+    if tarifa_passagem <= 0:
+        raise ValueError("tarifa_passagem must be positive")
+
+    if dias_trabalhados < 0:
+        raise ValueError("dias_trabalhados cannot be negative")
+
+    # Calculate VT
+    vt_total = (
+        Decimal(viagens_por_dia) * tarifa_passagem * Decimal(dias_trabalhados)
+    ).quantize(Decimal("0.01"))
+
+    return vt_total
+
+
 def calcular_valor_hora(
     valor_contrato_mensal: Decimal, carga_horaria_mensal: int = CARGA_HORARIA_PADRAO
 ) -> Decimal:

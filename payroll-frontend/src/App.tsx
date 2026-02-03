@@ -12,6 +12,7 @@ import MainLayout from './layouts/MainLayout'
 import Dashboard from './pages/Dashboard'
 import Providers from './pages/Providers'
 import Payrolls from './pages/Payrolls'
+import Settings from './pages/Settings'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
@@ -111,6 +112,7 @@ function App() {
                         <Route index element={<Dashboard />} />
                         <Route path="admin/providers" element={<Providers />} />
                         <Route path="admin/payrolls" element={<Payrolls />} />
+                        <Route path="admin/settings" element={<Settings />} />
                       </Route>
 
                       {/* Provider Routes */}

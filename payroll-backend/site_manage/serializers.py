@@ -79,7 +79,15 @@ class ProviderLightSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Provider
-        fields = ["id", "name", "role", "monthly_value"]
+        fields = [
+            "id",
+            "name",
+            "role",
+            "monthly_value",
+            "vt_enabled",
+            "vt_fare",
+            "vt_trips_per_day",
+        ]
 
 
 # ==============================================================================
@@ -142,9 +150,11 @@ class PayrollSerializer(serializers.ModelSerializer):
             "holiday_hours",
             "night_hours",
             "late_minutes",
+            "absence_days",
             "absence_hours",
             # Descontos variáveis
             "manual_discounts",
+            "vt_value",
             "vt_discount",
             # Valores calculados - Proventos
             "overtime_amount",
@@ -180,6 +190,7 @@ class PayrollSerializer(serializers.ModelSerializer):
             "total_earnings",
             "late_discount",
             "absence_discount",
+            "vt_value",
             "total_discounts",
             "gross_value",
             "net_value",
@@ -295,12 +306,17 @@ class PayrollCreateSerializer(serializers.Serializer):
     late_minutes = serializers.IntegerField(
         default=0, required=False, help_text="Total de minutos de atraso no mês"
     )
+    absence_days = serializers.IntegerField(
+        default=0,
+        required=False,
+        help_text="Dias de falta no mês (usado para cálculo de VT e desconto)",
+    )
     absence_hours = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0,
         required=False,
-        help_text="Horas de falta",
+        help_text="Horas de falta (DEPRECATED: use absence_days)",
     )
     manual_discounts = serializers.DecimalField(
         max_digits=10,

@@ -168,12 +168,24 @@ class Provider(models.Model):
         verbose_name="Percentual de Adiantamento",
         help_text="Percentual do adiantamento quinzenal (ex: 40%)",
     )
-    vt_value = models.DecimalField(
-        max_digits=10,
+
+    # Vale Transporte (Transportation Voucher) - Dynamic Configuration
+    vt_enabled = models.BooleanField(
+        default=False,
+        verbose_name="Recebe Vale Transporte",
+        help_text="Se True, VT será calculado automaticamente com base nos dias trabalhados",
+    )
+    vt_fare = models.DecimalField(
+        max_digits=5,
         decimal_places=2,
-        default=Decimal("0.00"),
-        verbose_name="Valor Vale Transporte",
-        help_text="Valor fixo mensal do vale transporte",
+        default=Decimal("4.60"),
+        verbose_name="Tarifa da Passagem",
+        help_text="Valor da passagem de ônibus (ex: R$ 4,60 em Belém)",
+    )
+    vt_trips_per_day = models.IntegerField(
+        default=4,
+        verbose_name="Viagens por Dia",
+        help_text="Número de viagens de ônibus por dia (ex: 2, 4, 6, etc.)",
     )
 
     # Dados de Pagamento
@@ -375,17 +387,23 @@ class Payroll(models.Model):
         help_text="Horas com adicional noturno (20%)",
     )
 
-    # Descontos Variáveis
+    # Faltas e Descontos Variáveis
     late_minutes = models.IntegerField(
         default=0,
         verbose_name="Minutos de Atraso",
         help_text="Total de minutos de atraso no mês",
+    )
+    absence_days = models.IntegerField(
+        default=0,
+        verbose_name="Dias de Falta",
+        help_text="Número de dias de falta no mês (para cálculo de VT e desconto)",
     )
     absence_hours = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=Decimal("0.00"),
         verbose_name="Horas de Falta",
+        help_text="DEPRECATED: Use absence_days. Mantido para compatibilidade.",
     )
     manual_discounts = models.DecimalField(
         max_digits=10,
@@ -394,12 +412,22 @@ class Payroll(models.Model):
         verbose_name="Descontos Manuais",
         help_text="Outros descontos a serem aplicados",
     )
+
+    # Vale Transporte (calculated)
+    vt_value = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        editable=False,
+        verbose_name="Vale Transporte Calculado",
+        help_text="Calculado automaticamente: viagens × tarifa × dias trabalhados",
+    )
     vt_discount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=Decimal("0.00"),
-        verbose_name="Vale Transporte",
-        help_text="Valor mensal do VT",
+        verbose_name="Desconto Vale Transporte",
+        help_text="DEPRECATED: Use vt_value. Mantido para compatibilidade.",
     )
 
     # Valores Calculados - Proventos
@@ -525,6 +553,8 @@ class Payroll(models.Model):
         from domain.payroll_calculator import (
             calcular_folha_completa,
             calcular_salario_proporcional,
+            calcular_vale_transporte,
+            calcular_dias_trabalhados,
         )
 
         # Importar função de cálculo de dias
@@ -549,10 +579,32 @@ class Payroll(models.Model):
             self.worked_days = 0
             self.proportional_base_value = Decimal("0.00")
 
+        # NOVO: Calcular Vale Transporte dinâmico se habilitado
+        if self.provider.vt_enabled:
+            # Calcular dias efetivamente trabalhados (considera faltas + hired_date)
+            dias_efetivos = calcular_dias_trabalhados(
+                reference_month=self.reference_month,
+                absence_days=self.absence_days,
+                hired_date=self.hired_date,
+            )
+
+            # Calcular VT baseado em viagens × tarifa × dias trabalhados
+            self.vt_value = calcular_vale_transporte(
+                viagens_por_dia=self.provider.vt_trips_per_day,
+                tarifa_passagem=self.provider.vt_fare,
+                dias_trabalhados=dias_efetivos,
+            )
+        else:
+            # Provider não tem VT habilitado
+            self.vt_value = Decimal("0.00")
+
         # Calcular dias úteis e domingos/feriados do mês
         dias_uteis, domingos_feriados = calcular_dias_mes(self.reference_month)
 
         # Calcular todos os valores usando a função do domínio
+        # Usamos vt_discount (deprecated) OU vt_value para compatibilidade
+        vt_para_calculo = self.vt_value if self.vt_value > 0 else self.vt_discount
+
         calculated = calcular_folha_completa(
             valor_contrato_mensal=self.base_value,
             percentual_adiantamento=(
@@ -565,7 +617,7 @@ class Payroll(models.Model):
             horas_noturnas=self.night_hours,
             minutos_atraso=self.late_minutes,
             horas_falta=self.absence_hours,
-            vale_transporte=self.vt_discount,
+            vale_transporte=vt_para_calculo,
             descontos_manuais=self.manual_discounts,
             carga_horaria_mensal=(
                 self.provider.monthly_hours if self.provider_id else 220
