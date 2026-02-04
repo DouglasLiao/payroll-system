@@ -26,6 +26,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import type { Provider } from '../types'
 import { formatCurrency } from '../utils/formatters'
+import { getMonthCalendarInfo } from '../utils/calendarUtils'
 
 // Schema de validação
 const payrollSchema = z.object({
@@ -104,11 +105,23 @@ export const PayrollFormDialog = ({
 
   const overtimeValue = hourlyRate * 1.5
   const holidayValue = hourlyRate * 2
+  const nightValue = hourlyRate * 1.2 // 20% adicional noturno
   const totalOvertime = (watchedValues.overtime_hours_50 || 0) * overtimeValue
   const totalHoliday = (watchedValues.holiday_hours || 0) * holidayValue
-  const dsrPercentage = 16.67
-  const dsrValue = totalOvertime * (dsrPercentage / 100)
+  const totalNight = (watchedValues.night_hours || 0) * nightValue
+
+  // DSR = (Overtime + Holiday) / WorkDays × (Sundays + Holidays)
+  // Calcular baseado no mês de referência
+  const calendarInfo = watchedValues.reference_month
+    ? getMonthCalendarInfo(watchedValues.reference_month)
+    : { workDays: 25, restDays: 6 } // Fallback
+  const dsrValue =
+    ((totalOvertime + totalHoliday) / calendarInfo.workDays) *
+    calendarInfo.restDays
+
+  // Descontos
   const lateDiscount = ((watchedValues.late_minutes || 0) / 60) * hourlyRate
+  const absenceDiscount = (watchedValues.absence_hours || 0) * hourlyRate
 
   // Calculate VT automatically if provider has VT enabled
   const calculatedVT = selectedProvider?.vt_enabled
@@ -117,9 +130,12 @@ export const PayrollFormDialog = ({
       22 // Aproximado, o backend calculará exato
     : 0
 
-  const totalAdditionals = totalOvertime + totalHoliday + dsrValue
+  const totalAdditionals = totalOvertime + totalHoliday + totalNight + dsrValue
   const totalDiscounts =
-    lateDiscount + calculatedVT + (watchedValues.manual_discounts || 0)
+    lateDiscount +
+    absenceDiscount +
+    calculatedVT +
+    (watchedValues.manual_discounts || 0)
   const advanceValue = selectedProvider
     ? Number(selectedProvider.monthly_value) *
       (Number(selectedProvider.advance_percentage) / 100)
@@ -539,8 +555,8 @@ export const PayrollFormDialog = ({
                     </Grid>
                     <Grid size={{ xs: 4 }}>
                       <TextField
-                        label="Percentual DSR"
-                        value={`${dsrPercentage}%`}
+                        label="Fórmula DSR"
+                        value={`(HE+Fer)/${calendarInfo.workDays}×${calendarInfo.restDays}`}
                         fullWidth
                         disabled
                         sx={{ bgcolor: 'action.hover' }}
@@ -548,8 +564,57 @@ export const PayrollFormDialog = ({
                     </Grid>
                     <Grid size={{ xs: 8 }}>
                       <TextField
-                        label="Valor DSR (base: horas extras)"
+                        label="Valor DSR (horas extras + feriados)"
                         value={formatCurrency(dsrValue)}
+                        fullWidth
+                        disabled
+                        sx={{
+                          bgcolor: 'success.100',
+                          '& .MuiInputBase-input.Mui-disabled': {
+                            color: 'success.dark',
+                            fontWeight: 600,
+                          },
+                        }}
+                      />
+                    </Grid>
+                    {/* Horas Noturnas */}
+                    <Grid size={{ xs: 12 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ mt: 1, mb: 1, fontWeight: 600 }}
+                      >
+                        Horas Noturnas (20% adicional)
+                      </Typography>
+                    </Grid>
+                    <Grid size={{ xs: 4 }}>
+                      <Controller
+                        name="night_hours"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Horas Noturnas"
+                            fullWidth
+                            value={field.value || ''}
+                            onChange={handleNumericChange(field)}
+                            placeholder="0"
+                          />
+                        )}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 4 }}>
+                      <TextField
+                        label="Valor Hora Noturna"
+                        value={formatCurrency(nightValue)}
+                        fullWidth
+                        disabled
+                        sx={{ bgcolor: 'action.hover' }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 4 }}>
+                      <TextField
+                        label="Total Noturno"
+                        value={formatCurrency(totalNight)}
                         fullWidth
                         disabled
                         sx={{
@@ -631,7 +696,7 @@ export const PayrollFormDialog = ({
                         Faltas
                       </Typography>
                     </Grid>
-                    <Grid size={{ xs: 6 }}>
+                    <Grid size={{ xs: 4 }}>
                       <Controller
                         name="absence_days"
                         control={control}
@@ -648,7 +713,7 @@ export const PayrollFormDialog = ({
                         )}
                       />
                     </Grid>
-                    <Grid size={{ xs: 6 }}>
+                    <Grid size={{ xs: 4 }}>
                       <Controller
                         name="absence_hours"
                         control={control}
@@ -662,6 +727,21 @@ export const PayrollFormDialog = ({
                             placeholder="0"
                           />
                         )}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 4 }}>
+                      <TextField
+                        label="Desconto por Faltas"
+                        value={formatCurrency(absenceDiscount)}
+                        fullWidth
+                        disabled
+                        sx={{
+                          bgcolor: 'error.100',
+                          '& .MuiInputBase-input.Mui-disabled': {
+                            color: 'error.dark',
+                            fontWeight: 600,
+                          },
+                        }}
                       />
                     </Grid>
                   </Grid>
