@@ -15,19 +15,9 @@ import {
   RecentPayrollsCard,
 } from '../components/dashboard'
 
-// const PERIOD_OPTIONS: Array<{
-//   value: DashboardFilters['period']
-//   label: string
-// }> = [
-//   { value: '30d', label: '1 Mês' },
-//   { value: '90d', label: '3 Meses' },
-//   { value: '1y', label: '1 Ano' },
-//   { value: 'all', label: 'Todo o Período' },
-// ]
-
 const Dashboard = () => {
   const { stats, monthlyData, trends, recentActivity, isLoading } =
-    useDashboardData({ period: '30d' })
+    useDashboardData({ period: '1y' })
 
   return (
     <Box sx={{ maxWidth: '100%', width: '100%', mt: 4 }}>
@@ -43,22 +33,6 @@ const Dashboard = () => {
         }}
       >
         <Typography variant="h4">Dashboard</Typography>
-
-        {/* <ToggleButtonGroup
-          value={period}
-          exclusive
-          onChange={(_, newPeriod) => {
-            if (newPeriod !== null) setPeriod(newPeriod)
-          }}
-          size="small"
-          aria-label="período do dashboard"
-        >
-          {PERIOD_OPTIONS.map((option) => (
-            <ToggleButton key={option.value} value={option.value as string}>
-              {option.label}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup> */}
       </Box>
 
       <Grid container spacing={3}>
