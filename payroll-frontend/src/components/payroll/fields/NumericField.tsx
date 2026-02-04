@@ -1,11 +1,12 @@
 import React from 'react'
 import { Controller, type Control } from 'react-hook-form'
 import { TextField, type SxProps } from '@mui/material'
+import type { PayrollFormInputs } from '../sections/ContractDataSection'
 
 interface NumericFieldProps {
-  name: string
+  name: keyof PayrollFormInputs
   label: string
-  control: Control<any>
+  control: Control<PayrollFormInputs>
   placeholder?: string
   helperText?: string
   disabled?: boolean

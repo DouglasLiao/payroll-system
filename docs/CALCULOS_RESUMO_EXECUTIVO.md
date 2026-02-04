@@ -70,9 +70,9 @@ Exemplo Janeiro/2026:
 ├─ Feriados:            R$ 160,00
 ├─ Total:               R$ 310,00
 ├─ Dias Úteis:          25
-├─ Domingos+Feriados:   6
+├─ Domingos+Feriados:   5
 │
-└─ DSR = 310 / 25 × 6 = R$ 74,40
+└─ DSR = 310 / 25 × 5 = R$ 73,81
 ```
 
 > **💡 Diferença:** DSR varia conforme o calendário mensal automaticamente
@@ -96,6 +96,7 @@ Salário Base:          R$ 1.320,00
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TOTAL PROVENTOS:       R$ 2.034,40
 ```
+
 // 1944,40
 
 ---
@@ -124,14 +125,10 @@ Desconto = Horas × Valor/Hora
          = R$ 80,00
 ```
 
-
-Novo desconto das faltas = (Salario Base) / (numero total de dias do mês, é sempre 30)  * (numero de faltas)
-1 dia /30 = 73,33
+Novo desconto das faltas = (Salario Base) / (sempre 30) \* (numero de faltas)
+eg: 1 dia /30 = 73,33
 
 2.200,00/30 = 73,33
-
-
-
 
 ### 4. Vale Transporte
 
@@ -142,14 +139,14 @@ Valor fixo mensal:       R$ 202,40
 Calculados no dia do mês trabalhados no mês
 4,60 em Belem
 
-2 onibus * passagem * dias que ele foi para o trabalho.
+2 onibus _ passagem _ dias que ele foi para o trabalho.
 
 184,00
 
-----
+---
 
-4 onibus (ida e volta) * dias que ele foi para o trabalho
-368,00 
+4 onibus (ida e volta) \* dias que ele foi para o trabalho
+368,00
 
 20 dias.
 
@@ -159,7 +156,7 @@ ex.
 ele foi 20 dias para o escritorio. (na teoria)
 mas ele faltas 1 dia
 
-então é 19* a passagem
+então é 19\* a passagem
 
 EnTão é descontado no final do mês.
 
@@ -175,9 +172,7 @@ TOTAL DESCONTOS:       R$ 87,53
 
 ```
 
-
-<!-- + Vale Transporte:     R$   19*4,60*2 = 174,80 -->
----
+## <!-- + Vale Transporte:     R$   19*4,60*2 = 174,80 -->
 
 ## 💵 VALOR LÍQUIDO FINAL
 

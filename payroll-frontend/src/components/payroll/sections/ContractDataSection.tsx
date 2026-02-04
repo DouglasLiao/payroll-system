@@ -8,7 +8,8 @@ import { Controller, type Control, type FieldErrors } from 'react-hook-form'
 import type { Provider } from '../../../types'
 import { formatCurrency } from '../../../utils/formatters'
 
-interface PayrollFormInputs {
+export interface PayrollFormInputs {
+  name?: string
   provider_id: number
   reference_month: string
   hired_date?: string | null
@@ -16,7 +17,6 @@ interface PayrollFormInputs {
   holiday_hours?: number
   night_hours?: number
   late_minutes?: number
-  absence_hours?: number
   absence_days?: number
   manual_discounts?: number
   notes?: string
@@ -96,7 +96,7 @@ export const ContractDataSection: React.FC<ContractDataSectionProps> = ({
       </Grid>
 
       <Grid size={{ xs: 6 }}>
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
           <Controller
             name="reference_month"
             control={control}
@@ -127,13 +127,14 @@ export const ContractDataSection: React.FC<ContractDataSectionProps> = ({
       </Grid>
 
       <Grid size={{ xs: 6 }}>
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
           <Controller
             name="hired_date"
             control={control}
             render={({ field }) => (
               <DatePicker
                 label="Data de Admissão/Início (Opcional)"
+                format="DD/MM/YYYY"
                 value={selectedDate}
                 onChange={(newValue) => {
                   onDateChange(newValue)

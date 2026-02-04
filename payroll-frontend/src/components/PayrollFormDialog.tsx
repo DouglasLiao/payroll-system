@@ -41,7 +41,6 @@ const payrollSchema = z.object({
   night_hours: z.number().min(0).optional(),
   late_minutes: z.number().min(0).optional(),
   absence_days: z.number().min(0).optional(),
-  absence_hours: z.number().min(0).optional(),
   manual_discounts: z.number().min(0).optional(),
   notes: z.string().optional(),
 })
@@ -95,7 +94,6 @@ export const PayrollFormDialog = ({
       night_hours: 0,
       late_minutes: 0,
       absence_days: 0,
-      absence_hours: 0,
       manual_discounts: 0,
       notes: '',
     },

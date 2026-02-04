@@ -1,6 +1,11 @@
 import React from 'react'
 import { Grid, Typography, TextField } from '@mui/material'
-import type { Control } from 'react-hook-form'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { TimeField } from '@mui/x-date-pickers/TimeField'
+import dayjs, { type Dayjs } from 'dayjs'
+import type { Control, Controller as ControllerType } from 'react-hook-form'
+import { Controller } from 'react-hook-form'
 import type { Provider } from '../../../types'
 import { formatCurrency } from '../../../utils/formatters'
 import { NumericField } from '../fields/NumericField'
@@ -13,7 +18,6 @@ interface PayrollFormInputs {
   holiday_hours?: number
   night_hours?: number
   late_minutes?: number
-  absence_hours?: number
   absence_days?: number
   manual_discounts?: number
   notes?: string
@@ -55,11 +59,38 @@ export const DiscountsSection: React.FC<DiscountsSectionProps> = ({
         </Typography>
       </Grid>
       <Grid size={{ xs: 6 }}>
-        <NumericField
-          name="late_minutes"
-          label="Minutos de Atraso"
-          control={control}
-        />
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
+          <Controller
+            name="late_minutes"
+            control={control}
+            render={({ field }) => (
+              <TimeField
+                label="Tempo de Atraso"
+                format="HH:mm"
+                value={(() => {
+                  // Convert minutes to dayjs time object for display
+                  const totalMinutes = field.value || 0
+                  const hours = Math.floor(totalMinutes / 60)
+                  const minutes = totalMinutes % 60
+                  return dayjs().hour(hours).minute(minutes).second(0)
+                })()}
+                onChange={(newValue: Dayjs | null) => {
+                  // Convert HH:mm back to total minutes
+                  const totalMinutes = newValue
+                    ? newValue.hour() * 60 + newValue.minute()
+                    : 0
+                  field.onChange(totalMinutes)
+                }}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    helperText: 'Formato: HH:mm (ex: 01:30 para 1h30min)',
+                  },
+                }}
+              />
+            )}
+          />
+        </LocalizationProvider>
       </Grid>
       <Grid size={{ xs: 6 }}>
         <TextField
@@ -85,10 +116,10 @@ export const DiscountsSection: React.FC<DiscountsSectionProps> = ({
       </Grid>
       <Grid size={{ xs: 6 }}>
         <NumericField
-          name="absence_hours"
-          label="Horas de Falta"
+          name="absence_days"
+          label="Dias de Falta"
           control={control}
-          helperText="Total de horas faltadas no mês"
+          helperText="Número de dias de falta no mês"
         />
       </Grid>
       <Grid size={{ xs: 6 }}>
@@ -112,7 +143,7 @@ export const DiscountsSection: React.FC<DiscountsSectionProps> = ({
         <>
           <Grid size={{ xs: 12 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              Vale Transporte (Calculado Automaticamente)
+              Vale Transporte (Pagamento Separado)
             </Typography>
           </Grid>
           <Grid size={{ xs: 4 }}>
@@ -144,7 +175,7 @@ export const DiscountsSection: React.FC<DiscountsSectionProps> = ({
               value={formatCurrency(calculations.calculatedVT)}
               fullWidth
               disabled
-              helperText={`Ajustado automaticamente (${Math.max(0, calculations.workDaysForVT)} dias trabalhados)`}
+              helperText={`Pagamento separado da folha (${Math.max(0, calculations.workDaysForVT)} dias trabalhados)`}
               sx={{
                 bgcolor: 'info.50',
                 '& .MuiInputBase-input.Mui-disabled': {
@@ -152,25 +183,6 @@ export const DiscountsSection: React.FC<DiscountsSectionProps> = ({
                   fontWeight: 600,
                 },
               }}
-            />
-          </Grid>
-        </>
-      )}
-
-      {/* Dias de Falta (quando VT desabilitado) */}
-      {!selectedProvider.vt_enabled && (
-        <>
-          <Grid size={{ xs: 12 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              Dias de Falta
-            </Typography>
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <NumericField
-              name="absence_days"
-              label="Dias de Falta"
-              control={control}
-              helperText="Número de dias de falta no mês"
             />
           </Grid>
         </>

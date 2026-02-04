@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box,
   Typography,
@@ -32,7 +32,7 @@ import {
   deleteProvider,
   updateProvider,
 } from '../services/api'
-import type { Provider } from '../types'
+import type { Provider, PaginatedResponse } from '../types'
 import {
   validateCPF,
   validateCNPJ,
@@ -126,15 +126,41 @@ const Providers = () => {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<
+    'PIX' | 'TED' | 'TRANSFER'
+  >('PIX')
+  const [vtEnabled, setVtEnabled] = useState(false)
   const queryClient = useQueryClient()
   const { enqueueSnackbar } = useSnackbar()
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   const isEditMode = editingProvider !== null
 
-  const { data: providersData, isLoading } = useQuery({
-    queryKey: ['providers', page, rowsPerPage],
-    queryFn: () => getProviders({ page: page + 1, page_size: rowsPerPage }),
+  // First, fetch to get the count
+  const { data: initialData } = useQuery<PaginatedResponse<Provider>>({
+    queryKey: ['providers', 'initial'],
+    queryFn: () => getProviders({ page: 1, page_size: 10 }),
   })
+
+  // Then fetch all providers using the count from initial fetch
+  const { data: providersData, isLoading } = useQuery<
+    PaginatedResponse<Provider>
+  >({
+    queryKey: ['providers', 'all'],
+    queryFn: () => getProviders({ page: 1, page_size: initialData!.count }),
+    enabled: !!initialData?.count, // Only run when we have the count
+  })
+
+  console.log(providersData, 'aqui')
 
   const createMutation = useMutation({
     mutationFn: createProvider,
@@ -171,7 +197,6 @@ const Providers = () => {
   const {
     control,
     handleSubmit,
-    watch,
     reset,
     formState: { errors },
   } = useForm<ProviderFormInputs>({
@@ -194,8 +219,6 @@ const Providers = () => {
     },
   })
 
-  const paymentMethod = watch('payment_method')
-
   const onSubmit = (data: ProviderFormInputs) => {
     if (isEditMode) {
       updateMutation.mutate({
@@ -215,6 +238,8 @@ const Providers = () => {
 
   const handleEdit = (provider: Provider) => {
     setEditingProvider(provider)
+    setPaymentMethod(provider.payment_method)
+    setVtEnabled(provider.vt_enabled || false)
     reset({
       name: provider.name,
       role: provider.role,
@@ -236,6 +261,8 @@ const Providers = () => {
   const handleCloseDialog = () => {
     setOpen(false)
     setEditingProvider(null)
+    setPaymentMethod('PIX')
+    setVtEnabled(false)
     reset()
   }
 
@@ -254,14 +281,20 @@ const Providers = () => {
     setPage(0)
   }
 
-  // Filter providers based on search term
+  // Filter providers based on debounced search term
   const filteredProviders = providersData?.results?.filter((provider) => {
-    const searchLower = searchTerm.toLowerCase()
+    const searchLower = debouncedSearchTerm.toLowerCase()
     return (
       provider.name.toLowerCase().includes(searchLower) ||
       provider.role.toLowerCase().includes(searchLower)
     )
   })
+
+  // Apply client-side pagination after filtering
+  const paginatedProviders = filteredProviders?.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  )
 
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>
@@ -274,13 +307,13 @@ const Providers = () => {
           gap: 2,
         }}
       >
-        <Typography variant="h4">Providers</Typography>
+        <Typography variant="h4">Colaboradores</Typography>
         <Button
           variant="contained"
           startIcon={<Add />}
           onClick={handleOpenCreateDialog}
         >
-          Add Provider
+          Adicionar Colaborador
         </Button>
       </Box>
 
@@ -298,7 +331,7 @@ const Providers = () => {
 
       <Card sx={{ p: 2 }}>
         <GenericTable
-          data={filteredProviders}
+          data={paginatedProviders}
           loading={isLoading}
           keyExtractor={(p) => p.id}
           totalCount={filteredProviders?.length || 0}
@@ -443,6 +476,12 @@ const Providers = () => {
                       select
                       label="Payment Method"
                       fullWidth
+                      onChange={(e) => {
+                        field.onChange(e)
+                        setPaymentMethod(
+                          e.target.value as 'PIX' | 'TED' | 'TRANSFER'
+                        )
+                      }}
                     >
                       <MenuItem value="PIX">PIX</MenuItem>
                       <MenuItem value="TED">TED</MenuItem>
@@ -530,11 +569,6 @@ const Providers = () => {
 
               {/* VT Configuration */}
               <Grid size={{ xs: 12 }}>
-                <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
-                  🚌 Vale Transporte
-                </Typography>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
                 <Controller
                   name="vt_enabled"
                   control={control}
@@ -543,7 +577,10 @@ const Providers = () => {
                       <input
                         type="checkbox"
                         checked={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
+                        onChange={(e) => {
+                          field.onChange(e.target.checked)
+                          setVtEnabled(e.target.checked)
+                        }}
                       />
                       <Typography sx={{ ml: 1 }}>
                         Recebe Vale Transporte
@@ -552,7 +589,7 @@ const Providers = () => {
                   )}
                 />
               </Grid>
-              {watch('vt_enabled') && (
+              {vtEnabled && (
                 <>
                   <Grid size={{ xs: 6 }}>
                     <Controller

@@ -5,7 +5,11 @@ import { SnackbarProvider } from 'notistack'
 import { ThemeContextProvider } from './contexts/ThemeContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { getTheme } from './theme'
+import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
+
+// Configure dayjs to use Brazilian Portuguese locale globally
+dayjs.locale('pt-br')
 
 // Layouts & Pages
 import MainLayout from './layouts/MainLayout'

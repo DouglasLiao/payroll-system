@@ -13,7 +13,6 @@ interface PayrollFormInputs {
   holiday_hours?: number
   night_hours?: number
   late_minutes?: number
-  absence_hours?: number
   absence_days?: number
   manual_discounts?: number
   notes?: string

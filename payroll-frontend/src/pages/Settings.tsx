@@ -6,7 +6,6 @@ import {
   Card,
   Container,
   TextField,
-  Grid,
   Alert,
   Paper,
   Dialog,
@@ -20,6 +19,7 @@ import {
   Info as InfoIcon,
   Warning as WarningIcon,
 } from '@mui/icons-material'
+import Grid from '@mui/material/Grid'
 import { useSnackbar } from 'notistack'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getProviders, updateProvider } from '../services/api'
@@ -104,7 +104,7 @@ const Settings = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" sx={{ mb: 3 }}>
-        ⚙️ Configurações
+        Configurações
       </Typography>
 
       {/* VT Configuration Section */}
@@ -114,7 +114,7 @@ const Settings = () => {
             variant="h6"
             sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
           >
-            🚌 Vale Transporte
+            Vale Transporte
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Configure a tarifa do vale transporte para todos os colaboradores
@@ -130,7 +130,7 @@ const Settings = () => {
         </Alert>
 
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               label="Tarifa da Passagem (R$)"
               value={vtFare}
@@ -143,7 +143,7 @@ const Settings = () => {
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Paper
               sx={{
                 p: 2,
@@ -226,9 +226,9 @@ const Settings = () => {
       </Dialog>
 
       {/* Future Features Section */}
-      <Card sx={{ p: 3, bgcolor: 'grey.50' }}>
+      <Card sx={{ p: 3 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
-          🔮 Recursos Futuros
+          Recursos Futuros
         </Typography>
         <Alert severity="info" sx={{ mb: 2 }}>
           <Typography variant="body2">

@@ -153,6 +153,27 @@ export default function LoginPage() {
                   },
                   '& .MuiInputBase-input': {
                     color: '#0F172A',
+                    // Forçar background branco no autocomplete do navegador
+                    '&:-webkit-autofill': {
+                      WebkitBoxShadow:
+                        '0 0 0 100px rgba(255, 255, 255, 0.9) inset',
+                      WebkitTextFillColor: '#0F172A',
+                    },
+                    '&:-webkit-autofill:hover': {
+                      WebkitBoxShadow:
+                        '0 0 0 100px rgba(255, 255, 255, 0.9) inset',
+                      WebkitTextFillColor: '#0F172A',
+                    },
+                    '&:-webkit-autofill:focus': {
+                      WebkitBoxShadow:
+                        '0 0 0 100px rgba(255, 255, 255, 0.9) inset',
+                      WebkitTextFillColor: '#0F172A',
+                    },
+                    '&:-webkit-autofill:active': {
+                      WebkitBoxShadow:
+                        '0 0 0 100px rgba(255, 255, 255, 0.9) inset',
+                      WebkitTextFillColor: '#0F172A',
+                    },
                   },
                 }}
                 InputProps={{

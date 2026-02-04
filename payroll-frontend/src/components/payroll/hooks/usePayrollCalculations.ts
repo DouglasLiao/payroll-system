@@ -8,7 +8,6 @@ interface PayrollFormInputs {
   holiday_hours?: number
   night_hours?: number
   late_minutes?: number
-  absence_hours?: number
   absence_days?: number
   manual_discounts?: number
   notes?: string
@@ -41,7 +40,12 @@ export const usePayrollCalculations = (
     calendarInfo.restDays
 
   const lateDiscount = ((watchedValues.late_minutes || 0) / 60) * hourlyRate
-  const absenceDiscount = (watchedValues.absence_hours || 0) * hourlyRate
+
+  // New formula: (Monthly Salary / 30) × absence_days
+  const absenceDiscount = selectedProvider
+    ? (Number(selectedProvider.monthly_value) / 30) *
+      (watchedValues.absence_days || 0)
+    : 0
 
   const workDaysForVT =
     calendarInfo.workDays - (watchedValues.absence_days || 0)
@@ -52,11 +56,10 @@ export const usePayrollCalculations = (
     : 0
 
   const totalAdditionals = totalOvertime + totalHoliday + totalNight + dsrValue
+
+  // VT is NOT included in totalDiscounts because it's a separate payment
   const totalDiscounts =
-    lateDiscount +
-    absenceDiscount +
-    calculatedVT +
-    (watchedValues.manual_discounts || 0)
+    lateDiscount + absenceDiscount + (watchedValues.manual_discounts || 0)
 
   const advanceValue = selectedProvider
     ? Number(selectedProvider.monthly_value) *

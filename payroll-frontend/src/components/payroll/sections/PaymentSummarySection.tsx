@@ -8,6 +8,7 @@ interface CalculationsResult {
   totalDiscounts: number
   advanceValue: number
   finalValue: number
+  calculatedVT: number
 }
 
 interface PaymentSummarySectionProps {
@@ -90,6 +91,43 @@ export const PaymentSummarySection: React.FC<PaymentSummarySectionProps> = ({
           </Typography>
         </Box>
       </Grid>
+
+      {/* Separate VT Payment Section */}
+      {selectedProvider?.vt_enabled && calculations.calculatedVT > 0 && (
+        <>
+          <Grid size={{ xs: 12 }}>
+            <Divider sx={{ my: 2, borderColor: 'primary.light' }} />
+          </Grid>
+          <Grid size={{ xs: 12 }}>
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: 'info.main',
+                borderRadius: 2,
+                color: 'info.contrastText',
+              }}
+            >
+              <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                💳 Vale Transporte (Pagamento Separado)
+              </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <Typography variant="body2">
+                  Valor a ser pago separadamente:
+                </Typography>
+                <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                  {formatCurrency(calculations.calculatedVT)}
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+        </>
+      )}
     </Grid>
   )
 }
