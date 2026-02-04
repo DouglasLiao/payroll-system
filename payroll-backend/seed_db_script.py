@@ -297,7 +297,6 @@ def main():
                 reference_month=ref_month,
                 base_value=provider.monthly_value,
                 overtime_hours_50=overtime_50,
-                overtime_hours_100=overtime_100,
                 holiday_hours=holiday_hours,
                 night_hours=night_hours,
                 late_minutes=late_minutes,
