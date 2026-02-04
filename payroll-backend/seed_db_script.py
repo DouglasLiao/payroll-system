@@ -98,6 +98,7 @@ def main():
         "Gabriel",
         "Helena",
         "Igor",
+        "Joao",
         "Julia",
         "Lucas",
         "Mariana",
@@ -109,6 +110,8 @@ def main():
         "Thiago",
         "Vitoria",
         "Wagner",
+        "Alberto",
+        "Amanda",
     ]
     last_names = [
         "Silva",
@@ -124,16 +127,42 @@ def main():
         "Pereira",
         "Barbosa",
         "Lima",
+        "Carneiro",
+        "Freitas",
         "Araujo",
         "Ribeiro",
     ]
     roles = [
-        "Developer",
-        "Designer",
-        "Manager",
-        "QA Engineer",
-        "DevOps",
-        "Product Owner",
+        "Servente",
+        "Dentista",
+        "Pedreiro",
+        "Eletricista",
+        "Encanador",
+        "Pintor",
+        "Carpinteiro",
+        "Pedreiro",
+        "Padeiro",
+        "Cozinheiro",
+        "Garçom",
+        "Barman",
+        "Atendente",
+        "Caixa",
+        "Repositor",
+        "Empacotador",
+        "Açougueiro",
+        "Peixeiro",
+        "Hortifruti",
+        "Padaria",
+        "Confeitaria",
+        "Lanchonete",
+        "Restaurante",
+        "Bar",
+        "Cafeteria",
+        "Sorveteria",
+        "Churrascaria",
+        "Pizzaria",
+        "Hamburgueria",
+        "Temakeria",
     ]
 
     for i in range(50):
@@ -174,9 +203,46 @@ def main():
         for month_date in date_range(start_date, end_date):
             ref_month = month_date.strftime("%m/%Y")
 
-            # Random variations
-            overtime = (
-                Decimal(random.randint(0, 10)) if random.random() > 0.7 else Decimal(0)
+            # Random variations - creating more realistic scenarios
+            # 30% chance of having some overtime at 50%
+            overtime_50 = (
+                Decimal(random.randint(1, 20)) if random.random() > 0.7 else Decimal(0)
+            )
+
+            # 15% chance of having overtime at 100% (usually less than 50%)
+            overtime_100 = (
+                Decimal(random.randint(1, 10)) if random.random() > 0.85 else Decimal(0)
+            )
+
+            # 10% chance of working on holidays
+            holiday_hours = (
+                Decimal(random.randint(4, 12)) if random.random() > 0.9 else Decimal(0)
+            )
+
+            # 20% chance of night shift hours
+            night_hours = (
+                Decimal(random.randint(8, 40)) if random.random() > 0.8 else Decimal(0)
+            )
+
+            # 25% chance of being late (in minutes)
+            late_minutes = random.randint(5, 120) if random.random() > 0.75 else 0
+
+            # 15% chance of absences
+            has_absence = random.random() > 0.85
+            if has_absence:
+                # Random between 0.5 to 3 days absent
+                absence_days = Decimal(random.choice([0.5, 1, 1.5, 2, 2.5, 3]))
+                # Calculate absence hours based on 8 hours per day
+                absence_hours = absence_days * Decimal(8)
+            else:
+                absence_days = Decimal(0)
+                absence_hours = Decimal(0)
+
+            # 10% chance of manual discounts (penalties, loan deductions, etc)
+            manual_discounts = (
+                Decimal(random.randint(50, 500))
+                if random.random() > 0.9
+                else Decimal(0)
             )
 
             # Determine status with distribution:
@@ -230,7 +296,14 @@ def main():
                 provider=provider,
                 reference_month=ref_month,
                 base_value=provider.monthly_value,
-                overtime_hours_50=overtime,
+                overtime_hours_50=overtime_50,
+                overtime_hours_100=overtime_100,
+                holiday_hours=holiday_hours,
+                night_hours=night_hours,
+                late_minutes=late_minutes,
+                absence_hours=absence_hours,
+                absence_days=absence_days,
+                manual_discounts=manual_discounts,
                 **payroll_kwargs,
             )
             total_payrolls += 1
