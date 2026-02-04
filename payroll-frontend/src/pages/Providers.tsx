@@ -321,11 +321,10 @@ const Providers = () => {
             },
             {
               id: 'vt',
-              label: 'Vale Transporte/dia ',
+              label: 'Número de vales por dia',
               render: (p) => {
                 if (!p.vt_enabled) return '-'
-                const dailyVT = p.vt_trips_per_day * parseFloat(p.vt_fare)
-                return `${p.vt_trips_per_day}× R$ ${p.vt_fare} = R$ ${dailyVT.toFixed(2)}`
+                return `${p.vt_trips_per_day}`
               },
             },
             {

@@ -13,6 +13,8 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Autocomplete,
+  TextField,
 } from '@mui/material'
 import type { SelectChangeEvent } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
@@ -92,11 +94,10 @@ export const PayrollFiltersComponent = ({
     }
   }
 
-  const handleProviderChange = (event: SelectChangeEvent<number | string>) => {
-    const value = event.target.value
+  const handleProviderChange = (newValue: Provider | null) => {
     setLocalFilters({
       ...localFilters,
-      provider: value === '' ? undefined : Number(value),
+      provider: newValue?.id || undefined,
     })
   }
 
@@ -260,28 +261,36 @@ export const PayrollFiltersComponent = ({
             </LocalizationProvider>
 
             {/* Prestador */}
-            <FormControl fullWidth size="small">
-              <InputLabel>Prestador</InputLabel>
-              <Select
-                value={localFilters.provider || ''}
-                label="Prestador"
-                onChange={handleProviderChange}
-                startAdornment={
-                  <InputAdornment position="start">
-                    <Search fontSize="small" color="action" />
-                  </InputAdornment>
-                }
-              >
-                <MenuItem value="">
-                  <em>Todos os Prestadores</em>
-                </MenuItem>
-                {providers.map((provider) => (
-                  <MenuItem key={provider.id} value={provider.id}>
-                    {provider.name} - {provider.role}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Autocomplete
+              options={providers || []}
+              getOptionLabel={(option) => `${option.name} - ${option.role}`}
+              value={
+                providers?.find((p) => p.id === localFilters.provider) || null
+              }
+              onChange={(_, newValue) => handleProviderChange(newValue)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Prestador"
+                  size="small"
+                  placeholder="Buscar prestador..."
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <>
+                        <InputAdornment position="start">
+                          <Search fontSize="small" color="action" />
+                        </InputAdornment>
+                        {params.InputProps.startAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
+              noOptionsText="Nenhum prestador encontrado"
+              loadingText="Carregando..."
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+            />
 
             {/* Apply Filters Button */}
             <Box

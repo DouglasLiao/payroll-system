@@ -96,7 +96,6 @@ export const PayrollDetailDialog = ({
                     '& > div': {
                       display: 'flex',
                       justifyContent: 'space-between',
-                      mb: 1,
                     },
                   }}
                 >
@@ -147,14 +146,13 @@ export const PayrollDetailDialog = ({
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom color="error.main">
-                  📉 Descontos
+                  Descontos
                 </Typography>
                 <Box
                   sx={{
                     '& > div': {
                       display: 'flex',
                       justifyContent: 'space-between',
-                      mb: 1,
                     },
                   }}
                 >
