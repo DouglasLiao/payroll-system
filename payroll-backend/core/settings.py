@@ -292,3 +292,15 @@ SIMPLE_JWT = {
 
 # Configuração de timeout de inatividade (padrão: 300 segundos = 5 minutos)
 SESSION_INACTIVITY_TIMEOUT = 300  # segundos
+
+# Email Configuration (MailHog)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv("EMAIL_HOST", "mailhog")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "1025"))
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = False
+DEFAULT_FROM_EMAIL = "noreply@payroll-system.com"
+
+# Microservice Configuration
+EMAIL_SERVICE_URL = os.getenv("EMAIL_SERVICE_URL", "http://localhost:8001")
+EMAIL_SERVICE_API_KEY = os.getenv("EMAIL_SERVICE_API_KEY", "")

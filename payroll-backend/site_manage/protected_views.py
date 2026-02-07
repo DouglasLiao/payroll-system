@@ -20,6 +20,7 @@ from rest_framework.filters import OrderingFilter
 from .models import Provider, Payroll
 from .serializers import ProviderSerializer, PayrollSerializer, PayrollDetailSerializer
 from .permissions import IsCustomerAdminOrReadOnly, customer_admin_only
+from services.email_service import EmailService
 
 
 class ProtectedProviderViewSet(viewsets.ModelViewSet):
@@ -186,6 +187,134 @@ class ProtectedPayrollViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {"error": f"Erro ao gerar arquivo: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=False, methods=["get"], url_path="monthly-report")
+    def monthly_report(self, request):
+        """
+        Gera um relatório Excel consolidado para um mês específico.
+
+        GET /payrolls/monthly-report/?reference_month=MM/YYYY
+        """
+        from services.report_service import ReportService
+        from django.http import HttpResponse
+
+        reference_month = request.query_params.get("reference_month")
+
+        if not reference_month:
+            return Response(
+                {"error": "Parâmetro reference_month é obrigatório (formato MM/YYYY)"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # Validar permissão (Apenas Customer Admin)
+            if request.user.role != "CUSTOMER_ADMIN":
+                return Response(
+                    {"error": "Apenas Customer Admin pode gerar relatórios mensais."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            # Service
+            service = ReportService()
+
+            # Gerar arquivo
+            # Passamos o company_id do usuário logado
+            file_content = service.generate_monthly_summary(
+                company_id=request.user.company.id, reference_month=reference_month
+            )
+
+            content_str = file_content.getvalue().decode("utf-8-sig")
+            filename = f"relatorio_mensal_{reference_month.replace('/', '-')}.csv"
+
+            # Resposta
+            response = HttpResponse(
+                file_content.getvalue(),
+                content_type="text/csv; charset=utf-8",
+            )
+            response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+            return response
+
+        except Exception as e:
+            return Response(
+                {"error": f"Erro ao gerar relatório: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=False, methods=["post"], url_path="email-report")
+    def email_report(self, request):
+        """
+        Gera e envia por e-mail um relatório mensal.
+
+        POST /payrolls/email-report/
+        Body: { "reference_month": "MM/YYYY", "email": "optional@email.com" }
+        """
+        from services.report_service import ReportService
+        from services.email_service import EmailService
+
+        reference_month = request.data.get("reference_month")
+        email_address = request.data.get("email")
+
+        if not reference_month:
+            return Response(
+                {"error": "Parâmetro reference_month é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Se email não fornecido, usa o do usuário logado
+        if not email_address:
+            email_address = request.user.email
+
+        if not email_address:
+            return Response(
+                {
+                    "error": "E-mail não fornecido e usuário não possui e-mail cadastrado."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # Validar permissão (Apenas Customer Admin)
+            if request.user.role != "CUSTOMER_ADMIN":
+                return Response(
+                    {"error": "Apenas Customer Admin pode enviar relatórios."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            # Gerar relatório
+            report_service = ReportService()
+            file_content = report_service.generate_monthly_summary(
+                company_id=request.user.company.id, reference_month=reference_month
+            )
+
+            filename = f"relatorio_mensal_{reference_month.replace('/', '-')}.csv"
+
+            # Enviar e-mail
+            email_service = EmailService()
+            success = email_service.send_report_email(
+                recipient_email=email_address,
+                subject=f"Relatorio Mensal de Folha de Pagamento - {reference_month}",
+                body=f"Prezado(a),\n\nSegue em anexo o relatorio mensal consolidado referente ao mes {reference_month}.\n\nAtenciosamente,\nSistema de Folha de Pagamento",
+                attachment_name=filename,
+                attachment_content=file_content.getvalue(),
+                content_type="text/csv",
+            )
+
+            if success:
+                return Response(
+                    {"message": f"Relatório enviado com sucesso para {email_address}!"}
+                )
+            else:
+                return Response(
+                    {"error": "Falha ao enviar e-mail. Verifique os logs do sistema."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+        except Exception as e:
+            return Response(
+                {"error": f"Erro ao processar solicitação: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

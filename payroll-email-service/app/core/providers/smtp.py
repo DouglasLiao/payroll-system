@@ -26,6 +26,7 @@ class SMTPProvider(BaseEmailProvider):
         text_content: str = None,
         from_email: str = None,
         from_name: str = None,
+        attachments: list = None,
     ) -> Dict[str, Any]:
         """Send email via SMTP"""
 
@@ -33,18 +34,49 @@ class SMTPProvider(BaseEmailProvider):
         from_name = from_name or settings.FROM_NAME
 
         # Create message
-        message = MIMEMultipart("alternative")
+        message = MIMEMultipart("mixed")
         message["Subject"] = subject
         message["From"] = f"{from_name} <{from_email}>"
         message["To"] = to_email
 
+        # Create alternative part for text/html
+        msg_body = MIMEMultipart("alternative")
+
         # Add text and HTML parts
         if text_content:
             part1 = MIMEText(text_content, "plain")
-            message.attach(part1)
+            msg_body.attach(part1)
 
         part2 = MIMEText(html_content, "html")
-        message.attach(part2)
+        msg_body.attach(part2)
+
+        message.attach(msg_body)
+
+        # Process attachments
+        if attachments:
+            import base64
+            from email.mime.base import MIMEBase
+            from email import encoders
+
+            for attachment in attachments:
+                try:
+                    filename = attachment.get("filename")
+                    content = attachment.get("content")
+                    content_type = attachment.get(
+                        "content_type", "application/octet-stream"
+                    )
+
+                    # Create attachment part
+                    part = MIMEBase(*content_type.split("/"))
+                    part.set_payload(base64.b64decode(content))
+                    encoders.encode_base64(part)
+                    part.add_header(
+                        "Content-Disposition",
+                        f"attachment; filename= {filename}",
+                    )
+                    message.attach(part)
+                except Exception as e:
+                    logger.error(f"Error attaching file: {e}")
 
         try:
             # Send via SMTP
@@ -54,7 +86,7 @@ class SMTPProvider(BaseEmailProvider):
                 port=self.port,
                 username=self.username,
                 password=self.password,
-                use_tls=True,
+                use_tls=False,  # MailHog does not support TLS
             )
 
             logger.info(f"Email sent successfully to {to_email}")
@@ -73,7 +105,9 @@ class SMTPProvider(BaseEmailProvider):
         """Check SMTP connection"""
         try:
             async with aiosmtplib.SMTP(
-                hostname=self.host, port=self.port, use_tls=True
+                hostname=self.host,
+                port=self.port,
+                use_tls=False,  # MailHog does not support TLS
             ) as smtp:
                 await smtp.login(self.username, self.password)
             return True

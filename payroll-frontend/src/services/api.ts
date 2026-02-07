@@ -185,7 +185,10 @@ export const downloadPayrollFile = async (payrollId: number): Promise<void> => {
   })
 
   // Extract filename from Content-Disposition header
-  const contentDisposition = response.headers['content-disposition']
+  const contentDisposition =
+    response.headers['content-disposition'] ||
+    response.headers['Content-Disposition']
+
   let filename = `folha_${payrollId}.xlsx`
 
   if (contentDisposition) {
@@ -224,6 +227,29 @@ export const getDashboardStats = async (filters?: DashboardFilters) => {
   const url = `/dashboard/${queryString ? '?' + queryString : ''}`
 
   const { data } = await api.get<EnhancedDashboardStats>(url)
+  return data
+}
+
+export const downloadMonthlyReport = async (
+  referenceMonth: string
+): Promise<void> => {
+  // Construct the direct download URL
+  // We use direct navigation to leverage the browser's native download handling
+  // Authentication is handled via Cookies which are automatically sent with the request
+  const url = `${api.defaults.baseURL}payrolls/monthly-report/?reference_month=${referenceMonth}`
+
+  // Trigger download
+  window.location.href = url
+}
+
+export const sendReportEmail = async (
+  referenceMonth: string,
+  email?: string
+) => {
+  const { data } = await api.post('/payrolls/email-report/', {
+    reference_month: referenceMonth,
+    email,
+  })
   return data
 }
 

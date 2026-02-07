@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
 from uuid import UUID
 
@@ -14,6 +14,9 @@ class EmailSendRequest(BaseModel):
     text_content: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
     priority: str = Field(default="normal", pattern="^(low|normal|high)$")
+    attachments: Optional[List[Dict[str, str]]] = (
+        None  # [{filename, content, content_type}]
+    )
 
 
 class EmailBulkSendRequest(BaseModel):

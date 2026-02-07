@@ -106,6 +106,7 @@ async def send_email(request: EmailSendRequest, db: Session = Depends(get_db)):
                 template_name=request.template,
                 to_email=request.to,
                 context=request.context,
+                attachments=request.attachments,
                 db_session=db,
             )
         else:
@@ -122,6 +123,7 @@ async def send_email(request: EmailSendRequest, db: Session = Depends(get_db)):
                 html_content=request.html_content,
                 text_content=request.text_content,
                 context=request.context,
+                attachments=request.attachments,
                 db_session=db,
             )
 

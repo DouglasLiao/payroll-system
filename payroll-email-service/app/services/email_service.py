@@ -2,7 +2,7 @@ from app.core.email_sender import EmailSender
 from app.core.template_engine import TemplateEngine
 from app.models.email_template import EmailTemplate
 from app.db.session import get_db
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from sqlalchemy.orm import Session
 import logging
 
@@ -21,6 +21,7 @@ class EmailService:
         template_name: str,
         to_email: str,
         context: Dict[str, Any],
+        attachments: Optional[List[Dict[str, str]]] = None,
         tenant_id: Optional[str] = None,
         db_session: Session = None,
     ):
@@ -64,6 +65,7 @@ class EmailService:
                 text_content=text_content,
                 template_name=template_name,
                 context=context,
+                attachments=attachments,
                 tenant_id=tenant_id,
                 db_session=db_session,
             )
@@ -78,6 +80,7 @@ class EmailService:
         html_content: str,
         text_content: Optional[str] = None,
         context: Optional[Dict[str, Any]] = None,
+        attachments: Optional[List[Dict[str, str]]] = None,
         tenant_id: Optional[str] = None,
         db_session: Session = None,
     ):
@@ -88,6 +91,7 @@ class EmailService:
             html_content=html_content,
             text_content=text_content,
             context=context,
+            attachments=attachments,
             tenant_id=tenant_id,
             db_session=db_session,
         )

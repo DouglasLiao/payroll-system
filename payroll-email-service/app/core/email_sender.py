@@ -3,7 +3,7 @@ from app.core.providers.smtp import SMTPProvider
 from app.models.email_log import EmailLog
 from app.db.session import get_db
 from app.config import settings
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 import logging
 
@@ -28,6 +28,7 @@ class EmailSender:
         text_content: Optional[str] = None,
         template_name: Optional[str] = None,
         context: Optional[Dict[str, Any]] = None,
+        attachments: Optional[List[Dict[str, str]]] = None,
         tenant_id: Optional[str] = None,
         db_session=None,
     ) -> EmailLog:
@@ -52,6 +53,7 @@ class EmailSender:
                 subject=subject,
                 html_content=html_content,
                 text_content=text_content,
+                attachments=attachments,
             )
 
             # Update log based on result
