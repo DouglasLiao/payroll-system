@@ -384,16 +384,37 @@ class PayrollService:
             "holiday_hours",
             "night_hours",
             "late_minutes",
+            "absence_days",
             "absence_hours",
             "manual_discounts",
             "vt_discount",
             "notes",
+            "provider_id",
+            "hired_date",
         ]
 
         # Aplicar atualizações
         for field, value in updates.items():
             if field not in allowed_fields:
                 raise ValueError(f"Campo '{field}' não pode ser atualizado")
+
+            # Lógica especial para mudança de Prestador
+            if field == "provider_id":
+                new_provider = Provider.objects.get(pk=value)
+                payroll.provider = new_provider
+                # Atualizar valor base para o do novo prestador
+                payroll.base_value = new_provider.monthly_value
+                # Recalcular adiantamento se habilitado no novo prestador
+                if new_provider.advance_enabled:
+                    payroll.advance_value = (
+                        new_provider.monthly_value
+                        * new_provider.advance_percentage
+                        / Decimal("100")
+                    ).quantize(Decimal("0.01"))
+                else:
+                    payroll.advance_value = Decimal("0.00")
+                continue
+
             setattr(payroll, field, value)
 
         # Salvar (aciona recálculo automático)

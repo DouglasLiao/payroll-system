@@ -18,10 +18,12 @@ import {
   ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material'
 import type { Dayjs } from 'dayjs'
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import type { Provider } from '../types'
+import type { Provider, Payroll, PayrollDetail } from '../types'
 import { getMonthCalendarInfo } from '../utils/calendarUtils'
 import { usePayrollCalculations } from './payroll/hooks/usePayrollCalculations'
 import { ContractDataSection } from './payroll/sections/ContractDataSection'
@@ -29,6 +31,7 @@ import { AdditionalsSection } from './payroll/sections/AdditionalsSection'
 import { DiscountsSection } from './payroll/sections/DiscountsSection'
 import { PaymentSummarySection } from './payroll/sections/PaymentSummarySection'
 
+dayjs.extend(customParseFormat)
 // Schema de validação
 const payrollSchema = z.object({
   provider_id: z.number().min(1, 'Selecione um prestador'),
@@ -53,6 +56,7 @@ interface PayrollFormDialogProps {
   onSubmit: (data: PayrollFormInputs) => void
   providers?: Provider[]
   isPending: boolean
+  editingPayroll?: Payroll | PayrollDetail | null
 }
 
 interface ProportionalInfo {
@@ -67,7 +71,9 @@ export const PayrollFormDialog = ({
   onSubmit,
   providers,
   isPending,
+  editingPayroll,
 }: PayrollFormDialogProps) => {
+  const isEditMode = !!editingPayroll
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(
     null
   )
@@ -100,6 +106,54 @@ export const PayrollFormDialog = ({
   })
 
   const watchedValues = watch()
+
+  // Reset form when editingPayroll changes
+  useEffect(() => {
+    if (editingPayroll) {
+      reset({
+        provider_id: editingPayroll.provider.id,
+        reference_month: editingPayroll.reference_month,
+        hired_date: editingPayroll.hired_date || null,
+        overtime_hours_50: Number(editingPayroll.overtime_hours_50) || 0,
+        holiday_hours: Number(editingPayroll.holiday_hours) || 0,
+        night_hours: Number(editingPayroll.night_hours) || 0,
+        late_minutes: editingPayroll.late_minutes || 0,
+        absence_days: editingPayroll.absence_days || 0,
+        manual_discounts: Number(editingPayroll.manual_discounts) || 0,
+        notes: editingPayroll.notes || '',
+      })
+
+      // Set local state values
+      setSelectedMonth(dayjs(editingPayroll.reference_month, 'MM/YYYY'))
+
+      if (editingPayroll.hired_date) {
+        setSelectedDate(dayjs(editingPayroll.hired_date))
+      } else {
+        setSelectedDate(null)
+      }
+
+      const provider = providers?.find(
+        (p) => p.id === editingPayroll.provider.id
+      )
+      setSelectedProvider(provider || null)
+    } else {
+      reset({
+        provider_id: 0,
+        reference_month: '',
+        hired_date: null,
+        overtime_hours_50: 0,
+        holiday_hours: 0,
+        night_hours: 0,
+        late_minutes: 0,
+        absence_days: 0,
+        manual_discounts: 0,
+        notes: '',
+      })
+      setSelectedMonth(null)
+      setSelectedDate(null)
+      setSelectedProvider(null)
+    }
+  }, [editingPayroll, reset, providers])
 
   // Calendar info for DSR calculations
   const calendarInfo = watchedValues.reference_month
@@ -203,7 +257,7 @@ export const PayrollFormDialog = ({
     <Dialog open={open} onClose={handleFormClose} maxWidth="lg" fullWidth>
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          Nova Folha de Pagamento
+          {isEditMode ? 'Editar Folha de Pagamento' : 'Nova Folha de Pagamento'}
           <Tooltip title="Hora extra e DSR são adicionais contratuais (PJ), não obrigações legais">
             <IconButton size="small">
               <InfoIcon fontSize="small" />
@@ -252,6 +306,7 @@ export const PayrollFormDialog = ({
                 onProviderChange={handleProviderChange}
                 onMonthChange={handleMonthChange}
                 onDateChange={handleDateChange}
+                isEditMode={isEditMode}
               />
             </AccordionDetails>
           </Accordion>
@@ -407,7 +462,11 @@ export const PayrollFormDialog = ({
             variant="contained"
             disabled={isPending || !selectedProvider}
           >
-            {isPending ? 'Calculando...' : 'Criar Folha'}
+            {isPending
+              ? 'Salvando...'
+              : isEditMode
+                ? 'Salvar Alterações'
+                : 'Criar Folha'}
           </Button>
         </Box>
       </form>

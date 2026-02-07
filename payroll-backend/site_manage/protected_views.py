@@ -84,7 +84,44 @@ class ProtectedPayrollViewSet(viewsets.ModelViewSet):
         """Retorna serializer apropriado baseado na action"""
         if self.action == "retrieve":
             return PayrollDetailSerializer
+        if self.action in ["update", "partial_update"]:
+            from .serializers import PayrollUpdateSerializer
+
+            return PayrollUpdateSerializer
         return PayrollSerializer
+
+    def perform_update(self, serializer):
+        """
+        Sobrescreve o update padrão para usar o PayrollService e recalcular valores.
+        """
+        from services.payroll_service import PayrollService
+
+        service = PayrollService()
+        # validated_data contém os campos limpos pelo serializer
+        service.recalculate_payroll(serializer.instance.id, **serializer.validated_data)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Sobrescreve update para retornar o objeto completo serializado,
+        não apenas os campos editados (já que PayrollUpdateSerializer é limitado).
+        """
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+
+        # Usar o serializer de update para validação
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+
+        # Executar update (que chama o service)
+        self.perform_update(serializer)
+
+        # Recarregar do banco para pegar valores calculados atualizados
+        instance.refresh_from_db()
+
+        # Retornar dados completos usando o serializer detalhado (com provider aninhado)
+        # Isso garante consistência com o frontend que espera a estrutura do detail
+        read_serializer = PayrollDetailSerializer(instance)
+        return Response(read_serializer.data)
 
     def get_queryset(self):
         """Filtrar payrolls por empresa do usuário"""
@@ -115,15 +152,14 @@ class ProtectedPayrollViewSet(viewsets.ModelViewSet):
 
         return Payroll.objects.none()
 
-    @action(detail=True, methods=["get"], url_path="export-excel")
-    def export_excel(self, request, pk=None):
+    @action(detail=True, methods=["get"], url_path="export-file")
+    def export_file(self, request, pk=None):
         """
-        Exporta a folha de pagamento em formato Excel (.xlsx).
+        Exporta a folha de pagamento em formato de planilha (.xlsx).
+        Renomeado de export-excel para export-file para ser agnóstico,
+        mas mantém o formato Excel para suportar formatação e cores.
 
-        GET /payrolls/{id}/export-excel/
-
-        Returns:
-            Arquivo Excel formatado com todos os detalhes da folha
+        GET /payrolls/{id}/export-file/
         """
         from services.excel_service import ExcelService
         from django.http import Http404, HttpResponse
@@ -131,14 +167,14 @@ class ProtectedPayrollViewSet(viewsets.ModelViewSet):
         try:
             payroll = self.get_object()
 
-            # Gerar arquivo Excel
+            # Gerar arquivo (usando ExcelService para manter formatação)
             excel_service = ExcelService()
-            excel_file = excel_service.generate_payroll_excel(payroll)
+            file_content = excel_service.generate_payroll_excel(payroll)
             filename = excel_service.get_filename(payroll)
 
-            # Criar resposta HTTP com arquivo
+            # Criar resposta HTTP
             response = HttpResponse(
-                excel_file.getvalue(),
+                file_content.getvalue(),
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
             response["Content-Disposition"] = f'attachment; filename="{filename}"'
@@ -146,11 +182,10 @@ class ProtectedPayrollViewSet(viewsets.ModelViewSet):
             return response
 
         except Http404:
-            # Re-raise Http404 para retornar 404 corretamente
             raise
         except Exception as e:
             return Response(
-                {"error": f"Erro ao gerar Excel: {str(e)}"},
+                {"error": f"Erro ao gerar arquivo: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -260,6 +295,151 @@ class ProtectedPayrollViewSet(viewsets.ModelViewSet):
         # Return detailed response
         response_serializer = PayrollDetailSerializer(payroll)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"], url_path="close")
+    def close_payroll(self, request, pk=None):
+        """
+        Fecha uma folha de pagamento (transição DRAFT → CLOSED).
+
+        POST /payrolls/{id}/close/
+
+        Returns:
+            200: Payroll detail with updated status
+            400: Invalid status transition
+            403: Permission denied
+            404: Payroll not found
+        """
+        from django.utils import timezone
+
+        # Check permission - only Customer Admin can close payrolls
+        if request.user.role != "CUSTOMER_ADMIN":
+            return Response(
+                {"error": "Apenas Customer Admin pode fechar folhas de pagamento."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        payroll = self.get_object()
+
+        # Verify payroll belongs to user's company
+        if payroll.provider.company != request.user.company:
+            return Response(
+                {"error": "Você não tem permissão para fechar esta folha."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Validate status transition
+        if payroll.status != "DRAFT":
+            return Response(
+                {
+                    "error": f"Transição inválida. Status atual: {payroll.get_status_display()}. Apenas folhas em Rascunho podem ser fechadas."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Update status and timestamp
+        payroll.status = "CLOSED"
+        payroll.closed_at = timezone.now()
+        payroll.save()
+
+        # Return updated payroll
+        serializer = PayrollDetailSerializer(payroll)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="mark-as-paid")
+    def mark_as_paid(self, request, pk=None):
+        """
+        Marca uma folha de pagamento como paga (transição CLOSED → PAID).
+
+        POST /payrolls/{id}/mark-as-paid/
+
+        Returns:
+            200: Payroll detail with updated status
+            400: Invalid status transition
+            403: Permission denied
+            404: Payroll not found
+        """
+        from django.utils import timezone
+
+        # Check permission - only Customer Admin can mark as paid
+        if request.user.role != "CUSTOMER_ADMIN":
+            return Response(
+                {"error": "Apenas Customer Admin pode marcar folhas como pagas."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        payroll = self.get_object()
+
+        # Verify payroll belongs to user's company
+        if payroll.provider.company != request.user.company:
+            return Response(
+                {"error": "Você não tem permissão para atualizar esta folha."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Validate status transition
+        if payroll.status != "CLOSED":
+            return Response(
+                {
+                    "error": f"Transição inválida. Status atual: {payroll.get_status_display()}. Apenas folhas Fechadas podem ser marcadas como Pagas."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Update status and timestamp
+        payroll.status = "PAID"
+        payroll.paid_at = timezone.now()
+        payroll.save()
+
+        # Return updated payroll
+        serializer = PayrollDetailSerializer(payroll)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="reopen")
+    def reopen_payroll(self, request, pk=None):
+        """
+        Reabre uma folha de pagamento fechada (transição CLOSED → DRAFT).
+
+        POST /payrolls/{id}/reopen/
+
+        Returns:
+            200: Payroll detail with updated status
+            400: Invalid status transition
+            403: Permission denied
+            404: Payroll not found
+        """
+        # Check permission - only Customer Admin can reopen payrolls
+        if request.user.role != "CUSTOMER_ADMIN":
+            return Response(
+                {"error": "Apenas Customer Admin pode reabrir folhas de pagamento."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        payroll = self.get_object()
+
+        # Verify payroll belongs to user's company
+        if payroll.provider.company != request.user.company:
+            return Response(
+                {"error": "Você não tem permissão para reabrir esta folha."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Validate status transition
+        if payroll.status != "CLOSED":
+            return Response(
+                {
+                    "error": f"Transição inválida. Status atual: {payroll.get_status_display()}. Apenas folhas Fechadas podem ser reabertas."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Update status and clear closed_at timestamp
+        payroll.status = "DRAFT"
+        payroll.closed_at = None
+        payroll.save()
+
+        # Return updated payroll
+        serializer = PayrollDetailSerializer(payroll)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # ==============================================================================

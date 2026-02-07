@@ -40,6 +40,7 @@ interface ContractDataSectionProps {
   onProviderChange: (providerId: number) => void
   onMonthChange: (month: Dayjs | null) => void
   onDateChange: (date: Dayjs | null) => void
+  isEditMode?: boolean
 }
 
 export const ContractDataSection: React.FC<ContractDataSectionProps> = ({
@@ -54,6 +55,7 @@ export const ContractDataSection: React.FC<ContractDataSectionProps> = ({
   onProviderChange,
   onMonthChange,
   onDateChange,
+  isEditMode = false,
 }) => {
   return (
     <Grid container spacing={1.5}>
@@ -70,12 +72,12 @@ export const ContractDataSection: React.FC<ContractDataSectionProps> = ({
                 null ||
                 undefined
               }
-              onChange={(_, newValue) => {
-                const providerId = newValue?.id || 0
-                field.onChange(providerId)
-                onProviderChange(providerId)
+              onChange={(event, newValue) => {
+                onProviderChange(newValue?.id || 0)
+                field.onChange(newValue?.id || 0)
               }}
               disableClearable
+              disabled={isEditMode}
               renderInput={(params) => (
                 <TextField
                   {...params}
@@ -110,6 +112,7 @@ export const ContractDataSection: React.FC<ContractDataSectionProps> = ({
                   onMonthChange(newValue)
                   field.onChange(newValue ? newValue.format('MM/YYYY') : '')
                 }}
+                disabled={isEditMode}
                 slotProps={{
                   textField: {
                     fullWidth: true,

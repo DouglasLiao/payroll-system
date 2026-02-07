@@ -90,6 +90,7 @@ export interface PayrollFilters {
 }
 
 export const getPayrolls = async (params?: PayrollFilters) => {
+  console.log('API: getPayrolls called', params)
   const searchParams = new URLSearchParams()
 
   if (params?.status && params.status !== 'all') {
@@ -143,12 +144,14 @@ export const createPayroll = async (payrollData: PayrollCreateData) => {
 }
 
 export const closePayroll = async (id: number) => {
-  const { data } = await api.post<Payroll>(`/payrolls/${id}/close/`)
+  const { data } = await api.post<PayrollDetail>(`/payrolls/${id}/close/`)
   return data
 }
 
 export const markPayrollAsPaid = async (id: number) => {
-  const { data } = await api.post<Payroll>(`/payrolls/${id}/mark-paid/`)
+  const { data } = await api.post<PayrollDetail>(
+    `/payrolls/${id}/mark-as-paid/`
+  )
   return data
 }
 
@@ -163,23 +166,34 @@ export const recalculatePayroll = async (
   return data
 }
 
-export const reopenPayroll = async (id: number) => {
-  const { data } = await api.post<Payroll>(`/payrolls/${id}/reopen/`)
+export const updatePayroll = async (
+  id: number,
+  updates: Partial<PayrollCreateData>
+) => {
+  const { data } = await api.patch<PayrollDetail>(`/payrolls/${id}/`, updates)
   return data
 }
 
-export const downloadPayrollExcel = async (
-  payrollId: number
-): Promise<void> => {
-  const response = await api.get(`/payrolls/${payrollId}/export-excel/`, {
+export const reopenPayroll = async (id: number) => {
+  const { data } = await api.post<PayrollDetail>(`/payrolls/${id}/reopen/`)
+  return data
+}
+
+export const downloadPayrollFile = async (payrollId: number): Promise<void> => {
+  const response = await api.get(`/payrolls/${payrollId}/export-file/`, {
     responseType: 'blob',
   })
 
   // Extract filename from Content-Disposition header
   const contentDisposition = response.headers['content-disposition']
-  const filename = contentDisposition
-    ? contentDisposition.split('filename=')[1].replace(/"/g, '')
-    : `folha_${payrollId}.xlsx`
+  let filename = `folha_${payrollId}.xlsx`
+
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/)
+    if (filenameMatch && filenameMatch[1]) {
+      filename = filenameMatch[1]
+    }
+  }
 
   // Create download link
   const url = window.URL.createObjectURL(new Blob([response.data]))

@@ -384,6 +384,7 @@ class PayrollUpdateSerializer(serializers.Serializer):
         max_digits=10, decimal_places=2, required=False
     )
     late_minutes = serializers.IntegerField(required=False)
+    absence_days = serializers.IntegerField(required=False)
     absence_hours = serializers.DecimalField(
         max_digits=10, decimal_places=2, required=False
     )
@@ -394,3 +395,11 @@ class PayrollUpdateSerializer(serializers.Serializer):
         max_digits=10, decimal_places=2, required=False
     )
     notes = serializers.CharField(required=False, allow_blank=True)
+
+    # Campos estruturais (permitir edição)
+    provider_id = serializers.IntegerField(
+        required=False, help_text="ID do novo prestador (se mudar)"
+    )
+    hired_date = serializers.DateField(
+        required=False, allow_null=True, help_text="Data de início no mês"
+    )

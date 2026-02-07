@@ -33,9 +33,7 @@ SECRET_KEY = os.getenv(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "t")
 
-ALLOWED_HOSTS = (
-    os.getenv("ALLOWED_HOSTS", "*").split(",")
-)
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
 
 # Application definition
@@ -159,6 +157,11 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
+]
+
+# Expose Content-Disposition header for file downloads
+CORS_EXPOSE_HEADERS = [
+    "content-disposition",
 ]
 
 

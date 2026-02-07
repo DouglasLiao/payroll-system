@@ -9,29 +9,43 @@ import {
   Card,
   CardContent,
 } from '@mui/material'
-import { FileDownload } from '@mui/icons-material'
+import {
+  FileDownload,
+  Lock,
+  Payment,
+  LockOpen,
+  Edit,
+} from '@mui/icons-material'
 import type { PayrollDetail } from '../types'
 import { formatCurrency } from '../utils/formatters'
 import { StatusChip } from './StatusChip'
 
 interface PayrollDetailDialogProps {
   open: boolean
-  onClose: () => void
+  onClose: () => void // Closes the dialog
   payrollDetail?: PayrollDetail
+  onEdit: (payroll: PayrollDetail) => void // Opens edit form
+  onClosePayroll: (id: number) => void // Closes the payroll (DRAFT → CLOSED)
   onMarkPaid: (id: number) => void
-  onDownloadExcel: (id: number) => void
-  isMarkingPaid: boolean
+  onReopen: (id: number) => void
+  onDownloadFile: (id: number) => void
   isClosing: boolean
+  isMarkingPaid: boolean
+  isReopening: boolean
 }
 
 export const PayrollDetailDialog = ({
   open,
   onClose,
   payrollDetail,
+  onEdit,
+  onClosePayroll,
   onMarkPaid,
-  onDownloadExcel,
-  isMarkingPaid,
+  onReopen,
+  onDownloadFile,
   isClosing,
+  isMarkingPaid,
+  isReopening,
 }: PayrollDetailDialogProps) => {
   if (!payrollDetail) return null
 
@@ -59,28 +73,59 @@ export const PayrollDetailDialog = ({
                   variant="outlined"
                   color="primary"
                   startIcon={<FileDownload />}
-                  onClick={() => onDownloadExcel(payrollDetail.id)}
+                  onClick={() => onDownloadFile(payrollDetail.id)}
                 >
-                  Download Excel
+                  Download da Folha
                 </Button>
+
+                {/* DRAFT status: Can edit or close payroll */}
                 {payrollDetail.status === 'DRAFT' && (
-                  <Button
-                    variant="outlined"
-                    onClick={onClose}
-                    disabled={isClosing}
-                  >
-                    Fechar Folha
-                  </Button>
+                  <>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      startIcon={<Edit />}
+                      onClick={() => onEdit(payrollDetail)}
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<Lock />}
+                      onClick={() => onClosePayroll(payrollDetail.id)}
+                      disabled={isClosing}
+                    >
+                      Fechar Folha
+                    </Button>
+                  </>
                 )}
+
+                {/* CLOSED status: Can mark as paid or reopen */}
                 {payrollDetail.status === 'CLOSED' && (
-                  <Button
-                    variant="contained"
-                    onClick={() => onMarkPaid(payrollDetail.id)}
-                    disabled={isMarkingPaid}
-                  >
-                    Marcar como Paga
-                  </Button>
+                  <>
+                    <Button
+                      variant="outlined"
+                      color="warning"
+                      startIcon={<LockOpen />}
+                      onClick={() => onReopen(payrollDetail.id)}
+                      disabled={isReopening}
+                    >
+                      Reabrir
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      startIcon={<Payment />}
+                      onClick={() => onMarkPaid(payrollDetail.id)}
+                      disabled={isMarkingPaid}
+                    >
+                      Marcar como Paga
+                    </Button>
+                  </>
                 )}
+
+                {/* PAID status: No actions allowed (final state) */}
               </Box>
             </Box>
           </Grid>

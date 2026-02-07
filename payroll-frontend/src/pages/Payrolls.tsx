@@ -12,7 +12,12 @@ import { PayrollDetailDialog } from '../components/PayrollDetailDialog'
 import { PayrollStats } from '../components/PayrollStats'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSnackbar } from 'notistack'
-import type { Payroll, PayrollCreateData } from '../types'
+import type {
+  Payroll,
+  PayrollCreateData,
+  PayrollDetail,
+  PaginatedResponse,
+} from '../types'
 import { formatCurrency } from '../utils/formatters'
 import {
   getPayrolls,
@@ -21,13 +26,18 @@ import {
   getPayrollDetail,
   closePayroll,
   markPayrollAsPaid,
-  downloadPayrollExcel,
+  reopenPayroll,
+  updatePayroll,
+  downloadPayrollFile,
 } from '../services/api'
 
 const Payrolls = () => {
   const [openForm, setOpenForm] = useState(false)
   const [openDetail, setOpenDetail] = useState(false)
   const [selectedPayroll, setSelectedPayroll] = useState<number | null>(null)
+  const [editingPayroll, setEditingPayroll] = useState<PayrollDetail | null>(
+    null
+  )
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [filters, setFilters] = useState<PayrollFilters>({
@@ -84,8 +94,63 @@ const Payrolls = () => {
     },
   })
 
-  const handleCreateSubmit = (data: PayrollCreateData) => {
-    createMutation.mutate(data)
+  const reopenMutation = useMutation({
+    mutationFn: reopenPayroll,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payrolls'] })
+      queryClient.invalidateQueries({ queryKey: ['payroll-detail'] })
+      enqueueSnackbar('Folha reaberta com sucesso!', { variant: 'success' })
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: Partial<PayrollCreateData>
+    }) => updatePayroll(id, data),
+    onSuccess: (updatedData) => {
+      // Update payrolls list cache manually for immediate feedback
+      queryClient.setQueryData(
+        ['payrolls', filters, page, rowsPerPage],
+        (old: PaginatedResponse<Payroll>) => {
+          if (!old) return old
+          return {
+            ...old,
+            results: old.results.map((p: Payroll) =>
+              p.id === updatedData.id ? { ...p, ...updatedData } : p
+            ),
+          }
+        }
+      )
+
+      // Invalidate both queries to ensure total sync with backend
+      queryClient.invalidateQueries({ queryKey: ['payrolls'] })
+      queryClient.invalidateQueries({ queryKey: ['payroll-detail'] })
+
+      setEditingPayroll(null)
+      setOpenForm(false)
+      enqueueSnackbar('Folha atualizada com sucesso!', { variant: 'success' })
+    },
+    onError: (error: Error) => {
+      enqueueSnackbar(error.message, { variant: 'error' })
+    },
+  })
+
+  const handleFormSubmit = (data: PayrollCreateData) => {
+    if (editingPayroll) {
+      updateMutation.mutate({ id: editingPayroll.id, data })
+    } else {
+      createMutation.mutate(data)
+    }
+  }
+
+  const handleEdit = (payroll: PayrollDetail) => {
+    setEditingPayroll(payroll)
+    setOpenDetail(false)
+    setOpenForm(true)
   }
 
   const handlePageChange = (newPage: number) => {
@@ -102,12 +167,13 @@ const Payrolls = () => {
     setOpenDetail(true)
   }
 
-  const handleDownloadExcel = async (payrollId: number) => {
+  const handleDownloadFile = async (id: number) => {
     try {
-      await downloadPayrollExcel(payrollId)
-      enqueueSnackbar('Excel baixado com sucesso!', { variant: 'success' })
-    } catch {
-      enqueueSnackbar('Erro ao baixar Excel', { variant: 'error' })
+      await downloadPayrollFile(id)
+      enqueueSnackbar('Arquivo baixado com sucesso!', { variant: 'success' })
+    } catch (error) {
+      console.error(error)
+      enqueueSnackbar('Erro ao baixar arquivo', { variant: 'error' })
     }
   }
 
@@ -214,10 +280,14 @@ const Payrolls = () => {
       {/* Form Dialog */}
       <PayrollFormDialog
         open={openForm}
-        onClose={() => setOpenForm(false)}
-        onSubmit={handleCreateSubmit}
+        onClose={() => {
+          setOpenForm(false)
+          setEditingPayroll(null)
+        }}
+        onSubmit={handleFormSubmit}
         providers={providersData?.results}
-        isPending={createMutation.isPending}
+        isPending={createMutation.isPending || updateMutation.isPending}
+        editingPayroll={editingPayroll}
       />
 
       {/* Detail Dialog */}
@@ -225,10 +295,14 @@ const Payrolls = () => {
         open={openDetail}
         onClose={() => setOpenDetail(false)}
         payrollDetail={payrollDetail}
+        onEdit={handleEdit}
+        onClosePayroll={(id) => closeMutation.mutate(id)}
         onMarkPaid={(id) => markPaidMutation.mutate(id)}
-        onDownloadExcel={handleDownloadExcel}
-        isMarkingPaid={markPaidMutation.isPending}
+        onReopen={(id) => reopenMutation.mutate(id)}
+        onDownloadFile={handleDownloadFile}
         isClosing={closeMutation.isPending}
+        isMarkingPaid={markPaidMutation.isPending}
+        isReopening={reopenMutation.isPending}
       />
     </Container>
   )

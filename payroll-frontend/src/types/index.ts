@@ -57,7 +57,7 @@ export interface PayrollItem {
 
 export interface Payroll {
   id: number
-  provider: number
+  provider: Provider
   provider_name: string
   reference_month: string
 
