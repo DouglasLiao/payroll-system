@@ -18,14 +18,18 @@ from typing import Dict
 # CONSTANTES PADRÃO
 # ==============================================================================
 
+
+# ==============================================================================
+# CONSTANTES PADRÃO (Legado/Defaults)
+# ==============================================================================
+
 CARGA_HORARIA_PADRAO = 220  # horas/mês
 PERCENTUAL_ADIANTAMENTO_PADRAO = Decimal("40.00")  # 40%
-MULTIPLICADOR_HORA_EXTRA_50 = Decimal("1.5")
-MULTIPLICADOR_FERIADO = Decimal("2.0")
-# DSR não usa percentual fixo - calculado dinamicamente por mês
-MULTIPLICADOR_ADICIONAL_NOTURNO = Decimal(
-    "1.20"
-)  # 120% (hora completa + 20% adicional)
+
+# Defaults para retrocompatibilidade
+DEFAULT_MULT_HORA_EXTRA = Decimal("1.5")
+DEFAULT_MULT_FERIADO = Decimal("2.0")
+DEFAULT_MULT_NOTURNO = Decimal("1.20")
 
 
 # ==============================================================================
@@ -307,69 +311,68 @@ def calcular_saldo_pos_adiantamento(
 # ==============================================================================
 
 
-def calcular_hora_extra_50(horas_extras: Decimal, valor_hora: Decimal) -> Decimal:
+def calcular_hora_extra_50(
+    horas_extras: Decimal,
+    valor_hora: Decimal,
+    multiplicador: Decimal = DEFAULT_MULT_HORA_EXTRA,
+) -> Decimal:
     """
-    Calcula o valor das horas extras com 50% de adicional (regra contratual).
+    Calcula o valor das horas extras.
 
     Args:
-        horas_extras: Quantidade de horas extras trabalhadas
+        horas_extras: Quantidade de horas extras
         valor_hora: Valor da hora normal
-
-    Returns:
-        Valor total das horas extras
-
-    Exemplo:
-        >>> calcular_hora_extra_50(Decimal('10'), Decimal('10'))
-        Decimal('150.00')
+        multiplicador: Fator de multiplicação (ex: 1.5 para 50%, 2.0 para 100%)
     """
     if horas_extras < 0:
         raise ValueError("Horas extras não podem ser negativas")
 
-    valor_hora_extra = valor_hora * MULTIPLICADOR_HORA_EXTRA_50
+    if multiplicador < 1:
+        # Permitir multiplicadores menores que 1? Geralmente hora extra é > 1.
+        # Mas para flexibilidade, apenas logar ou aceitar.
+        pass
+
+    valor_hora_extra = valor_hora * multiplicador
     return (horas_extras * valor_hora_extra).quantize(Decimal("0.01"))
 
 
-def calcular_hora_feriado(horas_feriado: Decimal, valor_hora: Decimal) -> Decimal:
+def calcular_hora_feriado(
+    horas_feriado: Decimal,
+    valor_hora: Decimal,
+    multiplicador: Decimal = DEFAULT_MULT_FERIADO,
+) -> Decimal:
     """
-    Calcula o valor das horas trabalhadas em feriados com 100% de adicional.
+    Calcula o valor das horas trabalhadas em feriados.
 
     Args:
-        horas_feriado: Quantidade de horas trabalhadas em feriados
+        horas_feriado: Quantidade de horas
         valor_hora: Valor da hora normal
-
-    Returns:
-        Valor total das horas em feriados
-
-    Exemplo:
-        >>> calcular_hora_feriado(Decimal('8'), Decimal('10'))
-        Decimal('160.00')
+        multiplicador: Fator de multiplicação (ex: 2.0 para 100%)
     """
     if horas_feriado < 0:
         raise ValueError("Horas de feriado não podem ser negativas")
 
-    valor_hora_feriado = valor_hora * MULTIPLICADOR_FERIADO
+    valor_hora_feriado = valor_hora * multiplicador
     return (horas_feriado * valor_hora_feriado).quantize(Decimal("0.01"))
 
 
-def calcular_adicional_noturno(horas_noturnas: Decimal, valor_hora: Decimal) -> Decimal:
+def calcular_adicional_noturno(
+    horas_noturnas: Decimal,
+    valor_hora: Decimal,
+    multiplicador: Decimal = DEFAULT_MULT_NOTURNO,
+) -> Decimal:
     """
-    Calcula o adicional noturno (hora completa + 20% adicional).
+    Calcula o adicional noturno.
 
     Args:
-        horas_noturnas: Quantidade de horas trabalhadas no período noturno
+        horas_noturnas: Quantidade de horas
         valor_hora: Valor da hora normal
-
-    Returns:
-        Valor total do adicional noturno
-
-    Exemplo:
-        >>> calcular_adicional_noturno(Decimal('20'), Decimal('10'))
-        Decimal('240.00')  # 20h × R$ 10 × 1.20
+        multiplicador: Fator de multiplicação (ex: 1.2 para 20%)
     """
     if horas_noturnas < 0:
         raise ValueError("Horas noturnas não podem ser negativas")
 
-    valor_hora_noturna = valor_hora * MULTIPLICADOR_ADICIONAL_NOTURNO
+    valor_hora_noturna = valor_hora * multiplicador
     return (horas_noturnas * valor_hora_noturna).quantize(Decimal("0.01"))
 
 
@@ -658,29 +661,14 @@ def calcular_folha_completa(
     carga_horaria_mensal: int = CARGA_HORARIA_PADRAO,
     dias_uteis_mes: int = 22,
     domingos_e_feriados_mes: int = 8,
+    # Novos parâmetros de configuração (com defaults para compatibilidade)
+    multiplicador_extras: Decimal = DEFAULT_MULT_HORA_EXTRA,
+    multiplicador_feriado: Decimal = DEFAULT_MULT_FERIADO,
+    multiplicador_noturno: Decimal = DEFAULT_MULT_NOTURNO,
 ) -> Dict[str, Decimal]:
     """
-    Calcula todos os valores da folha de pagamento PJ de uma só vez.
-
-    IMPORTANTE: Sistema exclusivo para PJ (Pessoa Jurídica).
-    Não implementa regras CLT.
-
-    Args:
-        valor_contrato_mensal: Valor mensal do contrato
-        percentual_adiantamento: % de adiantamento (padrão 40%)
-        horas_extras: Horas extras 50%
-        horas_feriado: Horas trabalhadas em feriados
-        horas_noturnas: Horas com adicional noturno
-        minutos_atraso: Total de minutos de atraso
-        horas_falta: Total de horas de falta
-        vale_transporte: Valor do VT
-        descontos_manuais: Outros descontos
-        carga_horaria_mensal: Carga horária (padrão 220h)
-        dias_uteis_mes: Dias úteis no mês (padrão 22)
-        domingos_e_feriados_mes: Domingos + feriados no mês (padrão 8)
-
-    Returns:
-        Dicionário completo com todos os valores calculados
+    Calcula todos os valores da folha de pagamento PJ de uma só vez,
+    respeitando as configurações da empresa.
     """
     # Validar dados
     validacao = validar_dados_entrada(
@@ -707,9 +695,15 @@ def calcular_folha_completa(
     saldo = calcular_saldo_pos_adiantamento(valor_contrato_mensal, adiantamento)
 
     # Proventos
-    hora_extra_valor = calcular_hora_extra_50(horas_extras, valor_hora)
-    feriado_valor = calcular_hora_feriado(horas_feriado, valor_hora)
-    noturno_valor = calcular_adicional_noturno(horas_noturnas, valor_hora)
+    hora_extra_valor = calcular_hora_extra_50(
+        horas_extras, valor_hora, multiplicador_extras
+    )
+    feriado_valor = calcular_hora_feriado(
+        horas_feriado, valor_hora, multiplicador_feriado
+    )
+    noturno_valor = calcular_adicional_noturno(
+        horas_noturnas, valor_hora, multiplicador_noturno
+    )
     dsr_valor = calcular_dsr(
         hora_extra_valor, feriado_valor, dias_uteis_mes, domingos_e_feriados_mes
     )

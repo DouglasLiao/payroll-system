@@ -129,6 +129,9 @@ export const authApi = {
     password_confirm: string
     first_name?: string
     last_name?: string
+    company_name: string
+    company_cnpj: string
+    company_phone?: string
   }): Promise<{ message: string; user: User }> => {
     const response = await api.post('/auth/register/', data)
     return response.data

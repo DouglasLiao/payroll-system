@@ -1,5 +1,15 @@
 from rest_framework import serializers
-from .models import Provider, Payment, Payroll, PayrollItem, User, Company
+from .models import (
+    Provider,
+    Payment,
+    Payroll,
+    PayrollItem,
+    User,
+    Company,
+    PayrollMathTemplate,
+    PayrollConfiguration,
+    Subscription,
+)
 
 
 # ==============================================================================
@@ -58,6 +68,77 @@ class CompanySerializer(serializers.ModelSerializer):
 
     def get_provider_count(self, obj):
         return obj.providers.count()
+
+
+# ==============================================================================
+# CONFIGURATION & SUBSCRIPTION SERIALIZERS
+# ==============================================================================
+
+
+class PayrollMathTemplateSerializer(serializers.ModelSerializer):
+    """Serializer para templates globais de cálculo"""
+
+    business_days_rule_display = serializers.CharField(
+        source="get_business_days_rule_display", read_only=True
+    )
+    transport_voucher_type_display = serializers.CharField(
+        source="get_transport_voucher_type_display", read_only=True
+    )
+
+    class Meta:
+        model = PayrollMathTemplate
+        fields = "__all__"
+        read_only_fields = ["created_at", "updated_at"]
+
+
+class PayrollConfigurationSerializer(serializers.ModelSerializer):
+    """Serializer para configuração específica da empresa"""
+
+    business_days_rule_display = serializers.CharField(
+        source="get_business_days_rule_display", read_only=True
+    )
+    transport_voucher_type_display = serializers.CharField(
+        source="get_transport_voucher_type_display", read_only=True
+    )
+    company_name = serializers.CharField(source="company.name", read_only=True)
+
+    class Meta:
+        model = PayrollConfiguration
+        fields = "__all__"
+        read_only_fields = ["company", "created_at", "updated_at"]
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    """Serializer para assinaturas"""
+
+    plan_type_display = serializers.CharField(
+        source="get_plan_type_display", read_only=True
+    )
+    company_name = serializers.CharField(source="company.name", read_only=True)
+    status_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Subscription
+        fields = "__all__"
+        read_only_fields = [
+            "company",
+            "created_at",
+            "updated_at",
+            "price",
+            "max_providers",
+        ]
+
+    def get_status_display(self, obj):
+        if not obj.is_active:
+            return "Inativa"
+
+        # Check expiry
+        from django.utils import timezone
+
+        if obj.end_date and obj.end_date < timezone.now().date():
+            return "Expirada"
+
+        return "Ativa"
 
 
 # ==============================================================================

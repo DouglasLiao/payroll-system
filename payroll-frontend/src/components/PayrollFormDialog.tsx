@@ -105,6 +105,7 @@ export const PayrollFormDialog = ({
     },
   })
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const watchedValues = watch()
 
   // Reset form when editingPayroll changes

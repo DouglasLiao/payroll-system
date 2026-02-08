@@ -13,10 +13,10 @@ echo "🔨 Criando novas migrations..."
 echo "🚀 Aplicando migrations..."
 ./venv/bin/python manage.py migrate
 
-echo "👤 Criando superuser..."
-echo "from site_manage.models import User; User.objects.create_superuser('admin', 'admin@admin.com', 'admin123')" | ./venv/bin/python manage.py shell
+
+
 
 echo "📊 Populando banco de dados com dados de teste..."
-./venv/bin/python populate_db.py
+echo "yes" | ./venv/bin/python seed_db_script.py
 
 echo "✅ Banco de dados recriado com sucesso!"

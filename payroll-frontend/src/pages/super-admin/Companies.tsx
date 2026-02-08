@@ -18,30 +18,28 @@ import {
   DialogActions,
   Chip,
 } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Business as BusinessIcon,
   Email as EmailIcon,
   Phone as PhoneIcon,
+  Settings as SettingsIcon,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSnackbar } from 'notistack'
-import api from '../services/authApi'
+import {
+  getCompanies,
+  createCompany,
+  // deleteCompany, // TODO: Implement in API if needed
+} from '../../services/superAdminApi'
+import api from '../../services/authApi' // Keep for create-admin specific call or move to superAdminApi
+import type { Company } from '../../types'
 
-interface Company {
-  id: number
-  name: string
-  cnpj: string
-  email: string
-  phone: string
-  is_active: boolean
-  admin_count: number
-  provider_count: number
-  created_at: string
-}
-
-export default function SuperAdminDashboard() {
+export default function Companies() {
+  const navigate = useNavigate()
   const [openCompanyDialog, setOpenCompanyDialog] = useState(false)
   const [openAdminDialog, setOpenAdminDialog] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
@@ -66,19 +64,16 @@ export default function SuperAdminDashboard() {
   })
 
   // Fetch companies
-  const { data: companies = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['companies'],
-    queryFn: async () => {
-      const response = await api.get<Company[]>('/companies/')
-      return response.data
-    },
+    queryFn: () => getCompanies({ page_size: 100 }), // Fetch all for now
   })
+
+  const companies = data?.results || []
 
   // Create company mutation
   const createCompanyMutation = useMutation({
-    mutationFn: async (data: typeof companyForm) => {
-      return await api.post('/companies/', data)
-    },
+    mutationFn: createCompany,
     onSuccess: () => {
       enqueueSnackbar('Empresa criada com sucesso!', { variant: 'success' })
       queryClient.invalidateQueries({ queryKey: ['companies'] })
@@ -243,13 +238,35 @@ export default function SuperAdminDashboard() {
                     />
                   </TableCell>
                   <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      title="Configurações"
+                      onClick={() =>
+                        navigate(`/super-admin/companies/${company.id}/config`)
+                      }
+                    >
+                      <SettingsIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      color="success"
+                      title="Assinatura"
+                      onClick={() =>
+                        navigate(
+                          `/super-admin/companies/${company.id}/subscription`
+                        )
+                      }
+                    >
+                      <ReceiptIcon />
+                    </IconButton>
                     <Button
                       size="small"
                       onClick={() => {
                         setSelectedCompany(company)
                         setOpenAdminDialog(true)
                       }}
-                      sx={{ mr: 1 }}
+                      sx={{ ml: 1, mr: 1 }}
                     >
                       + Admin
                     </Button>

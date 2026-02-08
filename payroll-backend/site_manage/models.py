@@ -122,6 +122,225 @@ class PasswordResetToken(models.Model):
 
 
 # ==============================================================================
+# CONFIGURATION & SUBSCRIPTION MODELS
+# ==============================================================================
+
+
+class TransportVoucherType(models.TextChoices):
+    FIXED = "FIXED", "Valor Fixo Mensal"
+    DYNAMIC_PER_DAY = "DYNAMIC_PER_DAY", "Dinâmico por Dias Trabalhados"
+    DYNAMIC_PER_TRIP = "DYNAMIC_PER_TRIP", "Dinâmico por Viagem Realizada"
+
+
+class BusinessDaysRule(models.TextChoices):
+    WORKALENDAR = "WORKALENDAR", "Calendário Brasileiro Oficial"
+    FIXED_30 = "FIXED_30", "Fixo 30 Dias"
+
+
+class PayrollMathTemplate(models.Model):
+    """
+    Templates globais de cálculos de folha.
+    Permite configurar rapidamente uma empresa com regras pré-definidas.
+    """
+
+    name = models.CharField(
+        max_length=100, unique=True, verbose_name="Nome do Template"
+    )
+    description = models.TextField(blank=True, verbose_name="Descrição")
+
+    # Regras de Cálculo
+    overtime_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("50.00"),
+        verbose_name="% Hora Extra",
+    )
+    night_shift_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("20.00"),
+        verbose_name="% Adicional Noturno",
+    )
+    holiday_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("100.00"),
+        verbose_name="% Feriado",
+    )
+    advance_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("40.00"),
+        verbose_name="% Adiantamento Padrão",
+    )
+    transport_voucher_type = models.CharField(
+        max_length=20,
+        choices=TransportVoucherType.choices,
+        default=TransportVoucherType.DYNAMIC_PER_TRIP,
+        verbose_name="Tipo de Vale Transporte",
+    )
+    business_days_rule = models.CharField(
+        max_length=20,
+        choices=BusinessDaysRule.choices,
+        default=BusinessDaysRule.WORKALENDAR,
+        verbose_name="Regra de Dias Úteis",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Template de Cálculo"
+        verbose_name_plural = "Templates de Cálculo"
+
+    def __str__(self):
+        return self.name
+
+
+class PayrollConfiguration(models.Model):
+    """
+    Configuração específica de cálculo para uma empresa via OneToOne.
+    Substitui as constantes globais hardcoded.
+    """
+
+    company = models.OneToOneField(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="payroll_config",
+        verbose_name="Empresa",
+    )
+
+    # Regras de Cálculo (cópias do template ou customizadas)
+    overtime_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("50.00"),
+        verbose_name="% Hora Extra",
+    )
+    night_shift_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("20.00"),
+        verbose_name="% Adicional Noturno",
+    )
+    holiday_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("100.00"),
+        verbose_name="% Feriado",
+    )
+    advance_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("40.00"),
+        verbose_name="% Adiantamento Padrão",
+    )
+    transport_voucher_type = models.CharField(
+        max_length=20,
+        choices=TransportVoucherType.choices,
+        default=TransportVoucherType.DYNAMIC_PER_TRIP,
+        verbose_name="Tipo de Vale Transporte",
+    )
+    business_days_rule = models.CharField(
+        max_length=20,
+        choices=BusinessDaysRule.choices,
+        default=BusinessDaysRule.WORKALENDAR,
+        verbose_name="Regra de Dias Úteis",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Configuração de Folha"
+        verbose_name_plural = "Configurações de Folha"
+
+    def __str__(self):
+        return f"Config: {self.company.name}"
+
+
+class PlanType(models.TextChoices):
+    BASIC = "BASIC", "Basic (5 Prestadores)"
+    PRO = "PRO", "Pro (20 Prestadores)"
+    ENTERPRISE = "ENTERPRISE", "Enterprise (100 Prestadores)"
+    UNLIMITED = "UNLIMITED", "Unlimited (Ilimitado)"
+
+
+class Subscription(models.Model):
+    """
+    Assinatura e Licenciamento da Empresa.
+    Controla limites de uso (número de prestadores).
+    """
+
+    company = models.OneToOneField(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="subscription",
+        verbose_name="Empresa",
+    )
+
+    plan_type = models.CharField(
+        max_length=20,
+        choices=PlanType.choices,
+        default=PlanType.BASIC,
+        verbose_name="Plano",
+    )
+
+    max_providers = models.IntegerField(
+        verbose_name="Limite de Prestadores",
+        help_text="Máximo de prestadores ativos permitidos",
+    )
+
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Preço da Assinatura (R$)",
+        help_text="Valor mensal cobrado",
+    )
+
+    start_date = models.DateField(verbose_name="Data de Início")
+    end_date = models.DateField(
+        null=True, blank=True, verbose_name="Data de Término (Null = Vitalício)"
+    )
+
+    is_active = models.BooleanField(default=True, verbose_name="Assinatura Ativa")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Assinatura"
+        verbose_name_plural = "Assinaturas"
+
+    def save(self, *args, **kwargs):
+        # Definir limites e preços padrão se não definidos
+        if not self.max_providers:
+            if self.plan_type == PlanType.BASIC:
+                self.max_providers = 5
+            elif self.plan_type == PlanType.PRO:
+                self.max_providers = 20
+            elif self.plan_type == PlanType.ENTERPRISE:
+                self.max_providers = 100
+            elif self.plan_type == PlanType.UNLIMITED:
+                self.max_providers = 999999
+
+        if not self.price:
+            if self.plan_type == PlanType.BASIC:
+                self.price = Decimal("29.90")
+            elif self.plan_type == PlanType.PRO:
+                self.price = Decimal("59.90")
+            elif self.plan_type == PlanType.ENTERPRISE:
+                self.price = Decimal("99.90")
+            elif self.plan_type == PlanType.UNLIMITED:
+                self.price = Decimal("199.90")
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.company.name} - {self.get_plan_type_display()}"
+
+
+# ==============================================================================
 # PAYMENT MODELS
 # ==============================================================================
 
@@ -601,9 +820,38 @@ class Payroll(models.Model):
         # Calcular dias úteis e domingos/feriados do mês
         dias_uteis, domingos_feriados = calcular_dias_mes(self.reference_month)
 
+        # OBTER CONFIGURAÇÃO DA EMPRESA
+        # Tenta obter a configuração específica da empresa, senão usa defaults
+        mult_extras = None
+        mult_feriado = None
+        mult_noturno = None
+
+        try:
+            config = self.provider.company.payroll_config
+            # Converter percentuais para multiplicadores
+            # Ex: 50% -> 1.5, 100% -> 2.0
+            mult_extras = Decimal("1") + (config.overtime_percentage / Decimal("100"))
+            mult_feriado = Decimal("1") + (config.holiday_percentage / Decimal("100"))
+            mult_noturno = Decimal("1") + (
+                config.night_shift_percentage / Decimal("100")
+            )
+        except:
+            # Se não existir config (ex: empresas antigas sem migração), usa defaults do calculator
+            # que são importados implicitamente pelos argumentos default da função
+            pass
+
         # Calcular todos os valores usando a função do domínio
         # Usamos vt_discount (deprecated) OU vt_value para compatibilidade
         vt_para_calculo = self.vt_value if self.vt_value > 0 else self.vt_discount
+
+        # Preparar kwargs para injetar apenas se tivermos valores (senão usa defaults da função)
+        calc_kwargs = {}
+        if mult_extras:
+            calc_kwargs["multiplicador_extras"] = mult_extras
+        if mult_feriado:
+            calc_kwargs["multiplicador_feriado"] = mult_feriado
+        if mult_noturno:
+            calc_kwargs["multiplicador_noturno"] = mult_noturno
 
         calculated = calcular_folha_completa(
             valor_contrato_mensal=self.base_value,
@@ -624,6 +872,7 @@ class Payroll(models.Model):
             ),
             dias_uteis_mes=dias_uteis,
             domingos_e_feriados_mes=domingos_feriados,
+            **calc_kwargs,
         )
 
         # Atribuir valores calculados

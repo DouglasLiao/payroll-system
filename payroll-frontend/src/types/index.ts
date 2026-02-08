@@ -222,3 +222,78 @@ export interface ChartPeriod {
   value: 3 | 6 | 12
   label: string
 }
+
+// ==================== SUPER ADMIN TYPES ====================
+
+export interface Company {
+  id: number
+  name: string
+  cnpj: string
+  email: string
+  phone: string
+  is_active: boolean
+  admin_count: number
+  provider_count: number
+  created_at: string
+}
+
+export type TransportVoucherType = 'FIXED' | 'DYNAMIC' | 'NONE'
+export type BusinessDaysRule = 'commercial' | 'calendar'
+
+export interface PayrollMathTemplate {
+  id: number
+  name: string
+  description: string
+  overtime_percentage: string
+  night_shift_percentage: string
+  holiday_percentage: string
+  advance_percentage: string
+  transport_voucher_type: TransportVoucherType
+  transport_voucher_type_display: string
+  business_days_rule: BusinessDaysRule
+  business_days_rule_display: string
+  created_at: string
+  updated_at: string
+}
+
+export interface PayrollConfiguration {
+  id: number
+  company: number
+  company_name: string
+  overtime_percentage: string
+  night_shift_percentage: string
+  holiday_percentage: string
+  advance_percentage: string
+  transport_voucher_type: TransportVoucherType
+  transport_voucher_type_display: string
+  business_days_rule: BusinessDaysRule
+  business_days_rule_display: string
+  created_at: string
+  updated_at: string
+}
+
+export type PlanType = 'BASIC' | 'PRO' | 'ENTERPRISE' | 'UNLIMITED'
+
+export interface Subscription {
+  id: number
+  company: number
+  company_name: string
+  plan_type: PlanType
+  plan_type_display: string
+  max_providers: number | null
+  price: string
+  start_date: string
+  end_date: string | null
+  is_active: boolean
+  status_display: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SuperAdminStats {
+  total_companies: number
+  total_providers: number
+  active_subscriptions: number
+  mrr: number
+  pending_approvals: number
+}

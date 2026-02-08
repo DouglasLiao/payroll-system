@@ -44,13 +44,58 @@ const MainLayout = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'Colaboradores', icon: <PeopleIcon />, path: '/admin/providers' },
-    { text: 'Pagamentos', icon: <ReceiptIcon />, path: '/admin/payrolls' },
-    { text: 'Relatórios', icon: <DescriptionIcon />, path: '/admin/reports' },
-    { text: 'Configurações', icon: <SettingsIcon />, path: '/admin/settings' },
-  ]
+  const menuItems =
+    user?.role === 'SUPER_ADMIN'
+      ? [
+          {
+            text: 'Dashboard',
+            icon: <DashboardIcon />,
+            path: '/super-admin/dashboard',
+          },
+          {
+            text: 'Empresas',
+            icon: <BusinessIcon />,
+            path: '/super-admin/companies',
+          },
+          {
+            text: 'Aprovações',
+            icon: <PeopleIcon />,
+            path: '/super-admin/approvals',
+          },
+          {
+            text: 'Assinaturas',
+            icon: <DescriptionIcon />,
+            path: '/super-admin/subscriptions',
+          },
+          {
+            text: 'Configurações',
+            icon: <SettingsIcon />,
+            path: '/super-admin/configs',
+          },
+        ]
+      : [
+          { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+          {
+            text: 'Colaboradores',
+            icon: <PeopleIcon />,
+            path: '/admin/providers',
+          },
+          {
+            text: 'Pagamentos',
+            icon: <ReceiptIcon />,
+            path: '/admin/payrolls',
+          },
+          {
+            text: 'Relatórios',
+            icon: <DescriptionIcon />,
+            path: '/admin/reports',
+          },
+          {
+            text: 'Configurações',
+            icon: <SettingsIcon />,
+            path: '/admin/settings',
+          },
+        ]
 
   const handleLogout = async () => {
     await logout()

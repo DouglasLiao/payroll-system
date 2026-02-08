@@ -8,7 +8,15 @@ from datetime import timedelta
 import secrets
 import logging
 
-from .models import Payment, User, PasswordResetToken
+from .models import (
+    Payment,
+    User,
+    PasswordResetToken,
+    Company,
+    PayrollConfiguration,
+    Subscription,
+    UserRole,
+)
 from utils.redis_publisher import event_publisher
 
 logger = logging.getLogger(__name__)
@@ -161,7 +169,15 @@ class RegisterSerializer(serializers.Serializer):
         required=True, min_length=8, write_only=True
     )
     first_name = serializers.CharField(required=False, max_length=150, allow_blank=True)
+    first_name = serializers.CharField(required=False, max_length=150, allow_blank=True)
     last_name = serializers.CharField(required=False, max_length=150, allow_blank=True)
+
+    # Company Fields
+    company_name = serializers.CharField(required=True, max_length=255)
+    company_cnpj = serializers.CharField(required=True, max_length=18)
+    company_phone = serializers.CharField(
+        required=False, max_length=20, allow_blank=True
+    )
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
@@ -212,12 +228,33 @@ def register(request):
     serializer.is_valid(raise_exception=True)
 
     try:
+        # 1. Create Company (Inactive by default)
+        company = Company.objects.create(
+            name=serializer.validated_data["company_name"],
+            cnpj=serializer.validated_data["company_cnpj"],
+            phone=serializer.validated_data.get("company_phone", ""),
+            is_active=False,  # Requires approval
+        )
+
+        # 2. Create Default Configuration
+        PayrollConfiguration.objects.create(company=company)
+
+        # 3. Create Default Subscription (Basic)
+        Subscription.objects.create(
+            company=company,
+            start_date=timezone.now().date(),
+            is_active=True,  # Subscription exists, but company is inactive
+        )
+
+        # 4. Create User as CUSTOMER_ADMIN linked to Company
         user = User.objects.create_user(
             username=serializer.validated_data["username"],
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
             first_name=serializer.validated_data.get("first_name", ""),
             last_name=serializer.validated_data.get("last_name", ""),
+            role=UserRole.CUSTOMER_ADMIN,
+            company=company,
         )
 
         logger.info(f"New user registered: {user.username} ({user.email})")
@@ -235,6 +272,11 @@ def register(request):
                     "email": user.email,
                     "first_name": user.first_name,
                     "last_name": user.last_name,
+                    "company": {
+                        "id": company.id,
+                        "name": company.name,
+                        "status": "PENDING_APPROVAL",
+                    },
                 },
             },
             status=status.HTTP_201_CREATED,

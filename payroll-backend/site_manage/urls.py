@@ -18,6 +18,12 @@ from .auth_views import (
 )
 from .company_views import CompanyViewSet
 from .views import password_reset_request, password_reset_confirm, check_email, register
+from .payroll_config_views import (
+    PayrollMathTemplateViewSet,
+    PayrollConfigurationViewSet,
+    SubscriptionViewSet,
+    SuperAdminStatsViewSet,
+)
 
 router = DefaultRouter()
 router.register(r"companies", CompanyViewSet, basename="company")
@@ -25,6 +31,15 @@ router.register(r"companies", CompanyViewSet, basename="company")
 # Rotas protegidas para Payrolls
 router.register(r"payrolls", PayrollViewSet, basename="payroll")
 router.register(r"providers", ProviderViewSet, basename="provider")
+# Super Admin Configurations
+router.register(r"math-templates", PayrollMathTemplateViewSet, basename="math-template")
+router.register(
+    r"payroll-configs", PayrollConfigurationViewSet, basename="payroll-config"
+)
+router.register(r"subscriptions", SubscriptionViewSet, basename="subscription")
+router.register(
+    r"super-admin/stats", SuperAdminStatsViewSet, basename="super-admin-stats"
+)
 
 urlpatterns = [
     # Auth endpoints

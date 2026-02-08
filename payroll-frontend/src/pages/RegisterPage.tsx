@@ -24,6 +24,9 @@ const RegisterPage = () => {
     password_confirm: '',
     first_name: '',
     last_name: '',
+    company_name: '',
+    company_cnpj: '',
+    company_phone: '',
   })
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null)
 
@@ -38,7 +41,9 @@ const RegisterPage = () => {
     mutationFn: (data: typeof formData) => authApi.register(data),
     onSuccess: () => {
       navigate('/login', {
-        state: { message: 'Conta criada! Faça login para continuar.' },
+        state: {
+          message: 'Conta criada! Aguarde a aprovação do administrador.',
+        },
       })
     },
   })
@@ -139,6 +144,48 @@ const RegisterPage = () => {
                       : ''
                 }
               />
+
+              <Typography
+                variant="subtitle2"
+                sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
+              >
+                Dados da Empresa
+              </Typography>
+
+              <TextField
+                fullWidth
+                label="Nome da Empresa"
+                name="company_name"
+                value={formData.company_name}
+                onChange={handleChange}
+                required
+                sx={{ mb: 2 }}
+              />
+
+              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <TextField
+                  fullWidth
+                  label="CNPJ"
+                  name="company_cnpj"
+                  value={formData.company_cnpj}
+                  onChange={handleChange}
+                  required
+                />
+                <TextField
+                  fullWidth
+                  label="Telefone"
+                  name="company_phone"
+                  value={formData.company_phone}
+                  onChange={handleChange}
+                />
+              </Box>
+
+              <Typography
+                variant="subtitle2"
+                sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
+              >
+                Dados do Usuário Master
+              </Typography>
 
               <TextField
                 fullWidth

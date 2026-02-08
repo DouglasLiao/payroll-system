@@ -8,9 +8,6 @@ import { getTheme } from './theme'
 import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
 
-// Configure dayjs to use Brazilian Portuguese locale globally
-dayjs.locale('pt-br')
-
 // Layouts & Pages
 import MainLayout from './layouts/MainLayout'
 import Dashboard from './pages/Dashboard'
@@ -23,12 +20,21 @@ import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import UnauthorizedPage from './pages/UnauthorizedPage'
-import SuperAdminDashboard from './pages/SuperAdminDashboard'
+import SuperAdminOverview from './pages/super-admin/Overview'
+import SuperAdminCompanies from './pages/super-admin/Companies'
+import CompanyConfig from './pages/super-admin/CompanyConfig'
+import CompanySubscription from './pages/super-admin/CompanySubscription'
+import SuperAdminApprovals from './pages/super-admin/Approvals'
+import SuperAdminSubscriptions from './pages/super-admin/Subscriptions'
+import MathTemplateManager from './pages/super-admin/MathTemplateManager'
 import ProviderPayments from './pages/ProviderPayments'
 import ProtectedRoute from './components/ProtectedRoute'
 const EmployeeView = () => <div>Employee View (Coming Soon)</div>
 
 const queryClient = new QueryClient()
+
+// Configure dayjs to use Brazilian Portuguese locale globally
+dayjs.locale('pt-br')
 
 // Fixed light theme for login page
 const loginTheme = getTheme('light')
@@ -102,7 +108,38 @@ function App() {
                           </ProtectedRoute>
                         }
                       >
-                        <Route index element={<SuperAdminDashboard />} />
+                        <Route
+                          index
+                          element={<Navigate to="dashboard" replace />}
+                        />
+                        <Route
+                          path="dashboard"
+                          element={<SuperAdminOverview />}
+                        />
+                        <Route
+                          path="companies"
+                          element={<SuperAdminCompanies />}
+                        />
+                        <Route
+                          path="companies/:id/config"
+                          element={<CompanyConfig />}
+                        />
+                        <Route
+                          path="companies/:id/subscription"
+                          element={<CompanySubscription />}
+                        />
+                        <Route
+                          path="approvals"
+                          element={<SuperAdminApprovals />}
+                        />
+                        <Route
+                          path="subscriptions"
+                          element={<SuperAdminSubscriptions />}
+                        />
+                        <Route
+                          path="configs"
+                          element={<MathTemplateManager />}
+                        />
                       </Route>
 
                       {/* Protected Admin Routes with Sidebar */}

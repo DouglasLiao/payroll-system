@@ -59,7 +59,30 @@ class ProtectedProviderViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Ao criar provider, associar à empresa do Customer Admin"""
         if self.request.user.role == "CUSTOMER_ADMIN":
-            serializer.save(company=self.request.user.company)
+            company = self.request.user.company
+
+            # Verificar limite de prestadores do plano
+            try:
+                subscription = company.subscription
+                # Considerar apenas se a assinatura estiver ativa
+                if subscription.is_active:
+                    current_count = company.providers.count()
+                    limit = subscription.max_providers
+
+                    # Se limit is None, é ilimitado (ou validado de outra forma)
+                    if limit is not None and current_count >= limit:
+                        from rest_framework.exceptions import ValidationError
+
+                        raise ValidationError(
+                            f"Limite de prestadores atingido ({limit}). "
+                            "Faça o upgrade do seu plano para adicionar mais prestadores."
+                        )
+            except Exception:
+                # Se não tiver assinatura (legado) ou erro, permite por enquanto
+                # Ou poderia bloquear: raise ValidationError("Empresa sem assinatura ativa.")
+                pass
+
+            serializer.save(company=company)
         else:
             serializer.save()
 

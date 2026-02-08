@@ -3,8 +3,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.hashers import make_password
+from django.utils import timezone
 
-from .models import Company, User, UserRole
+from .models import Company, User, UserRole, PayrollConfiguration, Subscription
 from .serializers import CompanySerializer, UserSerializer
 from .permissions import IsSuperAdmin
 
@@ -17,6 +18,61 @@ class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all().order_by("name")
     serializer_class = CompanySerializer
     permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get_queryset(self):
+        """
+        Permite filtrar por status: /companies/?is_active=false
+        """
+        queryset = super().get_queryset()
+        is_active = self.request.query_params.get("is_active")
+
+        if is_active is not None:
+            # Convert string boolean to python boolean
+            if is_active.lower() in ["true", "1"]:
+                queryset = queryset.filter(is_active=True)
+            elif is_active.lower() in ["false", "0"]:
+                queryset = queryset.filter(is_active=False)
+
+        return queryset
+
+    @action(detail=True, methods=["post"])
+    def approve(self, request, pk=None):
+        """
+        Aprova uma empresa pendente e ativa sua assinatura.
+        POST /companies/{id}/approve/
+        """
+        company = self.get_object()
+
+        if company.is_active:
+            return Response(
+                {"message": "Empresa já está ativa."}, status=status.HTTP_200_OK
+            )
+
+        # Ativar empresa
+        company.is_active = True
+        company.save()
+
+        # Garantir que assinatura esteja ativa
+        try:
+            subscription = company.subscription
+            if not subscription.is_active:
+                subscription.is_active = True
+                subscription.start_date = timezone.now().date()
+                subscription.save()
+        except Company.subscription.RelatedObjectDoesNotExist:
+            # Criar assinatura se não existir (fallback)
+            Subscription.objects.create(
+                company=company, start_date=timezone.now().date(), is_active=True
+            )
+
+        # Garantir que configuração exista
+        if not hasattr(company, "payroll_config"):
+            PayrollConfiguration.objects.create(company=company)
+
+        return Response(
+            {"message": f"Empresa {company.name} aprovada com sucesso!"},
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=True, methods=["post"], url_path="create-admin")
     def create_admin(self, request, pk=None):

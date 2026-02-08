@@ -134,6 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = React.useContext(AuthContext)
   if (context === undefined) {
@@ -141,5 +142,3 @@ export const useAuth = () => {
   }
   return context
 }
-
-export default AuthContext

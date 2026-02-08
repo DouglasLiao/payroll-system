@@ -76,9 +76,9 @@ def main():
 
     print("Creating Admin User...")
     User.objects.create_user(
-        username="admin",
-        email="admin@techsolutions.com",
-        password="password123",
+        username="admin@admin.com",
+        email="admin@admin.com",
+        password="admin123",
         role=UserRole.CUSTOMER_ADMIN,
         company=company,
         first_name="Admin",
