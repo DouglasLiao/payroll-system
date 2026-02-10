@@ -237,8 +237,11 @@ export interface Company {
   created_at: string
 }
 
-export type TransportVoucherType = 'FIXED' | 'DYNAMIC' | 'NONE'
-export type BusinessDaysRule = 'commercial' | 'calendar'
+export type TransportVoucherType =
+  | 'FIXED'
+  | 'DYNAMIC_PER_DAY'
+  | 'DYNAMIC_PER_TRIP'
+export type BusinessDaysRule = 'WORKALENDAR' | 'FIXED_30'
 
 export interface PayrollMathTemplate {
   id: number

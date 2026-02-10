@@ -27,7 +27,7 @@ import {
   FilterList as FilterIcon,
 } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
-import api from '../services/authApi'
+import api from '../../services/authApi'
 
 interface Payroll {
   id: number

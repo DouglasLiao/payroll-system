@@ -10,7 +10,7 @@ import { authApi, type User } from '../services/authApi'
 
 interface AuthContextType {
   user: User | null
-  login: (username: string, password: string) => Promise<void>
+  login: (username: string, password: string) => Promise<User>
   logout: () => Promise<void>
   isAuthenticated: boolean
   isLoading: boolean
@@ -97,6 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const data = await authApi.login(username, password)
     setUser(data.user)
     setInactivityTimeout(data.user.inactivity_timeout || 300)
+    return data.user
   }
 
   const logout = async () => {

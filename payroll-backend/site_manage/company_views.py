@@ -35,6 +35,15 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.id == 1:
+            return Response(
+                {"error": "A empresa Super Admin não pode ser excluída."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().destroy(request, *args, **kwargs)
+
     @action(detail=True, methods=["post"])
     def approve(self, request, pk=None):
         """

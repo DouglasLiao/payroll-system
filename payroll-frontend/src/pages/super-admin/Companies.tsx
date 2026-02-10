@@ -274,6 +274,7 @@ export default function Companies() {
                       size="small"
                       color="error"
                       onClick={() => handleDeleteCompany(company.id)}
+                      disabled={company.id === 1}
                     >
                       <DeleteIcon />
                     </IconButton>

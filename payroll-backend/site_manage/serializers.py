@@ -64,7 +64,7 @@ class CompanySerializer(serializers.ModelSerializer):
         ]
 
     def get_admin_count(self, obj):
-        return obj.users.filter(role="CUSTOMER_ADMIN").count()
+        return obj.users.filter(role__in=["CUSTOMER_ADMIN", "SUPER_ADMIN"]).count()
 
     def get_provider_count(self, obj):
         return obj.providers.count()

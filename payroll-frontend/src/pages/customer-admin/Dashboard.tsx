@@ -5,7 +5,7 @@ import {
   // ToggleButtonGroup,
   // ToggleButton,
 } from '@mui/material'
-import { useDashboardData } from '../hooks/useDashboardData'
+import { useDashboardData } from '../../hooks/useDashboardData'
 import {
   DashboardMetricsGrid,
   FinancialChart,
@@ -13,7 +13,7 @@ import {
   CashFlowChart,
   RecentActivityCard,
   RecentPayrollsCard,
-} from '../components/dashboard'
+} from '../../components/dashboard'
 
 const Dashboard = () => {
   const { stats, monthlyData, trends, recentActivity, isLoading } =

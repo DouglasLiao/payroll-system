@@ -20,7 +20,7 @@ import {
   CheckCircle,
   Error as ErrorIcon,
 } from '@mui/icons-material'
-import { GenericTable } from '../components/GenericTable'
+import { GenericTable } from '../../components/GenericTable'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -31,16 +31,16 @@ import {
   createProvider,
   deleteProvider,
   updateProvider,
-} from '../services/api'
-import type { Provider, PaginatedResponse } from '../types'
+} from '../../services/api'
+import type { Provider, PaginatedResponse } from '../../types'
 import {
   validateCPF,
   validateCNPJ,
   onlyLetters,
   validateEmail,
   isPositiveNumber,
-} from '../utils/validators'
-import { CPFInput } from '../components/InputMasks'
+} from '../../utils/validators'
+import { CPFInput } from '../../components/InputMasks'
 
 const providerSchema = z
   .object({

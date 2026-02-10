@@ -9,12 +9,13 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
 
 // Layouts & Pages
+// Layouts & Pages
 import MainLayout from './layouts/MainLayout'
-import Dashboard from './pages/Dashboard'
-import Providers from './pages/Providers'
-import Payrolls from './pages/Payrolls'
-import Reports from './pages/Reports'
-import Settings from './pages/Settings'
+import Dashboard from './pages/customer-admin/Dashboard'
+import Providers from './pages/customer-admin/Providers'
+import Payrolls from './pages/customer-admin/Payrolls'
+import Reports from './pages/customer-admin/Reports'
+import Settings from './pages/customer-admin/Settings'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
@@ -27,7 +28,7 @@ import CompanySubscription from './pages/super-admin/CompanySubscription'
 import SuperAdminApprovals from './pages/super-admin/Approvals'
 import SuperAdminSubscriptions from './pages/super-admin/Subscriptions'
 import MathTemplateManager from './pages/super-admin/MathTemplateManager'
-import ProviderPayments from './pages/ProviderPayments'
+import ProviderPayments from './pages/provider/ProviderPayments'
 import ProtectedRoute from './components/ProtectedRoute'
 const EmployeeView = () => <div>Employee View (Coming Soon)</div>
 

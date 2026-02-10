@@ -56,7 +56,7 @@ const MathTemplateManager = () => {
     holiday_percentage: '',
     advance_percentage: '',
     transport_voucher_type: 'FIXED' as TransportVoucherType,
-    business_days_rule: 'commercial' as BusinessDaysRule,
+    business_days_rule: 'FIXED_30' as BusinessDaysRule,
   })
 
   // Fetch Templates
@@ -74,7 +74,7 @@ const MathTemplateManager = () => {
       holiday_percentage: '',
       advance_percentage: '',
       transport_voucher_type: 'FIXED',
-      business_days_rule: 'commercial',
+      business_days_rule: 'FIXED_30',
     })
     setSelectedTemplate(null)
   }
@@ -332,8 +332,12 @@ const MathTemplateManager = () => {
                   }
                 >
                   <MenuItem value="FIXED">Fixo</MenuItem>
-                  <MenuItem value="DYNAMIC">Dinâmico</MenuItem>
-                  <MenuItem value="NONE">Nenhum</MenuItem>
+                  <MenuItem value="DYNAMIC_PER_DAY">
+                    Dinâmico (por dia)
+                  </MenuItem>
+                  <MenuItem value="DYNAMIC_PER_TRIP">
+                    Dinâmico (por viagem)
+                  </MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -350,8 +354,8 @@ const MathTemplateManager = () => {
                     })
                   }
                 >
-                  <MenuItem value="commercial">Comercial (30 dias)</MenuItem>
-                  <MenuItem value="calendar">Calendário Real</MenuItem>
+                  <MenuItem value="FIXED_30">Comercial (30 dias)</MenuItem>
+                  <MenuItem value="WORKALENDAR">Calendário Real</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

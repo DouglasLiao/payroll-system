@@ -29,7 +29,7 @@ import {
   applyTemplateToCompany,
   getMathTemplates,
   getCompany,
-} from '../../services/superAdminApi' // Verify if getCompany is exported
+} from '../../services/superAdminApi'
 import type {
   PayrollMathTemplate,
   PayrollConfiguration,
@@ -50,8 +50,8 @@ const CompanyConfig = () => {
     night_shift_percentage: '',
     holiday_percentage: '',
     advance_percentage: '',
-    transport_voucher_type: 'FIXED',
-    business_days_rule: 'commercial',
+    transport_voucher_type: 'FIXED' as TransportVoucherType,
+    business_days_rule: 'FIXED_30' as BusinessDaysRule,
   })
 
   // Fetch Company Info
@@ -183,10 +183,12 @@ const CompanyConfig = () => {
                   <Select
                     label="Template"
                     value={selectedTemplate}
-                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                    onChange={(e) =>
+                      setSelectedTemplate(String(e.target.value))
+                    }
                   >
                     {templates.map((t: PayrollMathTemplate) => (
-                      <MenuItem key={t.id} value={t.id}>
+                      <MenuItem key={t.id} value={String(t.id)}>
                         {t.name}
                       </MenuItem>
                     ))}
@@ -311,10 +313,12 @@ const CompanyConfig = () => {
                     }
                   >
                     <MenuItem value="FIXED">Fixo (Valor Integrado)</MenuItem>
-                    <MenuItem value="DYNAMIC">
+                    <MenuItem value="DYNAMIC_PER_DAY">
                       Dinâmico (Calculado por dia)
                     </MenuItem>
-                    <MenuItem value="NONE">Não Utiliza</MenuItem>
+                    <MenuItem value="DYNAMIC_PER_TRIP">
+                      Dinâmico (Por viagem)
+                    </MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -331,10 +335,10 @@ const CompanyConfig = () => {
                       })
                     }
                   >
-                    <MenuItem value="commercial">
+                    <MenuItem value="FIXED_30">
                       Comercial (30 dias fixo)
                     </MenuItem>
-                    <MenuItem value="calendar">
+                    <MenuItem value="WORKALENDAR">
                       Calendário (Dias reais do mês)
                     </MenuItem>
                   </Select>

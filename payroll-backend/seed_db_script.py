@@ -16,6 +16,9 @@ from site_manage.models import (
     PayrollStatus,
     UserRole,
     PaymentMethod,
+    PayrollConfiguration,
+    Subscription,
+    PlanType,
 )
 from django.utils import timezone
 
@@ -34,14 +37,13 @@ def date_range(start_date, end_date):
 
 def main():
     print("WARNING: This will delete all existing data!")
-    confirm = input("Are you sure? (yes/no): ").strip().lower()
-    if confirm not in ["yes", "y"]:
-        print("Aborted.")
-        return
+    # confirm = input("Are you sure? (yes/no): ").strip().lower()
+    # if confirm not in ["yes", "y"]:
+    #     print("Aborted.")
+    #     return
 
     print("Cleaning database...")
 
-    # Safe cleanup - handles cases where tables might not exist yet
     try:
         Payroll.objects.all().delete()
         print("  ✓ Payrolls deleted")
@@ -61,31 +63,117 @@ def main():
         print(f"  ⚠ Users: {e}")
 
     try:
+        PayrollConfiguration.objects.all().delete()
+        print("  ✓ PayrollConfiguration deleted")
+    except Exception as e:
+        print(f"  ⚠ PayrollConfiguration: {e}")
+
+    try:
+        Subscription.objects.all().delete()
+        print("  ✓ Subscription deleted")
+    except Exception as e:
+        print(f"  ⚠ Subscription: {e}")
+
+    try:
         Company.objects.all().delete()
         print("  ✓ Companies deleted")
     except Exception as e:
         print(f"  ⚠ Companies: {e}")
 
-    print("Creating Company...")
-    company = Company.objects.create(
+    # ==============================================================================
+    # 1. SUPER ADMIN COMPANY (ID=1)
+    # ==============================================================================
+    print("\nCreating Super Admin Company (ID=1)...")
+    sa_company = Company.objects.create(
+        id=1,
+        name="Payroll System Admin",
+        cnpj="00.000.000/0001-00",
+        email="admin@payrollsystem.com",
+        phone="(11) 0000-0000",
+        is_active=True,
+    )
+
+    # Create Config for SA Company
+    PayrollConfiguration.objects.create(company=sa_company)
+
+    # Create Subscription for SA Company
+    Subscription.objects.create(
+        company=sa_company,
+        plan_type=PlanType.UNLIMITED,
+        start_date=timezone.now().date(),
+        is_active=True,
+    )
+
+    print("Creating Super Admin User...")
+    User.objects.create_superuser(
+        username="admin",
+        email="admin@payrollsystem.com",
+        password="password123",
+        role=UserRole.SUPER_ADMIN,
+        company=sa_company,  # Linked to ID 1
+        first_name="Super",
+        last_name="Admin",
+    )
+
+    print("Creating Extra Super Admins (Douglas & Bernardo)...")
+    User.objects.create_superuser(
+        username="douglas",
+        email="douglas@payrollsystem.com",
+        password="password123",
+        role=UserRole.SUPER_ADMIN,
+        company=sa_company,
+        first_name="Douglas",
+        last_name="Liao",
+    )
+    User.objects.create_superuser(
+        username="bernardo",
+        email="bernardo@payrollsystem.com",
+        password="password123",
+        role=UserRole.SUPER_ADMIN,
+        company=sa_company,
+        first_name="Bernardo",
+        last_name="Silva",
+    )
+
+    # ==============================================================================
+    # 2. CLIENT COMPANY (ID=2)
+    # ==============================================================================
+    print("\nCreating Client Company (ID=2)...")
+    client_company = Company.objects.create(
+        id=2,
         name="Tech Solutions Ltda",
         cnpj="12.345.678/0001-90",
         email="contact@techsolutions.com",
         phone="(11) 98765-4321",
+        is_active=True,
     )
 
-    print("Creating Admin User...")
+    # Create Config for Client Company
+    PayrollConfiguration.objects.create(company=client_company)
+
+    # Create Subscription for Client Company
+    Subscription.objects.create(
+        company=client_company,
+        plan_type=PlanType.PRO,
+        start_date=timezone.now().date(),
+        is_active=True,
+    )
+
+    print("Creating Customer Admin User...")
     User.objects.create_user(
-        username="admin@admin.com",
-        email="admin@admin.com",
-        password="admin123",
+        username="tech_admin",
+        email="admin@techsolutions.com",
+        password="password123",  # standard password
         role=UserRole.CUSTOMER_ADMIN,
-        company=company,
-        first_name="Admin",
-        last_name="User",
+        company=client_company,  # Linked to ID 2
+        first_name="Tech",
+        last_name="Admin",
     )
 
-    print(f"Creating 50 Providers...")
+    # ==============================================================================
+    # 3. PROVIDERS & PAYROLLS (FOR CLIENT COMPANY)
+    # ==============================================================================
+    print(f"\nCreating 50 Providers for {client_company.name}...")
     providers = []
 
     first_names = [
@@ -133,36 +221,15 @@ def main():
         "Ribeiro",
     ]
     roles = [
-        "Servente",
-        "Dentista",
-        "Pedreiro",
-        "Eletricista",
-        "Encanador",
-        "Pintor",
-        "Carpinteiro",
-        "Pedreiro",
-        "Padeiro",
-        "Cozinheiro",
-        "Garçom",
-        "Barman",
-        "Atendente",
-        "Caixa",
-        "Repositor",
-        "Empacotador",
-        "Açougueiro",
-        "Peixeiro",
-        "Hortifruti",
-        "Padaria",
-        "Confeitaria",
-        "Lanchonete",
-        "Restaurante",
-        "Bar",
-        "Cafeteria",
-        "Sorveteria",
-        "Churrascaria",
-        "Pizzaria",
-        "Hamburgueria",
-        "Temakeria",
+        "Developer",
+        "Designer",
+        "Product Manager",
+        "QA Engineer",
+        "DevOps",
+        "Data Scientist",
+        "System Architect",
+        "Tech Lead",
+        "Scrum Master",
     ]
 
     for i in range(50):
@@ -187,15 +254,20 @@ def main():
             vt_trips_per_day=vt_trips,
             payment_method=random.choice(["PIX", "TED", "TRANSFER"]),
             pix_key=f"+5591{random.randint(900000000, 999999999)}",
-            company=company,
+            company=client_company,  # Linked to ID 2
             email=f"{name.lower().replace(' ', '.')}@example.com",
             description=f"Consultor {role}",
         )
+        # Create user for provider access (optional, but good for completeness)
+        # We skip creating users for ALL providers to avoid clutter, maybe just a few?
+        # provider.user = User.objects.create_user(...)
+        # For now, keep it simple.
+
         providers.append(provider)
 
-    print("Generating Monthly Payrolls (2021-2026)...")
-    start_date = date(2021, 1, 1)
-    end_date = date(2026, 1, 1)
+    print("Generating Monthly Payrolls (2025-2026)...")
+    start_date = date(2025, 1, 1)  # Reduce range for speed
+    end_date = date(2026, 2, 1)
 
     total_payrolls = 0
 
@@ -203,95 +275,101 @@ def main():
         for month_date in date_range(start_date, end_date):
             ref_month = month_date.strftime("%m/%Y")
 
-            # Random variations - creating more realistic scenarios
-            # 30% chance of having some overtime at 50%
+            # Random variations
             overtime_50 = (
                 Decimal(random.randint(1, 20)) if random.random() > 0.7 else Decimal(0)
             )
-
-            # 15% chance of having overtime at 100% (usually less than 50%)
-            overtime_100 = (
-                Decimal(random.randint(1, 10)) if random.random() > 0.85 else Decimal(0)
-            )
-
-            # 10% chance of working on holidays
             holiday_hours = (
                 Decimal(random.randint(4, 12)) if random.random() > 0.9 else Decimal(0)
             )
-
-            # 20% chance of night shift hours
             night_hours = (
                 Decimal(random.randint(8, 40)) if random.random() > 0.8 else Decimal(0)
             )
-
-            # 25% chance of being late (in minutes)
             late_minutes = random.randint(5, 120) if random.random() > 0.75 else 0
 
-            # 15% chance of absences
             has_absence = random.random() > 0.85
             if has_absence:
-                # Random between 0.5 to 3 days absent
-                absence_days = Decimal(random.choice([0.5, 1, 1.5, 2, 2.5, 3]))
-                # Calculate absence hours based on 8 hours per day
+                absence_days = Decimal(random.choice([0.5, 1, 1.5, 2]))
                 absence_hours = absence_days * Decimal(8)
             else:
                 absence_days = Decimal(0)
                 absence_hours = Decimal(0)
 
-            # 10% chance of manual discounts (penalties, loan deductions, etc)
             manual_discounts = (
                 Decimal(random.randint(50, 500))
                 if random.random() > 0.9
                 else Decimal(0)
             )
 
-            # Determine status with distribution:
-            # 70% PAID, 20% CLOSED, 10% DRAFT
+            # Determine status
             rand = random.random()
             if rand < 0.70:
                 status = PayrollStatus.PAID
-                # PAID: Both closed_at and paid_at are set
-                # Use reference month to create realistic timestamps
                 year, month = map(int, ref_month.split("/")[::-1])
-                # Closing date: last day of the month
-                closed_date = timezone.make_aware(
-                    timezone.datetime(year, month, 28) + timedelta(days=4)
-                ) - timedelta(
-                    days=(timezone.datetime(year, month, 28) + timedelta(days=4)).day
-                )
-                # Payment date: ~5 days after closing
-                paid_date = closed_date + timedelta(days=random.randint(3, 7))
+                # Safety check for future dates vs current date
+                if date(year, month, 1) > timezone.now().date():
+                    status = PayrollStatus.DRAFT
+                    closed_date = None
+                    paid_date = None
+                else:
+                    # Closing date: last day of the month
+                    # Note: Simplified date logic
+                    if month == 12:
+                        next_month = date(year + 1, 1, 1)
+                    else:
+                        next_month = date(year, month + 1, 1)
+                    last_day_month = next_month - timedelta(days=1)
 
-                payroll_kwargs = {
-                    "status": status,
-                    "closed_at": closed_date,
-                    "paid_at": paid_date,
-                }
+                    closed_date = timezone.make_aware(
+                        timezone.datetime(year, month, last_day_month.day)
+                        + timedelta(days=4)
+                    )
+                    paid_date = closed_date + timedelta(days=random.randint(1, 3))
+
+                    payroll_kwargs = {
+                        "status": status,
+                        "closed_at": closed_date,
+                        "paid_at": paid_date,
+                    }
             elif rand < 0.90:
                 status = PayrollStatus.CLOSED
-                # CLOSED: Only closed_at is set
                 year, month = map(int, ref_month.split("/")[::-1])
-                closed_date = timezone.make_aware(
-                    timezone.datetime(year, month, 28) + timedelta(days=4)
-                ) - timedelta(
-                    days=(timezone.datetime(year, month, 28) + timedelta(days=4)).day
-                )
+                if date(year, month, 1) > timezone.now().date():
+                    status = PayrollStatus.DRAFT
+                    closed_date = None
+                    paid_date = None
+                else:
+                    if month == 12:
+                        next_month = date(year + 1, 1, 1)
+                    else:
+                        next_month = date(year, month + 1, 1)
+                    last_day_month = next_month - timedelta(days=1)
 
-                payroll_kwargs = {
-                    "status": status,
-                    "closed_at": closed_date,
-                    "paid_at": None,
-                }
+                    closed_date = timezone.make_aware(
+                        timezone.datetime(year, month, last_day_month.day)
+                        + timedelta(days=4)
+                    )
+                    payroll_kwargs = {
+                        "status": status,
+                        "closed_at": closed_date,
+                        "paid_at": None,
+                    }
             else:
                 status = PayrollStatus.DRAFT
-                # DRAFT: No timestamps
                 payroll_kwargs = {
                     "status": status,
                     "closed_at": None,
                     "paid_at": None,
                 }
 
-            # Create Payroll (auto-calculation happens on save)
+            if status == PayrollStatus.DRAFT:  # Safety override
+                payroll_kwargs = {
+                    "status": status,
+                    "closed_at": None,
+                    "paid_at": None,
+                }
+
+            # Create Payroll
             Payroll.objects.create(
                 provider=provider,
                 reference_month=ref_month,
@@ -307,11 +385,12 @@ def main():
             )
             total_payrolls += 1
 
-        print(f"  - Generated history for {provider.name}")
-
     print(
         f"Done! Created {len(providers)} providers and {total_payrolls} payroll records."
     )
+    print("User Credentials:")
+    print("  Super Admin: admin / password123 (Company ID: 1)")
+    print("  Customer Admin: tech_admin / password123 (Company ID: 2)")
 
 
 if __name__ == "__main__":

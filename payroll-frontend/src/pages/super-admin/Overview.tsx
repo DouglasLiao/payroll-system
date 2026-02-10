@@ -86,7 +86,7 @@ const Overview = () => {
 
       <Grid container spacing={3}>
         {statCards.map((card, index) => (
-          <Grid size={{ xs: 12, md: 6 }} sm={6} md={2.4} key={index}>
+          <Grid size={{ xs: 12, md: 6 }} key={index}>
             <Card
               sx={{ height: '100%', position: 'relative', overflow: 'visible' }}
             >

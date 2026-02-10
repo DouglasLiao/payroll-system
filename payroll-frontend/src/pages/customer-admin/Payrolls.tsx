@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { Box, Typography, Button, Container } from '@mui/material'
 import { Add, Visibility } from '@mui/icons-material'
-import { GenericTable } from '../components/GenericTable'
-import { StatusChip } from '../components/StatusChip'
+import { GenericTable } from '../../components/GenericTable'
+import { StatusChip } from '../../components/StatusChip'
 import {
   PayrollFiltersComponent,
   type PayrollFilters,
-} from '../components/PayrollFilters'
-import { PayrollFormDialog } from '../components/PayrollFormDialog'
-import { PayrollDetailDialog } from '../components/PayrollDetailDialog'
-import { PayrollStats } from '../components/PayrollStats'
+} from '../../components/PayrollFilters'
+import { PayrollFormDialog } from '../../components/PayrollFormDialog'
+import { PayrollDetailDialog } from '../../components/PayrollDetailDialog'
+import { PayrollStats } from '../../components/PayrollStats'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSnackbar } from 'notistack'
 import type {
@@ -17,8 +17,8 @@ import type {
   PayrollCreateData,
   PayrollDetail,
   PaginatedResponse,
-} from '../types'
-import { formatCurrency } from '../utils/formatters'
+} from '../../types'
+import { formatCurrency } from '../../utils/formatters'
 import {
   getPayrolls,
   getProviders,
@@ -29,7 +29,7 @@ import {
   reopenPayroll,
   updatePayroll,
   downloadPayrollFile,
-} from '../services/api'
+} from '../../services/api'
 
 const Payrolls = () => {
   const [openForm, setOpenForm] = useState(false)

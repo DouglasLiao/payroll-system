@@ -34,11 +34,17 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      await login(email, password)
+      const user = await login(email, password)
 
-      // Redirecionamento será feito automaticamente pelo AuthContext
-      // ou podemos redirecionar aqui baseado na role
-      navigate('/')
+      // Redirect based on role
+      if (user.role === 'SUPER_ADMIN') {
+        navigate('/super-admin')
+      } else if (user.role === 'PROVIDER') {
+        navigate('/provider')
+      } else {
+        // Customer Admin
+        navigate('/')
+      }
     } catch (err: unknown) {
       setError(
         isAxiosError(err) && err.response?.data?.detail
