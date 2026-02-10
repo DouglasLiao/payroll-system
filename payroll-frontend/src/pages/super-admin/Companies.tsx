@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Chip,
+  Switch,
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -31,8 +31,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSnackbar } from 'notistack'
 import {
-  getCompanies,
   createCompany,
+  toggleCompanyStatus,
   // deleteCompany, // TODO: Implement in API if needed
 } from '../../services/superAdminApi'
 import api from '../../services/authApi' // Keep for create-admin specific call or move to superAdminApi
@@ -141,6 +141,22 @@ export default function Companies() {
     createAdminMutation.mutate(adminForm)
   }
 
+  // Toggle status mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: toggleCompanyStatus,
+    onSuccess: (data) => {
+      enqueueSnackbar(data.message, { variant: 'success' })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+    },
+    onError: () => {
+      enqueueSnackbar('Erro ao alterar status da empresa', { variant: 'error' })
+    },
+  })
+
+  const handleToggleStatus = (id: number) => {
+    toggleStatusMutation.mutate(id)
+  }
+
   return (
     <Box>
       <Box
@@ -231,9 +247,10 @@ export default function Companies() {
                   <TableCell align="center">{company.admin_count}</TableCell>
                   <TableCell align="center">{company.provider_count}</TableCell>
                   <TableCell align="center">
-                    <Chip
-                      label={company.is_active ? 'Ativa' : 'Inativa'}
-                      color={company.is_active ? 'success' : 'default'}
+                    <Switch
+                      checked={company.is_active}
+                      onChange={() => handleToggleStatus(company.id)}
+                      color="success"
                       size="small"
                     />
                   </TableCell>

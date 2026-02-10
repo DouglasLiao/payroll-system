@@ -14,9 +14,11 @@ import {
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '../services/authApi'
 import { useMutation } from '@tanstack/react-query'
+import { useAuth } from '../contexts/AuthContext'
 
 const RegisterPage = () => {
   const navigate = useNavigate()
+  const { logout } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -40,10 +42,17 @@ const RegisterPage = () => {
   const registerMutation = useMutation({
     mutationFn: (data: typeof formData) => authApi.register(data),
     onSuccess: () => {
-      navigate('/login', {
-        state: {
-          message: 'Conta criada! Aguarde a aprovação do administrador.',
-        },
+      // Success state handled in render
+      setFormData({
+        email: '',
+        username: '',
+        password: '',
+        password_confirm: '',
+        first_name: '',
+        last_name: '',
+        company_name: '',
+        company_cnpj: '',
+        company_phone: '',
       })
     },
   })
@@ -99,185 +108,242 @@ const RegisterPage = () => {
               borderRadius: 3,
             }}
           >
-            <Typography
-              component="h1"
-              variant="h4"
-              sx={{ mb: 1, fontWeight: 700, textAlign: 'center' }}
-            >
-              Criar Conta
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 3, textAlign: 'center' }}
-            >
-              Preencha os dados abaixo para começar
-            </Typography>
+            {!registerMutation.isSuccess && (
+              <>
+                <Typography
+                  component="h1"
+                  variant="h4"
+                  sx={{ mb: 1, fontWeight: 700, textAlign: 'center' }}
+                >
+                  Criar Conta
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 3, textAlign: 'center' }}
+                >
+                  Preencha os dados abaixo para começar
+                </Typography>
 
-            {registerMutation.isError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {(registerMutation.error as Error)?.message ||
-                  'Erro ao criar conta'}
-              </Alert>
+                {registerMutation.isError && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {/* Tentar extrair mensagem de erro específica do backend */}
+                    {(registerMutation.error as any)?.response?.data?.username
+                      ? (registerMutation.error as any).response.data
+                          .username[0]
+                      : (registerMutation.error as any)?.response?.data
+                            ?.password
+                        ? (registerMutation.error as any).response.data
+                            .password[0]
+                        : (registerMutation.error as any)?.response?.data?.email
+                          ? (registerMutation.error as any).response.data
+                              .email[0]
+                          : (registerMutation.error as any)?.response?.data
+                                ?.non_field_errors
+                            ? (registerMutation.error as any).response.data
+                                .non_field_errors[0]
+                            : 'Erro ao criar conta. Verifique os dados e tente novamente.'}
+                  </Alert>
+                )}
+
+                <Box
+                  component="form"
+                  onSubmit={handleSubmit}
+                  sx={{ width: '100%' }}
+                >
+                  <TextField
+                    fullWidth
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    sx={{ mb: 2 }}
+                    error={emailAvailable === false}
+                    helperText={
+                      emailAvailable === false
+                        ? 'Este email já está cadastrado'
+                        : emailAvailable === true
+                          ? '✓ Email disponível'
+                          : ''
+                    }
+                  />
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
+                  >
+                    Dados da Empresa
+                  </Typography>
+
+                  <TextField
+                    fullWidth
+                    label="Nome da Empresa"
+                    name="company_name"
+                    value={formData.company_name}
+                    onChange={handleChange}
+                    required
+                    sx={{ mb: 2 }}
+                  />
+
+                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="CNPJ"
+                      name="company_cnpj"
+                      value={formData.company_cnpj}
+                      onChange={handleChange}
+                      required
+                    />
+                    <TextField
+                      fullWidth
+                      label="Telefone"
+                      name="company_phone"
+                      value={formData.company_phone}
+                      onChange={handleChange}
+                    />
+                  </Box>
+
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
+                  >
+                    Dados do Usuário Master
+                  </Typography>
+
+                  <TextField
+                    fullWidth
+                    label="Nome de usuário"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    required
+                    sx={{ mb: 2 }}
+                  />
+
+                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="Nome"
+                      name="first_name"
+                      value={formData.first_name}
+                      onChange={handleChange}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Sobrenome"
+                      name="last_name"
+                      value={formData.last_name}
+                      onChange={handleChange}
+                    />
+                  </Box>
+
+                  <TextField
+                    fullWidth
+                    label="Senha"
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    sx={{ mb: 2 }}
+                    helperText="Mínimo 8 caracteres"
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="Confirmar Senha"
+                    name="password_confirm"
+                    type="password"
+                    value={formData.password_confirm}
+                    onChange={handleChange}
+                    required
+                    sx={{ mb: 3 }}
+                  />
+
+                  <Button
+                    fullWidth
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    disabled={
+                      registerMutation.isPending || emailAvailable === false
+                    }
+                    sx={{
+                      py: 1.5,
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      background:
+                        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      '&:hover': {
+                        background:
+                          'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                      },
+                    }}
+                  >
+                    {registerMutation.isPending ? (
+                      <CircularProgress size={24} color="inherit" />
+                    ) : (
+                      'Criar Conta'
+                    )}
+                  </Button>
+
+                  <Box sx={{ textAlign: 'center', mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Já tem uma conta?{' '}
+                      <MuiLink
+                        component={Link}
+                        to="/login"
+                        sx={{ fontWeight: 600 }}
+                      >
+                        Fazer Login
+                      </MuiLink>
+                    </Typography>
+                  </Box>
+                </Box>
+              </>
             )}
 
-            <Box
-              component="form"
-              onSubmit={handleSubmit}
-              sx={{ width: '100%' }}
-            >
-              <TextField
-                fullWidth
-                label="Email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                sx={{ mb: 2 }}
-                error={emailAvailable === false}
-                helperText={
-                  emailAvailable === false
-                    ? 'Este email já está cadastrado'
-                    : emailAvailable === true
-                      ? '✓ Email disponível'
-                      : ''
-                }
-              />
-
-              <Typography
-                variant="subtitle2"
-                sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
-              >
-                Dados da Empresa
-              </Typography>
-
-              <TextField
-                fullWidth
-                label="Nome da Empresa"
-                name="company_name"
-                value={formData.company_name}
-                onChange={handleChange}
-                required
-                sx={{ mb: 2 }}
-              />
-
-              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                <TextField
-                  fullWidth
-                  label="CNPJ"
-                  name="company_cnpj"
-                  value={formData.company_cnpj}
-                  onChange={handleChange}
-                  required
-                />
-                <TextField
-                  fullWidth
-                  label="Telefone"
-                  name="company_phone"
-                  value={formData.company_phone}
-                  onChange={handleChange}
-                />
-              </Box>
-
-              <Typography
-                variant="subtitle2"
-                sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}
-              >
-                Dados do Usuário Master
-              </Typography>
-
-              <TextField
-                fullWidth
-                label="Nome de usuário"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                required
-                sx={{ mb: 2 }}
-              />
-
-              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                <TextField
-                  fullWidth
-                  label="Nome"
-                  name="first_name"
-                  value={formData.first_name}
-                  onChange={handleChange}
-                />
-                <TextField
-                  fullWidth
-                  label="Sobrenome"
-                  name="last_name"
-                  value={formData.last_name}
-                  onChange={handleChange}
-                />
-              </Box>
-
-              <TextField
-                fullWidth
-                label="Senha"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                sx={{ mb: 2 }}
-                helperText="Mínimo 8 caracteres"
-              />
-
-              <TextField
-                fullWidth
-                label="Confirmar Senha"
-                name="password_confirm"
-                type="password"
-                value={formData.password_confirm}
-                onChange={handleChange}
-                required
-                sx={{ mb: 3 }}
-              />
-
-              <Button
-                fullWidth
-                type="submit"
-                variant="contained"
-                size="large"
-                disabled={
-                  registerMutation.isPending || emailAvailable === false
-                }
-                sx={{
-                  py: 1.5,
-                  textTransform: 'none',
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  background:
-                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  '&:hover': {
-                    background:
-                      'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-                  },
-                }}
-              >
-                {registerMutation.isPending ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  'Criar Conta'
-                )}
-              </Button>
-
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Já tem uma conta?{' '}
-                  <MuiLink
-                    component={Link}
-                    to="/login"
-                    sx={{ fontWeight: 600 }}
-                  >
-                    Fazer Login
-                  </MuiLink>
+            {registerMutation.isSuccess && (
+              <Box sx={{ textAlign: 'center', py: 3 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ mb: 2, fontWeight: 700, color: 'success.main' }}
+                >
+                  Cadastro realizado com sucesso!
                 </Typography>
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mb: 3 }}
+                >
+                  Seu cadastro foi recebido com sucesso!
+                  <br />
+                  <br />
+                  Aguarde a aprovação do administrador para liberar sua licença{' '}
+                  <strong>Trial de 90 dias</strong>.
+                  <br />
+                  Você receberá um email assim que seu acesso for liberado.
+                </Typography>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={() => logout()}
+                  sx={{
+                    py: 1.5,
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    background:
+                      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  }}
+                >
+                  Voltar para o início
+                </Button>
               </Box>
-            </Box>
+            )}
           </Card>
         </Fade>
       </Container>

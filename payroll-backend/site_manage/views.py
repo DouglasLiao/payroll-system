@@ -16,6 +16,7 @@ from .models import (
     PayrollConfiguration,
     Subscription,
     UserRole,
+    PlanType,
 )
 from utils.redis_publisher import event_publisher
 
@@ -184,11 +185,6 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("Este email já está cadastrado.")
         return value
 
-    def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("Este nome de usuário já está em uso.")
-        return value
-
     def validate(self, data):
         if data["password"] != data["password_confirm"]:
             raise serializers.ValidationError(
@@ -233,22 +229,37 @@ def register(request):
             name=serializer.validated_data["company_name"],
             cnpj=serializer.validated_data["company_cnpj"],
             phone=serializer.validated_data.get("company_phone", ""),
-            is_active=False,  # Requires approval
+            is_active=False,  # Inactive (Pending Approval)
         )
 
         # 2. Create Default Configuration
         PayrollConfiguration.objects.create(company=company)
 
-        # 3. Create Default Subscription (Basic)
+        # 3. Create Default Subscription (Trial 90 days)
         Subscription.objects.create(
             company=company,
+            plan_type=PlanType.TRIAL,
             start_date=timezone.now().date(),
-            is_active=True,  # Subscription exists, but company is inactive
+            end_date=timezone.now().date() + timedelta(days=90),
+            is_active=True,  # Configured but waiting for company activation
         )
 
         # 4. Create User as CUSTOMER_ADMIN linked to Company
+        # Handle duplicate usernames by appending random suffix
+        username = serializer.validated_data["username"]
+        base_username = username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            # If username exists, append a random string or counter
+            # Using random string to minimize collisions/retries
+            import random
+            import string
+
+            suffix = "".join(random.choices(string.digits, k=4))
+            username = f"{base_username}_{suffix}"
+
         user = User.objects.create_user(
-            username=serializer.validated_data["username"],
+            username=username,
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
             first_name=serializer.validated_data.get("first_name", ""),
@@ -259,9 +270,59 @@ def register(request):
 
         logger.info(f"New user registered: {user.username} ({user.email})")
 
-        # TODO: Send welcome email (optional)
-        # from utils.redis_publisher import event_publisher
-        # event_publisher.publish_welcome_email(user.email, user.get_full_name() or user.username)
+        # Notify Super Admins
+        try:
+            from app_emails.services import EmailSender
+
+            sender = EmailSender()
+            super_admins = User.objects.filter(role=UserRole.SUPER_ADMIN).values_list(
+                "email", flat=True
+            )
+
+            for admin_email in super_admins:
+                if admin_email:
+                    sender.send_email(
+                        to_email=admin_email,
+                        subject=f"Novo Cadastro (Pendente): {company.name}",
+                        text_content=f"Um novo usuário se cadastrou e aguarda aprovação:\n\nEmpresa: {company.name} (CNPJ: {company.cnpj})\nUsuário: {user.username} ({user.email})\nTelefone: {company.phone}\nPlano: Trial (90 dias)",
+                        html_content=f"""
+                        <h2>Novo Cadastro (Pendente de Aprovação)</h2>
+                        <p><strong>Empresa:</strong> {company.name}</p>
+                        <p><strong>CNPJ:</strong> {company.cnpj}</p>
+                        <p><strong>Telefone:</strong> {company.phone}</p>
+                        <hr>
+                        <p><strong>Usuário:</strong> {user.username}</p>
+                        <p><strong>Email:</strong> {user.email}</p>
+                        <p><strong>Plano:</strong> Trial (90 dias)</p>
+                        <hr>
+                        <p>Acesse o painel administrativo para aprovar este cadastro.</p>
+                        """,
+                    )
+        except Exception as e:
+            logger.error(f"Failed to notify super admins: {e}")
+
+        # Send Pending Approval Email to User
+        try:
+            sender.send_email(
+                to_email=user.email,
+                subject=f"Cadastro Recebido - Aguardando Aprovação",
+                text_content=f"Olá {user.first_name},\n\nRecebemos seu cadastro para a empresa {company.name}.\n\nSeu acesso está pendente de aprovação por um administrador. Você receberá um novo email assim que sua conta for ativada com a licença Trial de 90 dias.\n\nAtenciosamente,\nEquipe Payroll System",
+                html_content=f"""
+                <h2>Cadastro Recebido!</h2>
+                <p>Olá <strong>{user.first_name}</strong>,</p>
+                <p>Recebemos o cadastro da empresa <strong>{company.name}</strong>.</p>
+                <p>Neste momento, seu acesso está aguardando aprovação de nossa equipe.</p>
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <p style="margin: 0;"><strong>Status:</strong> <span style="color: #ffc107;">Pendente de Aprovação</span></p>
+                    <p style="margin: 0;"><strong>Plano Solicitado:</strong> Trial (90 dias)</p>
+                </div>
+                <p>Você será notificado por email assim que seu acesso for liberado.</p>
+                <hr>
+                <p>Atenciosamente,<br>Equipe Payroll System</p>
+                """,
+            )
+        except Exception as e:
+            logger.error(f"Failed to notify user: {e}")
 
         return Response(
             {

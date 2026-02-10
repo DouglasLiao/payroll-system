@@ -11,10 +11,17 @@ import {
   Button,
   CircularProgress,
 } from '@mui/material'
-import { CheckCircle as CheckIcon } from '@mui/icons-material'
+import {
+  CheckCircle as CheckIcon,
+  Cancel as CancelIcon,
+} from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSnackbar } from 'notistack'
-import { getCompanies, approveCompany } from '../../services/superAdminApi'
+import {
+  getCompanies,
+  approveCompany,
+  rejectCompany,
+} from '../../services/superAdminApi'
 
 const Approvals = () => {
   const { enqueueSnackbar } = useSnackbar()
@@ -43,6 +50,29 @@ const Approvals = () => {
   const handleApprove = (id: number) => {
     if (confirm('Deseja aprovar esta empresa e ativar sua assinatura?')) {
       approveMutation.mutate(id)
+    }
+  }
+
+  const rejectMutation = useMutation({
+    mutationFn: rejectCompany,
+    onSuccess: () => {
+      enqueueSnackbar('Empresa rejeitada com sucesso!', { variant: 'success' })
+      queryClient.invalidateQueries({ queryKey: ['pendingCompanies'] })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+      queryClient.invalidateQueries({ queryKey: ['superAdminStats'] })
+    },
+    onError: () => {
+      enqueueSnackbar('Erro ao rejeitar empresa.', { variant: 'error' })
+    },
+  })
+
+  const handleReject = (id: number) => {
+    if (
+      confirm(
+        'Tem certeza que deseja REJEITAR esta empresa? Os dados serão excluídos permanentemente.'
+      )
+    ) {
+      rejectMutation.mutate(id)
     }
   }
 
@@ -98,6 +128,19 @@ const Approvals = () => {
                     {new Date(company.created_at).toLocaleDateString('pt-BR')}
                   </TableCell>
                   <TableCell align="right">
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      startIcon={<CancelIcon />}
+                      onClick={() => handleReject(company.id)}
+                      disabled={
+                        rejectMutation.isPending || approveMutation.isPending
+                      }
+                      sx={{ mr: 1 }}
+                    >
+                      Rejeitar
+                    </Button>
                     <Button
                       variant="contained"
                       color="success"

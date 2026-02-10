@@ -78,8 +78,103 @@ class CompanyViewSet(viewsets.ModelViewSet):
         if not hasattr(company, "payroll_config"):
             PayrollConfiguration.objects.create(company=company)
 
+        # Notify User about Approval
+        try:
+            from app_emails.services import EmailSender
+
+            # Find the admin user (Customer Admin)
+            admin_user = company.users.filter(role=UserRole.CUSTOMER_ADMIN).first()
+
+            if admin_user and admin_user.email:
+                sender = EmailSender()
+                sender.send_email(
+                    to_email=admin_user.email,
+                    subject=f"Cadastro Aprovado! - {company.name}",
+                    text_content=f"Olá {admin_user.first_name},\n\nParabéns! O cadastro da empresa {company.name} foi aprovado.\n\nVocê já pode acessar o sistema com seu email e senha.\n\nAtenciosamente,\nEquipe Payroll System",
+                    html_content=f"""
+                    <h2>Cadastro Aprovado!</h2>
+                    <p>Olá <strong>{admin_user.first_name}</strong>,</p>
+                    <p>Temos o prazer de informar que o cadastro da empresa <strong>{company.name}</strong> foi aprovado!</p>
+                    <div style="background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p style="margin: 0; color: #155724;"><strong>Status:</strong> Ativo</p>
+                        <p style="margin: 0; color: #155724;"><strong>Plano:</strong> Trial (90 dias)</p>
+                    </div>
+                    <p>Você já pode acessar o sistema utilizando seu email e senha cadastrados.</p>
+                    <br>
+                    <a href="http://localhost:5173/login" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Acessar Sistema</a>
+                    <hr>
+                    <p>Atenciosamente,<br>Equipe Payroll System</p>
+                    """,
+                )
+        except Exception as e:
+            # Log error but don't fail the request
+            print(f"Failed to send approval email: {e}")
+
         return Response(
             {"message": f"Empresa {company.name} aprovada com sucesso!"},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"], url_path="toggle-status")
+    def toggle_status(self, request, pk=None):
+        """
+        Alterna o status ativo/inativo da empresa.
+        POST /companies/{id}/toggle-status/
+        """
+        company = self.get_object()
+        company.is_active = not company.is_active
+        company.save()
+
+        status_msg = "ativada" if company.is_active else "desativada"
+        return Response(
+            {
+                "message": f"Empresa {company.name} {status_msg} com sucesso!",
+                "is_active": company.is_active,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"], url_path="reject")
+    def reject(self, request, pk=None):
+        """
+        Rejeita o cadastro da empresa (Deleta e notifica).
+        POST /companies/{id}/reject/
+        """
+        company = self.get_object()
+
+        # Notify User about Rejection
+        try:
+            from app_emails.services import EmailSender
+
+            # Find the admin user (Customer Admin)
+            admin_user = company.users.filter(role=UserRole.CUSTOMER_ADMIN).first()
+
+            if admin_user and admin_user.email:
+                sender = EmailSender()
+                sender.send_email(
+                    to_email=admin_user.email,
+                    subject=f"Cadastro Reprovado - {company.name}",
+                    text_content=f"Olá {admin_user.first_name},\n\nInformamos que o cadastro da empresa {company.name} foi reprovado.\n\nCaso tenha dúvidas, entre em contato com o suporte.\n\nAtenciosamente,\nEquipe Payroll System",
+                    html_content=f"""
+                    <h2>Cadastro Reprovado</h2>
+                    <p>Olá <strong>{admin_user.first_name}</strong>,</p>
+                    <p>Informamos que o cadastro da empresa <strong>{company.name}</strong> não foi aprovado.</p>
+                    <div style="background-color: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p style="margin: 0; color: #721c24;"><strong>Status:</strong> Reprovado</p>
+                    </div>
+                    <p>Seus dados serão removidos de nossa base.</p>
+                    <hr>
+                    <p>Atenciosamente,<br>Equipe Payroll System</p>
+                    """,
+                )
+        except Exception as e:
+            logger.error(f"Failed to send rejection email: {e}")
+
+        # Delete the company
+        company.delete()
+
+        return Response(
+            {"message": f"Empresa {company.name} rejeitada e removida com sucesso!"},
             status=status.HTTP_200_OK,
         )
 

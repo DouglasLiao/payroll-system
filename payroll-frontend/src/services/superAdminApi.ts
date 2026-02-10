@@ -62,6 +62,20 @@ export const approveCompany = async (id: number) => {
   return data
 }
 
+export const rejectCompany = async (id: number) => {
+  const { data } = await api.post<{ message: string }>(
+    `/companies/${id}/reject/`
+  )
+  return data
+}
+
+export const toggleCompanyStatus = async (id: number) => {
+  const { data } = await api.post<{ message: string; is_active: boolean }>(
+    `/companies/${id}/toggle-status/`
+  )
+  return data
+}
+
 // ==================== CONFIGURATIONS ====================
 
 export const getPayrollConfig = async (companyId: number) => {

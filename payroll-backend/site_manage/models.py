@@ -260,6 +260,7 @@ class PayrollConfiguration(models.Model):
 
 
 class PlanType(models.TextChoices):
+    TRIAL = "TRIAL", "Trial (90 Dias)"
     BASIC = "BASIC", "Basic (5 Prestadores)"
     PRO = "PRO", "Pro (20 Prestadores)"
     ENTERPRISE = "ENTERPRISE", "Enterprise (100 Prestadores)"
@@ -315,7 +316,9 @@ class Subscription(models.Model):
     def save(self, *args, **kwargs):
         # Definir limites e preços padrão se não definidos
         if not self.max_providers:
-            if self.plan_type == PlanType.BASIC:
+            if self.plan_type == PlanType.TRIAL:
+                self.max_providers = 5  # Trial limit
+            elif self.plan_type == PlanType.BASIC:
                 self.max_providers = 5
             elif self.plan_type == PlanType.PRO:
                 self.max_providers = 20
@@ -325,7 +328,9 @@ class Subscription(models.Model):
                 self.max_providers = 999999
 
         if not self.price:
-            if self.plan_type == PlanType.BASIC:
+            if self.plan_type == PlanType.TRIAL:
+                self.price = Decimal("0.00")
+            elif self.plan_type == PlanType.BASIC:
                 self.price = Decimal("29.90")
             elif self.plan_type == PlanType.PRO:
                 self.price = Decimal("59.90")

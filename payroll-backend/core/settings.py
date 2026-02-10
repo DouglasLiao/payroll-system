@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_filters",
     "site_manage",
+    "app_emails",
 ]
 
 MIDDLEWARE = [
@@ -102,20 +103,23 @@ DATABASES = {
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
+if DEBUG:
+    AUTH_PASSWORD_VALIDATORS = []
+else:
+    AUTH_PASSWORD_VALIDATORS = [
+        {
+            "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        },
+        {
+            "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        },
+        {
+            "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+        },
+        {
+            "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        },
+    ]
 
 # Custom User Model
 AUTH_USER_MODEL = "site_manage.User"
@@ -300,7 +304,3 @@ EMAIL_PORT = int(os.getenv("EMAIL_PORT", "1025"))
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = "noreply@payroll-system.com"
-
-# Microservice Configuration
-EMAIL_SERVICE_URL = os.getenv("EMAIL_SERVICE_URL", "http://localhost:8001")
-EMAIL_SERVICE_API_KEY = os.getenv("EMAIL_SERVICE_API_KEY", "")

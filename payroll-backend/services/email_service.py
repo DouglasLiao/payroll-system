@@ -1,17 +1,18 @@
-import base64
-from django.conf import settings
 import logging
-from requests import post
+import base64
+from app_emails.services import EmailSender
 
 logger = logging.getLogger(__name__)
 
 
 class EmailService:
-    """Client for the Payroll Email Microservice"""
+    """
+    Wrapper for the new EmailSender service to maintain backward compatibility
+    with existing code that uses this class.
+    """
 
     def __init__(self):
-        self.base_url = getattr(settings, "EMAIL_SERVICE_URL", "http://localhost:8001")
-        self.api_key = getattr(settings, "EMAIL_SERVICE_API_KEY", "")
+        self.sender = EmailSender()
 
     def send_report_email(
         self,
@@ -23,7 +24,8 @@ class EmailService:
         content_type="text/csv",
     ):
         """
-        Send an email with attachment using the microservice.
+        Send an email with attachment using the new monolithic email service.
+        Maintains the same signature as the old microservice client.
 
         Args:
             recipient_email (str): Email recipient
@@ -37,48 +39,29 @@ class EmailService:
             bool: True if successful, False otherwise
         """
         try:
-            # Encode attachment to base64
-            if isinstance(attachment_content, str):
-                attachment_content = attachment_content.encode("utf-8")
-
-            encoded_content = base64.b64encode(attachment_content).decode("utf-8")
-
-            payload = {
-                "to": recipient_email,
-                "subject": subject,
-                "text_content": body,
-                "html_content": f"<p>{body.replace(chr(10), '<br>')}</p>",
-                "attachments": [
+            # Prepare attachment for EmailSender
+            # EmailSender expects attachments as list of dicts or tuples
+            attachments = []
+            if attachment_name and attachment_content:
+                attachments.append(
                     {
                         "filename": attachment_name,
-                        "content": encoded_content,
+                        "content": attachment_content,
                         "content_type": content_type,
                     }
-                ],
-            }
-
-            headers = {
-                "Content-Type": "application/json",
-            }
-            if self.api_key:
-                headers["Authorization"] = f"Bearer {self.api_key}"
-
-            # Microservice is mounted at /email, not /api/v1/emails
-            url = f"{self.base_url}/email/send"
-
-            logger.info(f"Sending email to {recipient_email} via microservice at {url}")
-
-            response = post(url, json=payload, headers=headers, timeout=10)
-
-            if response.status_code in [200, 201, 202]:
-                logger.info(f"Email sent successfully. Status: {response.status_code}")
-                return True
-            else:
-                logger.error(
-                    f"Failed to send email. Status: {response.status_code}, Response: {response.text}"
                 )
-                return False
+
+            # Use html_content as body with simple wrapping, and text_content as body
+            html_content = f"<p>{body.replace(chr(10), '<br>')}</p>"
+
+            return self.sender.send_email(
+                to_email=recipient_email,
+                subject=subject,
+                html_content=html_content,
+                text_content=body,
+                attachments=attachments,
+            )
 
         except Exception as e:
-            logger.error(f"Error connecting to email microservice: {str(e)}")
+            logger.error(f"Error sending email via legacy wrapper: {str(e)}")
             return False
