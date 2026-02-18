@@ -137,18 +137,12 @@ class BusinessDaysRule(models.TextChoices):
     FIXED_30 = "FIXED_30", "Fixo 30 Dias"
 
 
-class PayrollMathTemplate(models.Model):
+class BasePayrollConfig(models.Model):
     """
-    Templates globais de cálculos de folha.
-    Permite configurar rapidamente uma empresa com regras pré-definidas.
+    Modelo abstrato com as regras de cálculo de folha.
+    Elimina duplicação entre PayrollMathTemplate e PayrollConfiguration.
     """
 
-    name = models.CharField(
-        max_length=100, unique=True, verbose_name="Nome do Template"
-    )
-    description = models.TextField(blank=True, verbose_name="Descrição")
-
-    # Regras de Cálculo
     overtime_percentage = models.DecimalField(
         max_digits=5,
         decimal_places=2,
@@ -190,6 +184,21 @@ class PayrollMathTemplate(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        abstract = True
+
+
+class PayrollMathTemplate(BasePayrollConfig):
+    """
+    Templates globais de cálculos de folha.
+    Permite configurar rapidamente uma empresa com regras pré-definidas.
+    """
+
+    name = models.CharField(
+        max_length=100, unique=True, verbose_name="Nome do Template"
+    )
+    description = models.TextField(blank=True, verbose_name="Descrição")
+
+    class Meta:
         verbose_name = "Template de Cálculo"
         verbose_name_plural = "Templates de Cálculo"
 
@@ -197,7 +206,7 @@ class PayrollMathTemplate(models.Model):
         return self.name
 
 
-class PayrollConfiguration(models.Model):
+class PayrollConfiguration(BasePayrollConfig):
     """
     Configuração específica de cálculo para uma empresa via OneToOne.
     Substitui as constantes globais hardcoded.
@@ -209,47 +218,6 @@ class PayrollConfiguration(models.Model):
         related_name="payroll_config",
         verbose_name="Empresa",
     )
-
-    # Regras de Cálculo (cópias do template ou customizadas)
-    overtime_percentage = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        default=Decimal("50.00"),
-        verbose_name="% Hora Extra",
-    )
-    night_shift_percentage = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        default=Decimal("20.00"),
-        verbose_name="% Adicional Noturno",
-    )
-    holiday_percentage = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        default=Decimal("100.00"),
-        verbose_name="% Feriado",
-    )
-    advance_percentage = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        default=Decimal("40.00"),
-        verbose_name="% Adiantamento Padrão",
-    )
-    transport_voucher_type = models.CharField(
-        max_length=20,
-        choices=TransportVoucherType.choices,
-        default=TransportVoucherType.DYNAMIC_PER_TRIP,
-        verbose_name="Tipo de Vale Transporte",
-    )
-    business_days_rule = models.CharField(
-        max_length=20,
-        choices=BusinessDaysRule.choices,
-        default=BusinessDaysRule.WORKALENDAR,
-        verbose_name="Regra de Dias Úteis",
-    )
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Configuração de Folha"
@@ -313,32 +281,26 @@ class Subscription(models.Model):
         verbose_name = "Assinatura"
         verbose_name_plural = "Assinaturas"
 
+    # Defaults por plano — use SubscriptionService.create_subscription() para criar
+    PLAN_DEFAULTS = {
+        PlanType.TRIAL: {"max_providers": 5, "price": Decimal("0.00")},
+        PlanType.BASIC: {"max_providers": 5, "price": Decimal("29.90")},
+        PlanType.PRO: {"max_providers": 20, "price": Decimal("59.90")},
+        PlanType.ENTERPRISE: {"max_providers": 100, "price": Decimal("99.90")},
+        PlanType.UNLIMITED: {"max_providers": 999999, "price": Decimal("199.90")},
+    }
+
+    @classmethod
+    def get_plan_defaults(cls, plan_type: str) -> dict:
+        """Retorna os valores padrão de um plano. Use em SubscriptionService."""
+        return cls.PLAN_DEFAULTS.get(plan_type, {})
+
     def save(self, *args, **kwargs):
-        # Definir limites e preços padrão se não definidos
-        if not self.max_providers:
-            if self.plan_type == PlanType.TRIAL:
-                self.max_providers = 5  # Trial limit
-            elif self.plan_type == PlanType.BASIC:
-                self.max_providers = 5
-            elif self.plan_type == PlanType.PRO:
-                self.max_providers = 20
-            elif self.plan_type == PlanType.ENTERPRISE:
-                self.max_providers = 100
-            elif self.plan_type == PlanType.UNLIMITED:
-                self.max_providers = 999999
-
-        if not self.price:
-            if self.plan_type == PlanType.TRIAL:
-                self.price = Decimal("0.00")
-            elif self.plan_type == PlanType.BASIC:
-                self.price = Decimal("29.90")
-            elif self.plan_type == PlanType.PRO:
-                self.price = Decimal("59.90")
-            elif self.plan_type == PlanType.ENTERPRISE:
-                self.price = Decimal("99.90")
-            elif self.plan_type == PlanType.UNLIMITED:
-                self.price = Decimal("199.90")
-
+        """
+        Persiste a assinatura.
+        NOTA: Use SubscriptionService.create_subscription() para criar assinaturas
+        com defaults de plano aplicados automaticamente.
+        """
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -771,130 +733,11 @@ class Payroll(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Calcula automaticamente todos os valores antes de salvar.
-        Usa as funções da camada de domínio para garantir consistência.
+        Persiste a folha de pagamento.
+        NOTA: Os cálculos são realizados pelo PayrollService antes de chamar save().
+        Não coloque lógica de negócio aqui — use PayrollService.create_payroll()
+        ou PayrollService.recalculate_payroll().
         """
-        from domain.payroll_calculator import (
-            calcular_folha_completa,
-            calcular_salario_proporcional,
-            calcular_vale_transporte,
-            calcular_dias_trabalhados,
-        )
-
-        # Importar função de cálculo de dias
-        from services.payroll_service import calcular_dias_mes
-
-        # NOVO: Calcular salário proporcional se hired_date preenchido
-        valor_base_atual = self.base_value
-
-        if self.hired_date:
-            # Funcionário começou no meio do mês - calcular proporcional
-            valor_proporcional, dias_trab, dias_totais = calcular_salario_proporcional(
-                self.provider.monthly_value, self.hired_date, self.reference_month
-            )
-            self.proportional_base_value = valor_proporcional
-            self.worked_days = dias_trab
-            valor_base_atual = valor_proporcional
-
-            # Atualizar base_value para refletir o valor proporcional
-            self.base_value = valor_proporcional
-        else:
-            # Mês completo - resetar campos proporcionais
-            self.worked_days = 0
-            self.proportional_base_value = Decimal("0.00")
-
-        # NOVO: Calcular Vale Transporte dinâmico se habilitado
-        if self.provider.vt_enabled:
-            # Calcular dias efetivamente trabalhados (considera faltas + hired_date)
-            dias_efetivos = calcular_dias_trabalhados(
-                reference_month=self.reference_month,
-                absence_days=self.absence_days,
-                hired_date=self.hired_date,
-            )
-
-            # Calcular VT baseado em viagens × tarifa × dias trabalhados
-            self.vt_value = calcular_vale_transporte(
-                viagens_por_dia=self.provider.vt_trips_per_day,
-                tarifa_passagem=self.provider.vt_fare,
-                dias_trabalhados=dias_efetivos,
-            )
-        else:
-            # Provider não tem VT habilitado
-            self.vt_value = Decimal("0.00")
-
-        # Calcular dias úteis e domingos/feriados do mês
-        dias_uteis, domingos_feriados = calcular_dias_mes(self.reference_month)
-
-        # OBTER CONFIGURAÇÃO DA EMPRESA
-        # Tenta obter a configuração específica da empresa, senão usa defaults
-        mult_extras = None
-        mult_feriado = None
-        mult_noturno = None
-
-        try:
-            config = self.provider.company.payroll_config
-            # Converter percentuais para multiplicadores
-            # Ex: 50% -> 1.5, 100% -> 2.0
-            mult_extras = Decimal("1") + (config.overtime_percentage / Decimal("100"))
-            mult_feriado = Decimal("1") + (config.holiday_percentage / Decimal("100"))
-            mult_noturno = Decimal("1") + (
-                config.night_shift_percentage / Decimal("100")
-            )
-        except:
-            # Se não existir config (ex: empresas antigas sem migração), usa defaults do calculator
-            # que são importados implicitamente pelos argumentos default da função
-            pass
-
-        # Calcular todos os valores usando a função do domínio
-        # Usamos vt_discount (deprecated) OU vt_value para compatibilidade
-        vt_para_calculo = self.vt_value if self.vt_value > 0 else self.vt_discount
-
-        # Preparar kwargs para injetar apenas se tivermos valores (senão usa defaults da função)
-        calc_kwargs = {}
-        if mult_extras:
-            calc_kwargs["multiplicador_extras"] = mult_extras
-        if mult_feriado:
-            calc_kwargs["multiplicador_feriado"] = mult_feriado
-        if mult_noturno:
-            calc_kwargs["multiplicador_noturno"] = mult_noturno
-
-        calculated = calcular_folha_completa(
-            valor_contrato_mensal=self.base_value,
-            percentual_adiantamento=(
-                (self.advance_value / self.base_value * 100)
-                if self.base_value > 0
-                else Decimal("0")
-            ),
-            horas_extras=self.overtime_hours_50,
-            horas_feriado=self.holiday_hours,
-            horas_noturnas=self.night_hours,
-            minutos_atraso=self.late_minutes,
-            horas_falta=self.absence_hours,
-            vale_transporte=vt_para_calculo,
-            descontos_manuais=self.manual_discounts,
-            carga_horaria_mensal=(
-                self.provider.monthly_hours if self.provider_id else 220
-            ),
-            dias_uteis_mes=dias_uteis,
-            domingos_e_feriados_mes=domingos_feriados,
-            **calc_kwargs,
-        )
-
-        # Atribuir valores calculados
-        self.hourly_rate = calculated["valor_hora"]
-        self.remaining_value = calculated["saldo_pos_adiantamento"]
-        self.overtime_amount = calculated["hora_extra_50"]
-        self.holiday_amount = calculated["feriado_trabalhado"]
-        self.night_shift_amount = calculated["adicional_noturno"]
-        self.dsr_amount = calculated["dsr"]
-        self.total_earnings = calculated["total_proventos"]
-        self.late_discount = calculated["desconto_atraso"]
-        self.absence_discount = calculated["desconto_falta"]
-        # dsr_on_absences REMOVIDO - conceito CLT
-        self.total_discounts = calculated["total_descontos"]
-        self.gross_value = calculated["valor_bruto"]
-        self.net_value = calculated["valor_liquido"]
-
         super().save(*args, **kwargs)
 
     def __str__(self):

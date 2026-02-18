@@ -3,6 +3,11 @@ Serviço de Folha de Pagamento PJ
 
 Este módulo contém a lógica de aplicação para criação e gestão de folhas
 de pagamento, orquestrando os modelos Django e as funções de cálculo do domínio.
+
+Seguindo o Django-Styleguide:
+- Services são responsáveis por toda a lógica de negócio de escrita
+- O Model.save() apenas persiste dados — sem cálculos
+- Toda lógica de cálculo é centralizada aqui
 """
 
 from decimal import Decimal
@@ -70,12 +75,142 @@ def calcular_dias_mes(reference_month: str) -> tuple[int, int]:
     return dias_uteis, domingos_e_feriados
 
 
+def _calcular_valores_folha(payroll: Payroll) -> dict:
+    """
+    Função interna que executa todos os cálculos de uma folha.
+
+    Centraliza a lógica que antes estava em Payroll.save().
+    Retorna um dicionário com todos os campos calculados para serem
+    atribuídos ao objeto Payroll antes de salvar.
+
+    Args:
+        payroll: Instância de Payroll com os dados de entrada preenchidos
+
+    Returns:
+        Dicionário com todos os campos calculados
+    """
+    from domain.payroll_calculator import (
+        calcular_folha_completa,
+        calcular_salario_proporcional,
+        calcular_vale_transporte,
+        calcular_dias_trabalhados,
+    )
+
+    resultado = {}
+
+    # ── Salário Proporcional ──────────────────────────────────────────────────
+    if payroll.hired_date:
+        valor_proporcional, dias_trab, _ = calcular_salario_proporcional(
+            payroll.provider.monthly_value, payroll.hired_date, payroll.reference_month
+        )
+        resultado["proportional_base_value"] = valor_proporcional
+        resultado["worked_days"] = dias_trab
+        resultado["base_value"] = valor_proporcional
+    else:
+        resultado["worked_days"] = 0
+        resultado["proportional_base_value"] = Decimal("0.00")
+
+    base_value = resultado.get("base_value", payroll.base_value)
+
+    # ── Vale Transporte ───────────────────────────────────────────────────────
+    if payroll.provider.vt_enabled:
+        dias_efetivos = calcular_dias_trabalhados(
+            reference_month=payroll.reference_month,
+            absence_days=payroll.absence_days,
+            hired_date=payroll.hired_date,
+        )
+        resultado["vt_value"] = calcular_vale_transporte(
+            viagens_por_dia=payroll.provider.vt_trips_per_day,
+            tarifa_passagem=payroll.provider.vt_fare,
+            dias_trabalhados=dias_efetivos,
+        )
+    else:
+        resultado["vt_value"] = Decimal("0.00")
+
+    # ── Dias Úteis / Feriados ─────────────────────────────────────────────────
+    dias_uteis, domingos_feriados = calcular_dias_mes(payroll.reference_month)
+
+    # ── Configuração da Empresa ───────────────────────────────────────────────
+    calc_kwargs = {}
+    try:
+        config = payroll.provider.company.payroll_config
+        calc_kwargs["multiplicador_extras"] = Decimal("1") + (
+            config.overtime_percentage / Decimal("100")
+        )
+        calc_kwargs["multiplicador_feriado"] = Decimal("1") + (
+            config.holiday_percentage / Decimal("100")
+        )
+        calc_kwargs["multiplicador_noturno"] = Decimal("1") + (
+            config.night_shift_percentage / Decimal("100")
+        )
+    except Exception:
+        # Empresa sem configuração — usa defaults do domain calculator
+        pass
+
+    # ── Cálculo Principal ─────────────────────────────────────────────────────
+    vt_para_calculo = (
+        resultado["vt_value"] if resultado["vt_value"] > 0 else payroll.vt_discount
+    )
+
+    advance_value = payroll.advance_value
+    percentual_adiantamento = (
+        (advance_value / base_value * 100) if base_value > 0 else Decimal("0")
+    )
+
+    calculated = calcular_folha_completa(
+        valor_contrato_mensal=base_value,
+        percentual_adiantamento=percentual_adiantamento,
+        horas_extras=payroll.overtime_hours_50,
+        horas_feriado=payroll.holiday_hours,
+        horas_noturnas=payroll.night_hours,
+        minutos_atraso=payroll.late_minutes,
+        horas_falta=payroll.absence_hours,
+        vale_transporte=vt_para_calculo,
+        descontos_manuais=payroll.manual_discounts,
+        carga_horaria_mensal=(
+            payroll.provider.monthly_hours if payroll.provider_id else 220
+        ),
+        dias_uteis_mes=dias_uteis,
+        domingos_e_feriados_mes=domingos_feriados,
+        **calc_kwargs,
+    )
+
+    # ── Mapear resultado ──────────────────────────────────────────────────────
+    resultado.update(
+        {
+            "hourly_rate": calculated["valor_hora"],
+            "remaining_value": calculated["saldo_pos_adiantamento"],
+            "overtime_amount": calculated["hora_extra_50"],
+            "holiday_amount": calculated["feriado_trabalhado"],
+            "night_shift_amount": calculated["adicional_noturno"],
+            "dsr_amount": calculated["dsr"],
+            "total_earnings": calculated["total_proventos"],
+            "late_discount": calculated["desconto_atraso"],
+            "absence_discount": calculated["desconto_falta"],
+            "total_discounts": calculated["total_descontos"],
+            "gross_value": calculated["valor_bruto"],
+            "net_value": calculated["valor_liquido"],
+        }
+    )
+
+    return resultado
+
+
+def _apply_calculated_values(payroll: Payroll, valores: dict) -> None:
+    """Aplica os valores calculados ao objeto Payroll."""
+    for field, value in valores.items():
+        setattr(payroll, field, value)
+
+
 class PayrollService:
     """
     Serviço para gerenciamento de folhas de pagamento PJ
 
     Orquestra a criação, atualização e gestão do ciclo de vida das folhas,
     integrando os modelos Django com as regras de cálculo do domínio.
+
+    Seguindo o Django-Styleguide: toda lógica de negócio vive aqui,
+    não no Model.save().
     """
 
     @transaction.atomic
@@ -87,13 +222,17 @@ class PayrollService:
         holiday_hours: Decimal = Decimal("0"),
         night_hours: Decimal = Decimal("0"),
         late_minutes: int = 0,
+        absence_days: int = 0,
         absence_hours: Decimal = Decimal("0"),
         manual_discounts: Decimal = Decimal("0"),
         advance_already_paid: Optional[Decimal] = None,
+        hired_date=None,
         notes: str = None,
     ) -> Payroll:
         """
         Cria uma nova folha de pagamento para um prestador PJ.
+
+        Realiza todos os cálculos antes de persistir.
 
         Args:
             provider_id: ID do prestador
@@ -102,9 +241,11 @@ class PayrollService:
             holiday_hours: Horas trabalhadas em feriados
             night_hours: Horas com adicional noturno
             late_minutes: Minutos de atraso
-            absence_hours: Horas de falta
+            absence_days: Dias de falta
+            absence_hours: Horas de falta (deprecated — use absence_days)
             manual_discounts: Descontos manuais
             advance_already_paid: Adiantamento já pago (se None, calcula automaticamente)
+            hired_date: Data de admissão (para salário proporcional)
             notes: Observações
 
         Returns:
@@ -114,10 +255,11 @@ class PayrollService:
             Provider.DoesNotExist: Se o prestador não existir
             ValueError: Se os dados forem inválidos
         """
-        # Buscar prestador
-        provider = Provider.objects.get(pk=provider_id)
+        provider = Provider.objects.select_related("company__payroll_config").get(
+            pk=provider_id
+        )
 
-        # Verificar se já existe folha para este mês
+        # Verificar duplicata
         if Payroll.objects.filter(
             provider=provider, reference_month=reference_month
         ).exists():
@@ -125,7 +267,7 @@ class PayrollService:
                 f"Já existe uma folha para {provider.name} no mês {reference_month}"
             )
 
-        # Calcular adiantamento se não foi informado
+        # Calcular adiantamento
         if advance_already_paid is None:
             if provider.advance_enabled:
                 advance_already_paid = (
@@ -136,15 +278,14 @@ class PayrollService:
             else:
                 advance_already_paid = Decimal("0.00")
 
-        # Validar que adiantamento não é maior que o salário
         if advance_already_paid > provider.monthly_value:
             raise ValueError(
                 f"Adiantamento (R$ {advance_already_paid}) não pode ser maior que "
                 f"o valor mensal (R$ {provider.monthly_value})"
             )
 
-        # Criar folha
-        payroll = Payroll.objects.create(
+        # Construir objeto sem salvar
+        payroll = Payroll(
             provider=provider,
             reference_month=reference_month,
             base_value=provider.monthly_value,
@@ -153,14 +294,22 @@ class PayrollService:
             holiday_hours=holiday_hours,
             night_hours=night_hours,
             late_minutes=late_minutes,
+            absence_days=absence_days,
             absence_hours=absence_hours,
             manual_discounts=manual_discounts,
-            vt_discount=provider.vt_value,
+            vt_discount=provider.vt_value,  # campo deprecated — mantido para compatibilidade
+            hired_date=hired_date,
             notes=notes,
         )
 
-        # O método save() do modelo já calcula todos os valores
-        # Agora criar os itens detalhados para transparência
+        # Calcular todos os valores e aplicar ao objeto
+        valores = _calcular_valores_folha(payroll)
+        _apply_calculated_values(payroll, valores)
+
+        # Persistir
+        payroll.save()
+
+        # Criar itens detalhados
         self._create_payroll_items(payroll)
 
         return payroll
@@ -176,7 +325,6 @@ class PayrollService:
 
         # === CRÉDITOS (PROVENTOS) ===
 
-        # Salário base após adiantamento
         items.append(
             PayrollItem(
                 payroll=payroll,
@@ -186,7 +334,6 @@ class PayrollService:
             )
         )
 
-        # Horas extras 50%
         if payroll.overtime_amount > 0:
             items.append(
                 PayrollItem(
@@ -197,7 +344,6 @@ class PayrollService:
                 )
             )
 
-        # Feriados trabalhados
         if payroll.holiday_amount > 0:
             items.append(
                 PayrollItem(
@@ -208,7 +354,6 @@ class PayrollService:
                 )
             )
 
-        # Adicional noturno
         if payroll.night_shift_amount > 0:
             items.append(
                 PayrollItem(
@@ -219,7 +364,6 @@ class PayrollService:
                 )
             )
 
-        # DSR sobre extras
         if payroll.dsr_amount > 0:
             items.append(
                 PayrollItem(
@@ -232,7 +376,6 @@ class PayrollService:
 
         # === DÉBITOS (DESCONTOS) ===
 
-        # Adiantamento quinzenal
         if payroll.advance_value > 0:
             percentage = (payroll.advance_value / payroll.base_value * 100).quantize(
                 Decimal("0.01")
@@ -246,7 +389,6 @@ class PayrollService:
                 )
             )
 
-        # Atrasos
         if payroll.late_discount > 0:
             items.append(
                 PayrollItem(
@@ -257,19 +399,27 @@ class PayrollService:
                 )
             )
 
-        # Faltas
         if payroll.absence_discount > 0:
             items.append(
                 PayrollItem(
                     payroll=payroll,
                     type=ItemType.DEBIT,
-                    description=f"Faltas ({payroll.absence_hours}h)",
+                    description=f"Faltas ({payroll.absence_days} dias)",
                     amount=payroll.absence_discount,
                 )
             )
 
-        # Vale transporte
-        if payroll.vt_discount > 0:
+        if payroll.vt_value > 0:
+            items.append(
+                PayrollItem(
+                    payroll=payroll,
+                    type=ItemType.DEBIT,
+                    description="Vale transporte",
+                    amount=payroll.vt_value,
+                )
+            )
+        elif payroll.vt_discount > 0:
+            # Compatibilidade com campo deprecated
             items.append(
                 PayrollItem(
                     payroll=payroll,
@@ -279,7 +429,6 @@ class PayrollService:
                 )
             )
 
-        # Descontos manuais
         if payroll.manual_discounts > 0:
             items.append(
                 PayrollItem(
@@ -290,13 +439,12 @@ class PayrollService:
                 )
             )
 
-        # Criar todos os itens de uma vez
         PayrollItem.objects.bulk_create(items)
 
     @transaction.atomic
     def close_payroll(self, payroll_id: int) -> Payroll:
         """
-        Fecha a folha de pagamento, impedindo edições futuras.
+        Fecha a folha de pagamento (DRAFT → CLOSED).
 
         Args:
             payroll_id: ID da folha a ser fechada
@@ -325,7 +473,7 @@ class PayrollService:
     @transaction.atomic
     def mark_as_paid(self, payroll_id: int) -> Payroll:
         """
-        Marca a folha como paga.
+        Marca a folha como paga (CLOSED → PAID).
 
         Args:
             payroll_id: ID da folha
@@ -355,6 +503,34 @@ class PayrollService:
         return payroll
 
     @transaction.atomic
+    def reopen_payroll(self, payroll_id: int) -> Payroll:
+        """
+        Reabre uma folha fechada (CLOSED → DRAFT).
+
+        Args:
+            payroll_id: ID da folha
+
+        Returns:
+            Folha reaberta
+
+        Raises:
+            ValueError: Se a folha já foi paga ou está em rascunho
+        """
+        payroll = Payroll.objects.get(pk=payroll_id)
+
+        if payroll.status == PayrollStatus.PAID:
+            raise ValueError("Folhas pagas não podem ser reabertas")
+
+        if payroll.status == PayrollStatus.DRAFT:
+            raise ValueError("Folha já está em rascunho")
+
+        payroll.status = PayrollStatus.DRAFT
+        payroll.closed_at = None
+        payroll.save()
+
+        return payroll
+
+    @transaction.atomic
     def recalculate_payroll(self, payroll_id: int, **updates) -> Payroll:
         """
         Recalcula a folha com novos valores (apenas se estiver em DRAFT).
@@ -370,7 +546,11 @@ class PayrollService:
             Payroll.DoesNotExist: Se a folha não existir
             ValueError: Se a folha não estiver em rascunho
         """
-        payroll = Payroll.objects.select_for_update().get(pk=payroll_id)
+        payroll = (
+            Payroll.objects.select_for_update()
+            .select_related("provider__company__payroll_config")
+            .get(pk=payroll_id)
+        )
 
         if payroll.status != PayrollStatus.DRAFT:
             raise ValueError(
@@ -378,7 +558,6 @@ class PayrollService:
                 f"Status atual: '{payroll.get_status_display()}'"
             )
 
-        # Campos que podem ser atualizados
         allowed_fields = [
             "overtime_hours_50",
             "holiday_hours",
@@ -393,18 +572,16 @@ class PayrollService:
             "hired_date",
         ]
 
-        # Aplicar atualizações
         for field, value in updates.items():
             if field not in allowed_fields:
                 raise ValueError(f"Campo '{field}' não pode ser atualizado")
 
-            # Lógica especial para mudança de Prestador
             if field == "provider_id":
-                new_provider = Provider.objects.get(pk=value)
+                new_provider = Provider.objects.select_related(
+                    "company__payroll_config"
+                ).get(pk=value)
                 payroll.provider = new_provider
-                # Atualizar valor base para o do novo prestador
                 payroll.base_value = new_provider.monthly_value
-                # Recalcular adiantamento se habilitado no novo prestador
                 if new_provider.advance_enabled:
                     payroll.advance_value = (
                         new_provider.monthly_value
@@ -417,7 +594,10 @@ class PayrollService:
 
             setattr(payroll, field, value)
 
-        # Salvar (aciona recálculo automático)
+        # Recalcular e aplicar
+        valores = _calcular_valores_folha(payroll)
+        _apply_calculated_values(payroll, valores)
+
         payroll.save()
 
         # Recriar itens
@@ -453,12 +633,10 @@ class PayrollService:
             },
             "reference_month": payroll.reference_month,
             "status": payroll.status,
-            # Valores base
             "base_value": payroll.base_value,
             "hourly_rate": payroll.hourly_rate,
             "advance_value": payroll.advance_value,
             "remaining_value": payroll.remaining_value,
-            # Horas
             "hours": {
                 "overtime_50": payroll.overtime_hours_50,
                 "holiday": payroll.holiday_hours,
@@ -466,7 +644,6 @@ class PayrollService:
                 "late_minutes": payroll.late_minutes,
                 "absence": payroll.absence_hours,
             },
-            # Proventos
             "earnings": {
                 "overtime": payroll.overtime_amount,
                 "holiday": payroll.holiday_amount,
@@ -474,19 +651,15 @@ class PayrollService:
                 "dsr": payroll.dsr_amount,
                 "total": payroll.total_earnings,
             },
-            # Descontos
             "discounts": {
                 "late": payroll.late_discount,
                 "absence": payroll.absence_discount,
-                # 'dsr_on_absences': REMOVIDO - conceito CLT
-                "vt": payroll.vt_discount,
+                "vt": payroll.vt_value or payroll.vt_discount,
                 "manual": payroll.manual_discounts,
                 "total": payroll.total_discounts,
             },
-            # Totais
             "gross_value": payroll.gross_value,
             "net_value": payroll.net_value,
-            # Itens detalhados
             "items": [
                 {
                     "type": item.type,
@@ -495,37 +668,9 @@ class PayrollService:
                 }
                 for item in items
             ],
-            # Metadados
             "notes": payroll.notes,
             "closed_at": payroll.closed_at,
             "paid_at": payroll.paid_at,
             "created_at": payroll.created_at,
             "updated_at": payroll.updated_at,
         }
-
-    def reopen_payroll(self, payroll_id: int) -> Payroll:
-        """
-        Reabre uma folha fechada (apenas se não foi paga).
-
-        Args:
-            payroll_id: ID da folha
-
-        Returns:
-            Folha reaberta
-
-        Raises:
-            ValueError: Se a folha já foi paga
-        """
-        payroll = Payroll.objects.get(pk=payroll_id)
-
-        if payroll.status == PayrollStatus.PAID:
-            raise ValueError("Folhas pagas não podem ser reabertas")
-
-        if payroll.status == PayrollStatus.DRAFT:
-            raise ValueError("Folha já está em rascunho")
-
-        payroll.status = PayrollStatus.DRAFT
-        payroll.closed_at = None
-        payroll.save()
-
-        return payroll

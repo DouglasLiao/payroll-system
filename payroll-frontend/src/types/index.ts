@@ -81,12 +81,14 @@ export interface Payroll {
   night_hours: string
   late_minutes: number
   absence_days: number
+  /** @deprecated Use absence_days instead */
   absence_hours: string
 
   // Descontos variáveis
   manual_discounts: string
   vt_value: string // Calculado automaticamente
-  vt_discount: string // Deprecated
+  /** @deprecated VT discount is now included in total_discounts */
+  vt_discount: string
 
   // Valores calculados - Proventos
   overtime_amount: string
@@ -141,14 +143,6 @@ export interface PayrollCreateData {
   notes?: string
 }
 
-export interface DashboardStats {
-  stats: {
-    pending: number
-    paid: number
-  }
-  recent_activity: Payment[]
-}
-
 // Enhanced dashboard stats with aggregations and trends
 export interface EnhancedDashboardStats {
   stats: {
@@ -185,16 +179,6 @@ export interface EnhancedDashboardStats {
     }
   }
   recent_activity: Payroll[]
-}
-
-// Dashboard component types
-export interface PayrollStats {
-  total: number
-  drafts: number
-  closed: number
-  paid: number
-  totalValue: number
-  avgValue: number
 }
 
 export interface MonthlyData {

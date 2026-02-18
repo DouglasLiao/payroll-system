@@ -1,14 +1,19 @@
 import axios, { AxiosError } from 'axios'
 
-const api = axios.create({
+/**
+ * authApi.ts — Authentication & Registration API
+ *
+ * All routes are under /users/auth/ (moved from /auth/ in the users/ app refactor).
+ */
+
+const authAxios = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/',
-  withCredentials: true, // Importante para enviar cookies httpOnly
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' },
 })
 
-// Tipos
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 export interface User {
   id: number
   username: string
@@ -30,98 +35,77 @@ export interface LoginResponse {
   user: User
 }
 
-// API de Autenticação
+// ── Auth API ──────────────────────────────────────────────────────────────────
+
 export const authApi = {
-  /**
-   * Login do usuário
-   * Cookies são definidos automaticamente pelo backend
-   */
   login: async (username: string, password: string): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>('/auth/token/', {
+    const { data } = await authAxios.post<LoginResponse>('/users/auth/token/', {
       username,
       password,
     })
-    return response.data
+    return data
   },
 
-  /**
-   * Busca informações do usuário logado
-   * Token é enviado automaticamente via cookie
-   */
   getCurrentUser: async (): Promise<User> => {
-    const response = await api.get<User>('/auth/me/')
-    return response.data
+    const { data } = await authAxios.get<User>('/users/auth/me/')
+    return data
   },
 
-  /**
-   * Logout do usuário
-   * Backend remove os cookies
-   */
   logout: async (): Promise<void> => {
-    await api.post('/auth/logout/')
+    await authAxios.post('/users/auth/logout/')
   },
 
-  /**
-   * Atualiza timeout de inatividade do usuário
-   */
   updateTimeout: async (
     timeout: number
   ): Promise<{ message: string; timeout: number }> => {
-    const response = await api.post('/auth/update-timeout/', { timeout })
-    return response.data
+    const { data } = await authAxios.post('/users/auth/update-timeout/', {
+      timeout,
+    })
+    return data
   },
 
-  /**
-   * Altera senha do usuário
-   */
   changePassword: async (
     oldPassword: string,
     newPassword: string
   ): Promise<{ message: string }> => {
-    const response = await api.post('/auth/change-password/', {
+    const { data } = await authAxios.post('/users/auth/change-password/', {
       old_password: oldPassword,
       new_password: newPassword,
     })
-    return response.data
+    return data
   },
 
-  /**
-   * Solicita reset de senha
-   */
   requestPasswordReset: async (email: string): Promise<{ message: string }> => {
-    const response = await api.post('/auth/password-reset/request/', { email })
-    return response.data
+    const { data } = await authAxios.post(
+      '/users/auth/password-reset/request/',
+      { email }
+    )
+    return data
   },
 
-  /**
-   * Confirma reset de senha com token
-   */
   confirmPasswordReset: async (
     token: string,
     newPassword: string,
     confirmPassword: string
   ): Promise<{ message: string }> => {
-    const response = await api.post('/auth/password-reset/confirm/', {
-      token,
-      new_password: newPassword,
-      new_password_confirm: confirmPassword,
-    })
-    return response.data
+    const { data } = await authAxios.post(
+      '/users/auth/password-reset/confirm/',
+      {
+        token,
+        new_password: newPassword,
+        new_password_confirm: confirmPassword,
+      }
+    )
+    return data
   },
 
-  /**
-   * Verifica se email está disponível
-   */
   checkEmail: async (
     email: string
   ): Promise<{ email: string; exists: boolean; available: boolean }> => {
-    const response = await api.post('/auth/check-email/', { email })
-    return response.data
+    const { data } = await authAxios.post('/users/auth/check-email/', { email })
+    return data
   },
 
-  /**
-   * Registra novo usuário
-   */
   register: async (data: {
     email: string
     username: string
@@ -133,22 +117,23 @@ export const authApi = {
     company_cnpj: string
     company_phone?: string
   }): Promise<{ message: string; user: User }> => {
-    const response = await api.post('/auth/register/', data)
-    return response.data
+    const { data: response } = await authAxios.post(
+      '/users/auth/register/',
+      data
+    )
+    return response
   },
 }
 
-// Interceptor para lidar com erros de autenticação
-api.interceptors.response.use(
+// ── Interceptor ───────────────────────────────────────────────────────────────
+
+authAxios.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    // Apenas redirecionar para login se não estiver na página de login
-    // e se for erro de autenticação real
     if (
       error.response?.status === 401 &&
       !window.location.pathname.includes('/login')
     ) {
-      // Evitar loops - só redirecionar uma vez
       const alreadyRedirected = sessionStorage.getItem('auth_redirect')
       if (!alreadyRedirected) {
         sessionStorage.setItem('auth_redirect', 'true')
@@ -159,4 +144,4 @@ api.interceptors.response.use(
   }
 )
 
-export default api
+export default authAxios

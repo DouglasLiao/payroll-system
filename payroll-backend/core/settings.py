@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_filters",
     "site_manage",
+    "users",
     "app_emails",
 ]
 

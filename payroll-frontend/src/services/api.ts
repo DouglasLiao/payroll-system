@@ -1,16 +1,20 @@
+/**
+ * api.ts — Shared Axios instance + re-exports for backward compatibility
+ *
+ * This file now serves two purposes:
+ * 1. Exports the shared axios instance used by all domain API files
+ * 2. Re-exports all functions from domain-specific files so existing imports
+ *    continue to work without changes (backward compatibility)
+ *
+ * New code should import directly from the domain files:
+ *   import { getPayrolls } from './payrollApi'
+ *   import { getProviders } from './providerApi'
+ *   import { getDashboardStats } from './dashboardApi'
+ */
+
 import axios from 'axios'
-import type {
-  Provider,
-  Payment,
-  EnhancedDashboardStats,
-  PaginatedResponse,
-  Payroll,
-  PayrollDetail,
-  PayrollCreateData,
-} from '../types'
 
 // Get API base URL from environment variables
-// Fallback to localhost for development if not set
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/'
 
@@ -19,49 +23,42 @@ const api = axios.create({
   withCredentials: true, // Enable sending cookies (JWT tokens) with requests
 })
 
-// ==================== PROVIDERS ====================
+export default api
 
-export interface ProviderFilters {
-  page?: number
-  page_size?: number
-  search?: string
-}
+// ── Re-exports for backward compatibility ─────────────────────────────────────
 
-export const getProviders = async (params?: ProviderFilters) => {
-  const searchParams = new URLSearchParams()
+export type { ProviderFilters } from './providerApi'
+export {
+  getProviders,
+  createProvider,
+  updateProvider,
+  deleteProvider,
+} from './providerApi'
 
-  if (params?.page) {
-    searchParams.append('page', params.page.toString())
-  }
-  if (params?.page_size) {
-    searchParams.append('page_size', params.page_size.toString())
-  }
+export type { PayrollFilters, PayrollStats } from './payrollApi'
+export {
+  getPayrolls,
+  getPayrollStats,
+  getPayrollDetail,
+  createPayroll,
+  updatePayroll,
+  closePayroll,
+  markPayrollAsPaid,
+  reopenPayroll,
+  recalculatePayroll,
+  downloadPayrollFile,
+} from './payrollApi'
 
-  const queryString = searchParams.toString()
-  const url = `/providers/${queryString ? '?' + queryString : ''}`
+export type { DashboardFilters } from './dashboardApi'
+export {
+  getDashboardStats,
+  downloadMonthlyReport,
+  sendReportEmail,
+} from './dashboardApi'
 
-  const { data } = await api.get<PaginatedResponse<Provider>>(url)
-  return data
-}
+// ── Legacy: Payments (kept here since not yet extracted) ──────────────────────
 
-export const createProvider = async (provider: Omit<Provider, 'id'>) => {
-  const { data } = await api.post<Provider>('/providers/', provider)
-  return data
-}
-
-export const updateProvider = async (
-  id: number,
-  provider: Partial<Provider>
-) => {
-  const { data } = await api.patch<Provider>(`/providers/${id}/`, provider)
-  return data
-}
-
-export const deleteProvider = async (id: number) => {
-  await api.delete(`/providers/${id}/`)
-}
-
-// ==================== PAYMENTS (Legacy) ====================
+import type { Payment, PaginatedResponse } from '../types'
 
 export const getPayments = async () => {
   const { data } = await api.get<PaginatedResponse<Payment>>('/payments/')
@@ -79,179 +76,3 @@ export const payPayment = async (id: number) => {
   const { data } = await api.post<Payment>(`/payments/${id}/pay/`)
   return data
 }
-
-// ==================== PAYROLLS ====================
-
-export interface PayrollFilters {
-  status?: string
-  reference_month?: string
-  provider?: number
-  page?: number
-  page_size?: number
-}
-
-export const getPayrolls = async (params?: PayrollFilters) => {
-  console.log('API: getPayrolls called', params)
-  const searchParams = new URLSearchParams()
-
-  if (params?.status && params.status !== 'all') {
-    searchParams.append('status', params.status)
-  }
-  if (params?.reference_month) {
-    // Convert from YYYY-MM (HTML5 month input) to MM/YYYY (backend format)
-    const [year, month] = params.reference_month.split('-')
-    const formattedMonth = `${month}/${year}`
-    searchParams.append('reference_month', formattedMonth)
-  }
-  if (params?.provider) {
-    searchParams.append('provider', params.provider.toString())
-  }
-  if (params?.page) {
-    searchParams.append('page', params.page.toString())
-  }
-  if (params?.page_size) {
-    searchParams.append('page_size', params.page_size.toString())
-  }
-
-  const queryString = searchParams.toString()
-  const url = `/payrolls/${queryString ? '?' + queryString : ''}`
-
-  const { data } = await api.get<PaginatedResponse<Payroll>>(url)
-  return data
-}
-
-export interface PayrollStats {
-  total: number
-  draft: number
-  paid: number
-}
-
-export const getPayrollStats = async (): Promise<PayrollStats> => {
-  const { data } = await api.get<PayrollStats>('/payrolls/stats/')
-  return data
-}
-
-export const getPayrollDetail = async (id: number) => {
-  const { data } = await api.get<PayrollDetail>(`/payrolls/${id}/`)
-  return data
-}
-
-export const createPayroll = async (payrollData: PayrollCreateData) => {
-  const { data } = await api.post<PayrollDetail>(
-    '/payrolls/calculate/',
-    payrollData
-  )
-  return data
-}
-
-export const closePayroll = async (id: number) => {
-  const { data } = await api.post<PayrollDetail>(`/payrolls/${id}/close/`)
-  return data
-}
-
-export const markPayrollAsPaid = async (id: number) => {
-  const { data } = await api.post<PayrollDetail>(
-    `/payrolls/${id}/mark-as-paid/`
-  )
-  return data
-}
-
-export const recalculatePayroll = async (
-  id: number,
-  updates: Partial<PayrollCreateData>
-) => {
-  const { data } = await api.put<PayrollDetail>(
-    `/payrolls/${id}/recalculate/`,
-    updates
-  )
-  return data
-}
-
-export const updatePayroll = async (
-  id: number,
-  updates: Partial<PayrollCreateData>
-) => {
-  const { data } = await api.patch<PayrollDetail>(`/payrolls/${id}/`, updates)
-  return data
-}
-
-export const reopenPayroll = async (id: number) => {
-  const { data } = await api.post<PayrollDetail>(`/payrolls/${id}/reopen/`)
-  return data
-}
-
-export const downloadPayrollFile = async (payrollId: number): Promise<void> => {
-  const response = await api.get(`/payrolls/${payrollId}/export-file/`, {
-    responseType: 'blob',
-  })
-
-  // Extract filename from Content-Disposition header
-  const contentDisposition =
-    response.headers['content-disposition'] ||
-    response.headers['Content-Disposition']
-
-  let filename = `folha_${payrollId}.xlsx`
-
-  if (contentDisposition) {
-    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/)
-    if (filenameMatch && filenameMatch[1]) {
-      filename = filenameMatch[1]
-    }
-  }
-
-  // Create download link
-  const url = window.URL.createObjectURL(new Blob([response.data]))
-  const link = document.createElement('a')
-  link.href = url
-  link.setAttribute('download', filename)
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.URL.revokeObjectURL(url)
-}
-
-// ==================== DASHBOARD ====================
-
-export interface DashboardFilters {
-  period?: '7d' | '30d' | '90d' | '1y' | 'all'
-  start_date?: string
-  end_date?: string
-}
-
-export const getDashboardStats = async (filters?: DashboardFilters) => {
-  const params = new URLSearchParams()
-  if (filters?.period) params.append('period', filters.period)
-  if (filters?.start_date) params.append('start_date', filters.start_date)
-  if (filters?.end_date) params.append('end_date', filters.end_date)
-
-  const queryString = params.toString()
-  const url = `/dashboard/${queryString ? '?' + queryString : ''}`
-
-  const { data } = await api.get<EnhancedDashboardStats>(url)
-  return data
-}
-
-export const downloadMonthlyReport = async (
-  referenceMonth: string
-): Promise<void> => {
-  // Construct the direct download URL
-  // We use direct navigation to leverage the browser's native download handling
-  // Authentication is handled via Cookies which are automatically sent with the request
-  const url = `${api.defaults.baseURL}payrolls/monthly-report/?reference_month=${referenceMonth}`
-
-  // Trigger download
-  window.location.href = url
-}
-
-export const sendReportEmail = async (
-  referenceMonth: string,
-  email?: string
-) => {
-  const { data } = await api.post('/payrolls/email-report/', {
-    reference_month: referenceMonth,
-    email,
-  })
-  return data
-}
-
-export default api

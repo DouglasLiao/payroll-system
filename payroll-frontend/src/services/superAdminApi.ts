@@ -1,3 +1,9 @@
+/**
+ * superAdminApi.ts — Super Admin API (companies, subscriptions, templates, config)
+ *
+ * All routes are under /users/ (moved from root in the users/ app refactor).
+ */
+
 import api from './api'
 import type {
   Company,
@@ -8,14 +14,14 @@ import type {
   PaginatedResponse,
 } from '../types'
 
-// ==================== STATS ====================
+// ── Stats ─────────────────────────────────────────────────────────────────────
 
 export const getSuperAdminStats = async () => {
-  const { data } = await api.get<SuperAdminStats>('/super-admin/stats/')
+  const { data } = await api.get<SuperAdminStats>('/users/super-admin/stats/')
   return data
 }
 
-// ==================== COMPANIES ====================
+// ── Companies ─────────────────────────────────────────────────────────────────
 
 export interface CompanyFilters {
   page?: number
@@ -34,55 +40,55 @@ export const getCompanies = async (params?: CompanyFilters) => {
     searchParams.append('is_active', params.is_active.toString())
 
   const queryString = searchParams.toString()
-  const url = `/companies/${queryString ? '?' + queryString : ''}`
+  const url = `/users/companies/${queryString ? '?' + queryString : ''}`
 
   const { data } = await api.get<PaginatedResponse<Company>>(url)
   return data
 }
 
 export const getCompany = async (id: number) => {
-  const { data } = await api.get<Company>(`/companies/${id}/`)
+  const { data } = await api.get<Company>(`/users/companies/${id}/`)
   return data
 }
 
 export const createCompany = async (company: Partial<Company>) => {
-  const { data } = await api.post<Company>('/companies/', company)
+  const { data } = await api.post<Company>('/users/companies/', company)
   return data
 }
 
 export const updateCompany = async (id: number, company: Partial<Company>) => {
-  const { data } = await api.patch<Company>(`/companies/${id}/`, company)
+  const { data } = await api.patch<Company>(`/users/companies/${id}/`, company)
   return data
 }
 
 export const approveCompany = async (id: number) => {
   const { data } = await api.post<{ message: string }>(
-    `/companies/${id}/approve/`
+    `/users/companies/${id}/approve/`
   )
   return data
 }
 
 export const rejectCompany = async (id: number) => {
   const { data } = await api.post<{ message: string }>(
-    `/companies/${id}/reject/`
+    `/users/companies/${id}/reject/`
   )
   return data
 }
 
 export const toggleCompanyStatus = async (id: number) => {
   const { data } = await api.post<{ message: string; is_active: boolean }>(
-    `/companies/${id}/toggle-status/`
+    `/users/companies/${id}/toggle-status/`
   )
   return data
 }
 
-// ==================== CONFIGURATIONS ====================
+// ── Payroll Config ────────────────────────────────────────────────────────────
 
 export const getPayrollConfig = async (companyId: number) => {
   const { data } = await api.get<PayrollConfiguration[]>(
-    `/payroll-configs/?company_id=${companyId}`
+    `/users/payroll-configs/?company_id=${companyId}`
   )
-  return data[0] // Assuming 1:1, usually returns list
+  return data[0]
 }
 
 export const updatePayrollConfig = async (
@@ -90,7 +96,7 @@ export const updatePayrollConfig = async (
   config: Partial<PayrollConfiguration>
 ) => {
   const { data } = await api.patch<PayrollConfiguration>(
-    `/payroll-configs/${configId}/`,
+    `/users/payroll-configs/${configId}/`,
     config
   )
   return data
@@ -101,7 +107,7 @@ export const applyTemplateToCompany = async (
   templateId: number
 ) => {
   const { data } = await api.post<PayrollConfiguration>(
-    '/payroll-configs/apply-template/',
+    '/users/payroll-configs/apply-template/',
     {
       company_id: companyId,
       template_id: templateId,
@@ -110,19 +116,20 @@ export const applyTemplateToCompany = async (
   return data
 }
 
-// ==================== TEMPLATES ====================
+// ── Math Templates ────────────────────────────────────────────────────────────
 
 export const getMathTemplates = async () => {
-  const { data } =
-    await api.get<PaginatedResponse<PayrollMathTemplate>>('/math-templates/')
-  return data.results // Assuming pagination or list
+  const { data } = await api.get<PaginatedResponse<PayrollMathTemplate>>(
+    '/users/math-templates/'
+  )
+  return data.results
 }
 
 export const createMathTemplate = async (
   template: Partial<PayrollMathTemplate>
 ) => {
   const { data } = await api.post<PayrollMathTemplate>(
-    '/math-templates/',
+    '/users/math-templates/',
     template
   )
   return data
@@ -133,28 +140,28 @@ export const updateMathTemplate = async (
   template: Partial<PayrollMathTemplate>
 ) => {
   const { data } = await api.patch<PayrollMathTemplate>(
-    `/math-templates/${id}/`,
+    `/users/math-templates/${id}/`,
     template
   )
   return data
 }
 
 export const deleteMathTemplate = async (id: number) => {
-  await api.delete(`/math-templates/${id}/`)
+  await api.delete(`/users/math-templates/${id}/`)
 }
 
-// ==================== SUBSCRIPTIONS ====================
+// ── Subscriptions ─────────────────────────────────────────────────────────────
 
 export const getSubscription = async (companyId: number) => {
   const { data } = await api.get<PaginatedResponse<Subscription>>(
-    `/subscriptions/?company_id=${companyId}`
+    `/users/subscriptions/?company_id=${companyId}`
   )
   return data.results[0]
 }
 
 export const getAllSubscriptions = async (page = 1) => {
   const { data } = await api.get<PaginatedResponse<Subscription>>(
-    `/subscriptions/?page=${page}`
+    `/users/subscriptions/?page=${page}`
   )
   return data
 }
@@ -165,7 +172,7 @@ export const renewSubscription = async (
   endDate?: string
 ) => {
   const { data } = await api.post<Subscription>(
-    `/subscriptions/${subscriptionId}/renew/`,
+    `/users/subscriptions/${subscriptionId}/renew/`,
     {
       plan_type: planType,
       end_date: endDate,
