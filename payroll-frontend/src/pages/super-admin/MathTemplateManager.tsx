@@ -21,7 +21,7 @@ import {
   InputLabel,
   Select,
 } from '@mui/material'
-import { CustomMenuItem } from '../../components/CustomMenuItem'
+import { CustomMenuItem } from '../../components/menu'
 import {
   Add as AddIcon,
   Edit as EditIcon,

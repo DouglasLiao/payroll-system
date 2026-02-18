@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { Box, Typography, Button, Container } from '@mui/material'
 import { Add, Visibility } from '@mui/icons-material'
-import { GenericTable } from '../../components/GenericTable'
-import { StatusChip } from '../../components/StatusChip'
+import { GenericTable } from '../../components/table'
+import { StatusChip } from '../../components/table'
 import {
   PayrollFiltersComponent,
   type PayrollFilters,
-} from '../../components/PayrollFilters'
-import { PayrollFormDialog } from '../../components/PayrollFormDialog'
-import { PayrollDetailDialog } from '../../components/PayrollDetailDialog'
-import { PayrollStats } from '../../components/PayrollStats'
+} from '../../components/filters'
+import { PayrollFormDialog } from '../../components/dialogs'
+import { PayrollDetailDialog } from '../../components/dialogs'
+import { PayrollStats } from '../../components/stats'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSnackbar } from 'notistack'
 import type {

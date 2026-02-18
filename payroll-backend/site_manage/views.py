@@ -577,7 +577,13 @@ class DashboardView(APIView):
                 )
 
         # Tendências
-        trends = {"monthly_growth_percentage": 0}
+        trends = {
+            "monthly_growth_percentage": 0,
+            "period_vs_previous": {
+                "payrolls_change": 0,
+                "value_change": 0,
+            },
+        }
         sorted_months = sorted(
             monthly_data.keys(), key=lambda x: (x.split("/")[1], x.split("/")[0])
         )
@@ -592,9 +598,18 @@ class DashboardView(APIView):
                 monthly_data[prev_month][s]["value"]
                 for s in ["draft", "closed", "paid"]
             )
+            last_count = monthly_data[last_month]["total_count"]
+            prev_count = monthly_data[prev_month]["total_count"]
             if prev_total > 0:
                 trends["monthly_growth_percentage"] = (
                     (last_total - prev_total) / prev_total
+                ) * 100
+                trends["period_vs_previous"]["value_change"] = (
+                    (last_total - prev_total) / prev_total
+                ) * 100
+            if prev_count > 0:
+                trends["period_vs_previous"]["payrolls_change"] = (
+                    (last_count - prev_count) / prev_count
                 ) * 100
 
         # Atividade recente

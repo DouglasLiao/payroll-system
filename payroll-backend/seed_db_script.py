@@ -21,6 +21,7 @@ from site_manage.models import (
     PlanType,
 )
 from django.utils import timezone
+from services.payroll_service import PayrollService
 
 
 def date_range(start_date, end_date):
@@ -97,9 +98,12 @@ def main():
     PayrollConfiguration.objects.create(company=sa_company)
 
     # Create Subscription for SA Company
+    _sa_defaults = Subscription.get_plan_defaults(PlanType.UNLIMITED)
     Subscription.objects.create(
         company=sa_company,
         plan_type=PlanType.UNLIMITED,
+        max_providers=_sa_defaults["max_providers"],
+        price=_sa_defaults["price"],
         start_date=timezone.now().date(),
         is_active=True,
     )
@@ -152,9 +156,12 @@ def main():
     PayrollConfiguration.objects.create(company=client_company)
 
     # Create Subscription for Client Company
+    _pro_defaults = Subscription.get_plan_defaults(PlanType.PRO)
     Subscription.objects.create(
         company=client_company,
         plan_type=PlanType.PRO,
+        max_providers=_pro_defaults["max_providers"],
+        price=_pro_defaults["price"],
         start_date=timezone.now().date(),
         is_active=True,
     )
@@ -183,9 +190,12 @@ def main():
             is_active=True,
         )
         PayrollConfiguration.objects.create(company=dummy_company)
+        _basic_defaults = Subscription.get_plan_defaults(PlanType.BASIC)
         Subscription.objects.create(
             company=dummy_company,
             plan_type=PlanType.BASIC,
+            max_providers=_basic_defaults["max_providers"],
+            price=_basic_defaults["price"],
             start_date=timezone.now().date(),
             is_active=True,
             end_date=timezone.now().date() + timedelta(days=365),
@@ -286,17 +296,19 @@ def main():
 
         providers.append(provider)
 
-    print("Generating Monthly Payrolls (2025-2026)...")
-    start_date = date(2025, 1, 1)  # Reduce range for speed
+    print("Generating Monthly Payrolls (2025-2026) via PayrollService...")
+    start_date = date(2025, 1, 1)
     end_date = date(2026, 2, 1)
 
+    service = PayrollService()
     total_payrolls = 0
+    skipped = 0
 
     for provider in providers:
         for month_date in date_range(start_date, end_date):
             ref_month = month_date.strftime("%m/%Y")
 
-            # Random variations
+            # Random input variations
             overtime_50 = (
                 Decimal(random.randint(1, 20)) if random.random() > 0.7 else Decimal(0)
             )
@@ -309,12 +321,10 @@ def main():
             late_minutes = random.randint(5, 120) if random.random() > 0.75 else 0
 
             has_absence = random.random() > 0.85
-            if has_absence:
-                absence_days = Decimal(random.choice([0.5, 1, 1.5, 2]))
-                absence_hours = absence_days * Decimal(8)
-            else:
-                absence_days = Decimal(0)
-                absence_hours = Decimal(0)
+            absence_days = (
+                random.choice([1, 2]) if has_absence else 0
+            )  # int, not Decimal
+            absence_hours = Decimal(absence_days * 8)
 
             manual_discounts = (
                 Decimal(random.randint(50, 500))
@@ -322,89 +332,65 @@ def main():
                 else Decimal(0)
             )
 
-            # Determine status
+            # Create payroll via service (always starts as DRAFT, all fields calculated)
+            try:
+                payroll = service.create_payroll(
+                    provider_id=provider.id,
+                    reference_month=ref_month,
+                    overtime_hours_50=overtime_50,
+                    holiday_hours=holiday_hours,
+                    night_hours=night_hours,
+                    late_minutes=late_minutes,
+                    absence_days=absence_days,
+                    absence_hours=absence_hours,
+                    manual_discounts=manual_discounts,
+                )
+            except ValueError:
+                skipped += 1
+                continue
+
+            # Determine target status and update directly (bulk-friendly)
             rand = random.random()
-            if rand < 0.70:
-                status = PayrollStatus.PAID
-                year, month = map(int, ref_month.split("/")[::-1])
-                # Safety check for future dates vs current date
-                if date(year, month, 1) > timezone.now().date():
-                    status = PayrollStatus.DRAFT
-                    closed_date = None
-                    paid_date = None
+            year, month = int(ref_month[3:]), int(ref_month[:2])
+            is_future = date(year, month, 1) > timezone.now().date()
+
+            if rand < 0.70 and not is_future:
+                # PAID
+                if month == 12:
+                    next_month = date(year + 1, 1, 1)
                 else:
-                    # Closing date: last day of the month
-                    # Note: Simplified date logic
-                    if month == 12:
-                        next_month = date(year + 1, 1, 1)
-                    else:
-                        next_month = date(year, month + 1, 1)
-                    last_day_month = next_month - timedelta(days=1)
-
-                    closed_date = timezone.make_aware(
-                        timezone.datetime(year, month, last_day_month.day)
-                        + timedelta(days=4)
-                    )
-                    paid_date = closed_date + timedelta(days=random.randint(1, 3))
-
-                    payroll_kwargs = {
-                        "status": status,
-                        "closed_at": closed_date,
-                        "paid_at": paid_date,
-                    }
-            elif rand < 0.90:
-                status = PayrollStatus.CLOSED
-                year, month = map(int, ref_month.split("/")[::-1])
-                if date(year, month, 1) > timezone.now().date():
-                    status = PayrollStatus.DRAFT
-                    closed_date = None
-                    paid_date = None
+                    next_month = date(year, month + 1, 1)
+                last_day = next_month - timedelta(days=1)
+                closed_dt = timezone.make_aware(
+                    timezone.datetime(year, month, last_day.day) + timedelta(days=4)
+                )
+                paid_dt = closed_dt + timedelta(days=random.randint(1, 3))
+                Payroll.objects.filter(pk=payroll.pk).update(
+                    status=PayrollStatus.PAID,
+                    closed_at=closed_dt,
+                    paid_at=paid_dt,
+                )
+            elif rand < 0.90 and not is_future:
+                # CLOSED
+                if month == 12:
+                    next_month = date(year + 1, 1, 1)
                 else:
-                    if month == 12:
-                        next_month = date(year + 1, 1, 1)
-                    else:
-                        next_month = date(year, month + 1, 1)
-                    last_day_month = next_month - timedelta(days=1)
+                    next_month = date(year, month + 1, 1)
+                last_day = next_month - timedelta(days=1)
+                closed_dt = timezone.make_aware(
+                    timezone.datetime(year, month, last_day.day) + timedelta(days=4)
+                )
+                Payroll.objects.filter(pk=payroll.pk).update(
+                    status=PayrollStatus.CLOSED,
+                    closed_at=closed_dt,
+                    paid_at=None,
+                )
+            # else: leave as DRAFT (already the default)
 
-                    closed_date = timezone.make_aware(
-                        timezone.datetime(year, month, last_day_month.day)
-                        + timedelta(days=4)
-                    )
-                    payroll_kwargs = {
-                        "status": status,
-                        "closed_at": closed_date,
-                        "paid_at": None,
-                    }
-            else:
-                status = PayrollStatus.DRAFT
-                payroll_kwargs = {
-                    "status": status,
-                    "closed_at": None,
-                    "paid_at": None,
-                }
-
-            if status == PayrollStatus.DRAFT:  # Safety override
-                payroll_kwargs = {
-                    "status": status,
-                    "closed_at": None,
-                    "paid_at": None,
-                }
-
-            # Create Payroll
-            Payroll.objects.create(
-                provider=provider,
-                reference_month=ref_month,
-                base_value=provider.monthly_value,
-                overtime_hours_50=overtime_50,
-                holiday_hours=holiday_hours,
-                night_hours=night_hours,
-                late_minutes=late_minutes,
-                absence_hours=absence_hours,
-                absence_days=absence_days,
-                manual_discounts=manual_discounts,
-                **payroll_kwargs,
-            )
             total_payrolls += 1
+
+    if skipped:
+        print(f"  ⚠ {skipped} payrolls skipped (duplicates or validation errors)")
 
     print(
         f"Done! Created {len(providers)} providers and {total_payrolls} payroll records."

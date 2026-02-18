@@ -10,8 +10,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getCompanies } from '../../services/superAdminApi'
 import api from '../../services/authApi' // Keep for create-admin specific call or move to superAdminApi
 import { enqueueSnackbar } from 'notistack'
-import { GenericTable, type Column } from '../../components/GenericTable'
-import { SearchField } from '../../components/SearchField'
+import { GenericTable, type Column } from '../../components/table'
+import { SearchField } from '../../components/search'
 
 export default function Companies() {
   const navigate = useNavigate()

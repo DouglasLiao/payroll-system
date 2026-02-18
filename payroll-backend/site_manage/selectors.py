@@ -125,58 +125,46 @@ def dashboard_stats_for_company(*, company: Company) -> dict:
     """
     Calcula as estatísticas do dashboard para uma empresa.
 
-    Centraliza as queries de agregação que antes estavam inline na DashboardView.
-
-    Args:
-        company: Empresa do usuário autenticado
-
-    Returns:
-        Dicionário com todas as estatísticas do dashboard
+    Retorna a estrutura que o frontend espera em EnhancedDashboardStats.stats:
+    {
+        total_providers: int,
+        payrolls: { total, draft, closed, paid },
+        financial: { total_value, pending_value, paid_value, average_payroll },
+    }
     """
     providers_qs = Provider.objects.filter(company=company)
     payrolls_qs = Payroll.objects.filter(provider__company=company)
 
-    # Estatísticas de prestadores
     total_providers = providers_qs.count()
-
-    # Estatísticas de folhas
     total_payrolls = payrolls_qs.count()
     draft_payrolls = payrolls_qs.filter(status=PayrollStatus.DRAFT).count()
     closed_payrolls = payrolls_qs.filter(status=PayrollStatus.CLOSED).count()
     paid_payrolls = payrolls_qs.filter(status=PayrollStatus.PAID).count()
 
-    # Valores totais
-    total_net = payrolls_qs.aggregate(total=Sum("net_value"))["total"] or Decimal("0")
-    total_paid = payrolls_qs.filter(status=PayrollStatus.PAID).aggregate(
+    total_value = payrolls_qs.aggregate(total=Sum("net_value"))["total"] or Decimal("0")
+    paid_value = payrolls_qs.filter(status=PayrollStatus.PAID).aggregate(
         total=Sum("net_value")
     )["total"] or Decimal("0")
-    total_pending = payrolls_qs.filter(
+    pending_value = payrolls_qs.filter(
         status__in=[PayrollStatus.DRAFT, PayrollStatus.CLOSED]
     ).aggregate(total=Sum("net_value"))["total"] or Decimal("0")
-
-    # Assinatura ativa
-    subscription = Subscription.objects.filter(company=company, is_active=True).first()
+    average_payroll = (
+        (total_value / total_payrolls) if total_payrolls > 0 else Decimal("0")
+    )
 
     return {
-        "providers": {
-            "total": total_providers,
-            "limit": subscription.max_providers if subscription else 0,
-        },
+        "total_providers": total_providers,
         "payrolls": {
             "total": total_payrolls,
             "draft": draft_payrolls,
             "closed": closed_payrolls,
             "paid": paid_payrolls,
         },
-        "financials": {
-            "total_net": total_net,
-            "total_paid": total_paid,
-            "total_pending": total_pending,
-        },
-        "subscription": {
-            "plan": subscription.plan_type if subscription else None,
-            "is_active": subscription.is_active if subscription else False,
-            "max_providers": subscription.max_providers if subscription else 0,
+        "financial": {
+            "total_value": float(total_value),
+            "pending_value": float(pending_value),
+            "paid_value": float(paid_value),
+            "average_payroll": float(average_payroll),
         },
     }
 

@@ -13,13 +13,13 @@ import {
   FormControl,
   InputLabel,
 } from '@mui/material'
-import { CustomMenuItem } from '../../components/CustomMenuItem'
+import { CustomMenuItem } from '../../components/menu'
 import {
   Visibility as ViewIcon,
   Download as DownloadIcon,
   FilterList as FilterIcon,
 } from '@mui/icons-material'
-import { GenericTable } from '../../components/GenericTable'
+import { GenericTable } from '../../components/table'
 import { useQuery } from '@tanstack/react-query'
 import api from '../../services/authApi'
 

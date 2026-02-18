@@ -27,7 +27,7 @@ import {
   renewSubscription,
   getCompany,
 } from '../../services/superAdminApi'
-import { CustomMenuItem } from '../../components/CustomMenuItem'
+import { CustomMenuItem } from '../../components/menu'
 
 const CompanySubscription = () => {
   const { id } = useParams()

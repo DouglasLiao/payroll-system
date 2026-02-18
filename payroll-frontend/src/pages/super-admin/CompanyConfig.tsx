@@ -35,7 +35,7 @@ import type {
   TransportVoucherType,
   BusinessDaysRule,
 } from '../../types'
-import { CustomMenuItem } from '../../components/CustomMenuItem'
+import { CustomMenuItem } from '../../components/menu'
 
 const CompanyConfig = () => {
   const { id } = useParams()

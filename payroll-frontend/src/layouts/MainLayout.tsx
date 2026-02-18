@@ -28,7 +28,7 @@ import {
   Settings as SettingsIcon,
   Description as DescriptionIcon,
 } from '@mui/icons-material'
-import { CustomMenuItem } from '../components/CustomMenuItem'
+import { CustomMenuItem } from '../components/menu'
 import { useThemeContext } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 

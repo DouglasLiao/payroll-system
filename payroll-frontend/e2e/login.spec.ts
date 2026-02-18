@@ -17,14 +17,16 @@ test.describe('Login Flow', () => {
     const password = 'password123'
 
     // Preencher formulário de login
-    await page.fill('input[name="email"], input[type="email"]', email)
-    await page.fill('input[name="password"], input[type="password"]', password)
+    await page.fill('input[type="email"]', email)
+    await page.fill('input[type="password"]', password)
 
     // Clicar em entrar
     await page.click('button[type="submit"]')
 
-    // Aguardar navegação
-    await page.waitForURL('**', { timeout: 5000 })
+    // Aguardar navegação para fora do /login (redirect após JWT)
+    await page.waitForURL((url) => !url.pathname.includes('/login'), {
+      timeout: 8000,
+    })
 
     // Verificar que não está mais na página de login
     const currentUrl = page.url()

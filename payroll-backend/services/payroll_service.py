@@ -297,7 +297,7 @@ class PayrollService:
             absence_days=absence_days,
             absence_hours=absence_hours,
             manual_discounts=manual_discounts,
-            vt_discount=provider.vt_value,  # campo deprecated — mantido para compatibilidade
+            vt_discount=provider.vt_fare,  # campo deprecated — mantido para compatibilidade
             hired_date=hired_date,
             notes=notes,
         )

@@ -29,7 +29,7 @@ import SuperAdminApprovals from './pages/super-admin/Approvals'
 import SuperAdminSubscriptions from './pages/super-admin/Subscriptions'
 import MathTemplateManager from './pages/super-admin/MathTemplateManager'
 import ProviderPayments from './pages/provider/ProviderPayments'
-import ProtectedRoute from './components/ProtectedRoute'
+import ProtectedRoute from './components/routing'
 const EmployeeView = () => <div>Employee View (Coming Soon)</div>
 
 const queryClient = new QueryClient()
