@@ -78,7 +78,32 @@ const Payrolls = () => {
 
   const closeMutation = useMutation({
     mutationFn: closePayroll,
-    onSuccess: () => {
+    onSuccess: (updatedPayroll) => {
+      // Manual cache update for list
+      queryClient.setQueryData(
+        ['payrolls', filters, page, rowsPerPage],
+        (old: PaginatedResponse<Payroll> | undefined) => {
+          if (!old) return old
+          return {
+            ...old,
+            results: old.results.map((p) =>
+              p.id === updatedPayroll.id
+                ? { ...p, status: 'CLOSED', status_display: 'Fechada' }
+                : p
+            ),
+          }
+        }
+      )
+
+      // Manual cache update for detail
+      queryClient.setQueryData(
+        ['payroll-detail', selectedPayroll],
+        (old: PayrollDetail | undefined) => {
+          if (!old || old.id !== updatedPayroll.id) return old
+          return { ...old, status: 'CLOSED', status_display: 'Fechada' }
+        }
+      )
+
       queryClient.invalidateQueries({ queryKey: ['payrolls'] })
       queryClient.invalidateQueries({ queryKey: ['payroll-detail'] })
       enqueueSnackbar('Folha fechada com sucesso!', { variant: 'success' })
@@ -87,7 +112,32 @@ const Payrolls = () => {
 
   const markPaidMutation = useMutation({
     mutationFn: markPayrollAsPaid,
-    onSuccess: () => {
+    onSuccess: (updatedPayroll) => {
+      // Manual cache update for list
+      queryClient.setQueryData(
+        ['payrolls', filters, page, rowsPerPage],
+        (old: PaginatedResponse<Payroll> | undefined) => {
+          if (!old) return old
+          return {
+            ...old,
+            results: old.results.map((p) =>
+              p.id === updatedPayroll.id
+                ? { ...p, status: 'PAID', status_display: 'Paga' }
+                : p
+            ),
+          }
+        }
+      )
+
+      // Manual cache update for detail
+      queryClient.setQueryData(
+        ['payroll-detail', selectedPayroll],
+        (old: PayrollDetail | undefined) => {
+          if (!old || old.id !== updatedPayroll.id) return old
+          return { ...old, status: 'PAID', status_display: 'Paga' }
+        }
+      )
+
       queryClient.invalidateQueries({ queryKey: ['payrolls'] })
       queryClient.invalidateQueries({ queryKey: ['payroll-detail'] })
       enqueueSnackbar('Folha marcada como paga!', { variant: 'success' })
@@ -96,7 +146,32 @@ const Payrolls = () => {
 
   const reopenMutation = useMutation({
     mutationFn: reopenPayroll,
-    onSuccess: () => {
+    onSuccess: (updatedPayroll) => {
+      // Manual cache update for list
+      queryClient.setQueryData(
+        ['payrolls', filters, page, rowsPerPage],
+        (old: PaginatedResponse<Payroll> | undefined) => {
+          if (!old) return old
+          return {
+            ...old,
+            results: old.results.map((p) =>
+              p.id === updatedPayroll.id
+                ? { ...p, status: 'DRAFT', status_display: 'Rascunho' }
+                : p
+            ),
+          }
+        }
+      )
+
+      // Manual cache update for detail
+      queryClient.setQueryData(
+        ['payroll-detail', selectedPayroll],
+        (old: PayrollDetail | undefined) => {
+          if (!old || old.id !== updatedPayroll.id) return old
+          return { ...old, status: 'DRAFT', status_display: 'Rascunho' }
+        }
+      )
+
       queryClient.invalidateQueries({ queryKey: ['payrolls'] })
       queryClient.invalidateQueries({ queryKey: ['payroll-detail'] })
       enqueueSnackbar('Folha reaberta com sucesso!', { variant: 'success' })

@@ -74,6 +74,31 @@ class ProviderViewSet(viewsets.ModelViewSet):
         """Filtrar providers por empresa do usuário via selector."""
         return provider_list_for_user(user=self.request.user).order_by("name")
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            self.perform_create(serializer)
+        except Exception as e:
+            from rest_framework.exceptions import ValidationError
+
+            if isinstance(e, ValidationError):
+                # DRF ValidationError can be a list or dict. Normalize to detail for frontend.
+                msg = (
+                    e.detail[0]
+                    if isinstance(e.detail, list) and e.detail
+                    else str(e.detail)
+                )
+                return Response({"detail": msg}, status=status.HTTP_400_BAD_REQUEST)
+            raise e
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
+
     def perform_create(self, serializer):
         """Ao criar provider, associar à empresa do Customer Admin."""
         if self.request.user.role == "CUSTOMER_ADMIN":

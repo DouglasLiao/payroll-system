@@ -330,6 +330,13 @@ class Provider(models.Model):
     """
 
     name = models.CharField(max_length=255, verbose_name="Nome")
+    document = models.CharField(
+        max_length=14,
+        verbose_name="CPF/CNPJ",
+        null=True,
+        blank=True,
+        help_text="CPF (11 dígitos) ou CNPJ (14 dígitos)",
+    )
     role = models.CharField(max_length=100, verbose_name="Função/Cargo")
 
     # Configurações Contratuais PJ

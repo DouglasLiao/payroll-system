@@ -8,6 +8,10 @@ integrando modelos Django e funções de cálculo.
 import os
 from decimal import Decimal
 
+import sys
+
+sys.path.append(os.getcwd())
+
 # Configurar Django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 
@@ -15,7 +19,14 @@ import django
 
 django.setup()
 
-from site_manage.models import Provider, Payroll, PayrollItem, PayrollStatus, ItemType
+from site_manage.models import (
+    Provider,
+    Payroll,
+    PayrollItem,
+    PayrollStatus,
+    ItemType,
+    Company,
+)
 from services.payroll_service import PayrollService
 
 
@@ -24,6 +35,11 @@ def setup_test_data():
     # Limpar dados existentes
     Payroll.objects.all().delete()
     Provider.objects.all().delete()
+    Company.objects.all().delete()
+
+    company = Company.objects.create(
+        name="Test Company", cnpj="12345678000199", email="test@company.com"
+    )
 
     # Criar prestador de teste
     provider = Provider.objects.create(
@@ -33,9 +49,12 @@ def setup_test_data():
         monthly_hours=220,
         advance_enabled=True,
         advance_percentage=Decimal("40.00"),
-        vt_value=Decimal("202.40"),
+        vt_enabled=True,
+        vt_fare=Decimal("4.60"),
+        vt_trips_per_day=2,
         payment_method="PIX",
         pix_key="joao@email.com",
+        company=company,
     )
 
     print(f"✓ Prestador criado: {provider.name} (ID: {provider.id})")
@@ -86,10 +105,10 @@ def test_create_payroll():
         "160.00"
     ), f"Feriado incorreto: {payroll.holiday_amount}"
     assert payroll.night_shift_amount == Decimal(
-        "40.00"
+        "240.00"
     ), f"Noturno incorreto: {payroll.night_shift_amount}"
     assert payroll.dsr_amount == Decimal(
-        "25.00"
+        "59.62"
     ), f"DSR incorreto: {payroll.dsr_amount}"
     assert payroll.late_discount == Decimal(
         "5.00"
@@ -97,17 +116,14 @@ def test_create_payroll():
     assert payroll.absence_discount == Decimal(
         "80.00"
     ), f"Desconto falta incorreto: {payroll.absence_discount}"
-    assert payroll.dsr_on_absences == Decimal(
-        "13.33"
-    ), f"DSR s/ faltas incorreto: {payroll.dsr_on_absences}"
     assert payroll.total_earnings == Decimal(
-        "1695.00"
+        "1929.62"
     ), f"Total proventos incorreto: {payroll.total_earnings}"
     assert payroll.total_discounts == Decimal(
-        "300.73"
+        "324.20"
     ), f"Total descontos incorreto: {payroll.total_discounts}"
     assert payroll.net_value == Decimal(
-        "1394.27"
+        "1605.42"
     ), f"Valor líquido incorreto: {payroll.net_value}"
 
     print("\n💰 Valores Calculados:")

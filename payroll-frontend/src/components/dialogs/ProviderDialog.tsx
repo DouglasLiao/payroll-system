@@ -12,7 +12,7 @@ import { CheckCircle, Error as ErrorIcon } from '@mui/icons-material'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { CustomMenuItem } from 'src/components/menu/CustomMenuItem'
 import { CPFInput } from 'src/components/inputs/InputMasks'
 import {
@@ -103,6 +103,23 @@ const providerSchema = z
 
 export type ProviderFormInputs = z.infer<typeof providerSchema>
 
+const DEFAULT_PROVIDER_VALUES: ProviderFormInputs = {
+  name: '',
+  document: '',
+  role: '',
+  monthly_value: '',
+  payment_method: 'PIX',
+  pix_key: '',
+  bank_name: '',
+  bank_agency: '',
+  bank_account: '',
+  email: '',
+  description: '',
+  vt_enabled: false,
+  vt_fare: '4.60',
+  vt_trips_per_day: 4,
+}
+
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface ProviderDialogProps {
@@ -122,44 +139,26 @@ export const ProviderDialog = ({
   onSubmit,
   isSubmitting = false,
 }: ProviderDialogProps) => {
-  const isEditMode = provider != null
-  const [paymentMethod, setPaymentMethod] = useState<
-    'PIX' | 'TED' | 'TRANSFER'
-  >('PIX')
-  const [vtEnabled, setVtEnabled] = useState(false)
-
   const {
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<ProviderFormInputs>({
     resolver: zodResolver(providerSchema),
-    defaultValues: {
-      name: '',
-      document: '',
-      role: '',
-      monthly_value: '',
-      payment_method: 'PIX',
-      pix_key: '',
-      bank_name: '',
-      bank_agency: '',
-      bank_account: '',
-      email: '',
-      description: '',
-      vt_enabled: false,
-      vt_fare: '4.60',
-      vt_trips_per_day: 4,
-    },
+    defaultValues: DEFAULT_PROVIDER_VALUES,
   })
+
+  const paymentMethod = watch('payment_method')
+  const vtEnabled = watch('vt_enabled')
 
   // Populate form when editing
   useEffect(() => {
     if (provider) {
-      setPaymentMethod(provider.payment_method)
-      setVtEnabled(provider.vt_enabled || false)
       reset({
         name: provider.name,
+        document: provider.document || '', // Added document field
         role: provider.role,
         monthly_value: provider.monthly_value,
         payment_method: provider.payment_method,
@@ -174,21 +173,19 @@ export const ProviderDialog = ({
         vt_trips_per_day: provider.vt_trips_per_day || 4,
       })
     } else {
-      setPaymentMethod('PIX')
-      setVtEnabled(false)
-      reset()
+      reset(DEFAULT_PROVIDER_VALUES)
     }
-  }, [provider, reset])
+  }, [provider, reset, open])
 
   const handleClose = () => {
-    reset()
+    reset(DEFAULT_PROVIDER_VALUES)
     onClose()
   }
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        {isEditMode ? 'Editar Colaborador' : 'Novo Colaborador'}
+        {provider ? 'Editar Colaborador' : 'Novo Colaborador'}
       </DialogTitle>
 
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -222,10 +219,10 @@ export const ProviderDialog = ({
                     label="CPF/CNPJ"
                     fullWidth
                     required
-                    disabled={isEditMode}
+                    disabled={!!provider && !!provider.document}
                     error={!!fieldState.error}
                     helperText={
-                      isEditMode
+                      provider && provider.document
                         ? 'CPF/CNPJ não pode ser alterado'
                         : fieldState.error?.message
                     }
@@ -284,12 +281,6 @@ export const ProviderDialog = ({
                     select
                     label="Forma de Pagamento"
                     fullWidth
-                    onChange={(e) => {
-                      field.onChange(e)
-                      setPaymentMethod(
-                        e.target.value as 'PIX' | 'TED' | 'TRANSFER'
-                      )
-                    }}
                   >
                     <CustomMenuItem value="PIX">PIX</CustomMenuItem>
                     <CustomMenuItem value="TED">TED</CustomMenuItem>
@@ -391,7 +382,6 @@ export const ProviderDialog = ({
                       checked={field.value}
                       onChange={(e) => {
                         field.onChange(e.target.checked)
-                        setVtEnabled(e.target.checked)
                       }}
                     />
                     <Typography sx={{ ml: 1 }}>
@@ -444,7 +434,7 @@ export const ProviderDialog = ({
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
           <Button onClick={handleClose}>Cancelar</Button>
           <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {isEditMode ? 'Salvar' : 'Criar'}
+            {provider ? 'Salvar' : 'Criar'}
           </Button>
         </Box>
       </form>

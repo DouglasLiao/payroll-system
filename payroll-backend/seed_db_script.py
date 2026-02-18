@@ -263,7 +263,14 @@ def main():
         "Scrum Master",
     ]
 
-    for i in range(50):
+    def generate_cpf():
+        cpf = [random.randint(0, 9) for _ in range(9)]
+        for _ in range(2):
+            val = sum([(len(cpf) + 1 - i) * v for i, v in enumerate(cpf)]) % 11
+            cpf.append(11 - val if val > 1 else 0)
+        return "%s%s%s.%s%s%s.%s%s%s-%s%s" % tuple(cpf)
+
+    for i in range(19):
         name = f"{random.choice(first_names)} {random.choice(last_names)}"
         role = random.choice(roles)
         monthly_value = Decimal(random.randint(5000, 15000))
@@ -275,6 +282,7 @@ def main():
 
         provider = Provider.objects.create(
             name=name,
+            document=generate_cpf(),
             role=role,
             monthly_value=monthly_value,
             monthly_hours=168,

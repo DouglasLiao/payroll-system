@@ -548,7 +548,7 @@ class PayrollService:
         """
         payroll = (
             Payroll.objects.select_for_update()
-            .select_related("provider__company__payroll_config")
+            .select_related("provider__company")
             .get(pk=payroll_id)
         )
 
@@ -577,9 +577,26 @@ class PayrollService:
                 raise ValueError(f"Campo '{field}' não pode ser atualizado")
 
             if field == "provider_id":
+                # Validar se o novo prestador já tem folha neste mês (exceto a própria)
+                if (
+                    Payroll.objects.filter(
+                        provider_id=value, reference_month=payroll.reference_month
+                    )
+                    .exclude(pk=payroll.id)
+                    .exists()
+                ):
+                    raise ValueError(
+                        f"O prestador selecionado já possui uma folha para o mês {payroll.reference_month}"
+                    )
+
                 new_provider = Provider.objects.select_related(
                     "company__payroll_config"
                 ).get(pk=value)
+
+                # Validar se o novo prestador pertence à mesma empresa
+                if new_provider.company_id != payroll.provider.company_id:
+                    raise ValueError("O novo prestador deve pertencer à mesma empresa.")
+
                 payroll.provider = new_provider
                 payroll.base_value = new_provider.monthly_value
                 if new_provider.advance_enabled:

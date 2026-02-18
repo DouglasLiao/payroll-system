@@ -59,8 +59,17 @@ const Providers = () => {
       handleCloseDialog()
       enqueueSnackbar('Colaborador criado com sucesso', { variant: 'success' })
     },
-    onError: () =>
-      enqueueSnackbar('Erro ao criar colaborador', { variant: 'error' }),
+    onError: (error: any) => {
+      console.error(error)
+      const message =
+        error.response?.data?.detail ||
+        error.response?.data?.[0] ||
+        (Array.isArray(error.response?.data)
+          ? error.response?.data[0]
+          : null) ||
+        'Erro ao criar colaborador'
+      enqueueSnackbar(message, { variant: 'error' })
+    },
   })
 
   const updateMutation = useMutation({

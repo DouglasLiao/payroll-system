@@ -132,11 +132,6 @@ export const PayrollFormDialog = ({
       } else {
         setSelectedDate(null)
       }
-
-      const provider = providers?.find(
-        (p) => p.id === editingPayroll.provider.id
-      )
-      setSelectedProvider(provider || null)
     } else {
       reset({
         provider_id: 0,
@@ -154,7 +149,7 @@ export const PayrollFormDialog = ({
       setSelectedDate(null)
       setSelectedProvider(null)
     }
-  }, [editingPayroll, reset, providers])
+  }, [editingPayroll, reset])
 
   // Calendar info for DSR calculations
   const calendarInfo = watchedValues.reference_month

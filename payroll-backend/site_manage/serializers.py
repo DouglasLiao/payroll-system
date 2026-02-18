@@ -156,6 +156,35 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class ProviderSerializer(serializers.ModelSerializer):
     """Serializer completo para Provider"""
 
+    def to_internal_value(self, data):
+        """Converte formatos BRL (1.000,00) para decimal Python"""
+        if "monthly_value" in data and isinstance(data["monthly_value"], str):
+            val = data["monthly_value"]
+            # Check if it has comma (BRL format like 1.000,00)
+            if "," in val:
+                data["monthly_value"] = val.replace(".", "").replace(",", ".")
+            # If no comma but has dot, assume US format (2200.00)
+            # Do nothing, let Django handle it
+            pass
+        if "vt_fare" in data and isinstance(data["vt_fare"], str):
+            val = data["vt_fare"].strip()
+            if not val:
+                data["vt_fare"] = "0.00"
+            else:
+                # Check if it has comma (BRL format like 4,60 or 1.000,00)
+                if "," in val:
+                    data["vt_fare"] = val.replace(".", "").replace(",", ".")
+                # If no comma but has dot, assume US format (4.60) or simple number
+                # Do nothing, let Django handle "4.60"
+                pass
+
+            print(
+                f"DEBUG: vt_fare processing - Input: '{val}', Output: '{data['vt_fare']}'",
+                flush=True,
+            )
+
+        return super().to_internal_value(data)
+
     class Meta:
         model = Provider
         fields = "__all__"
