@@ -6,9 +6,9 @@ import {
   AttachMoney as MoneyIcon,
   People as PeopleIcon,
 } from '@mui/icons-material'
-import { StatCard } from '../StatCard'
-import { formatCurrency } from '../../utils/formatters'
-import type { EnhancedDashboardStats } from '../../types'
+import { StatCard } from 'src/components/stats'
+import { formatCurrency } from 'src/utils/formatters'
+import type { EnhancedDashboardStats } from 'src/types'
 
 interface DashboardMetricsGridProps {
   stats?: EnhancedDashboardStats['stats']

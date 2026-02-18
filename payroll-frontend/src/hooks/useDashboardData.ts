@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getDashboardStats, type DashboardFilters } from '../services/api'
+import { getDashboardStats, type DashboardFilters } from 'src/services/api'
 
 /**
  * Custom hook to fetch dashboard data from backend

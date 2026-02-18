@@ -1,5 +1,5 @@
 import type { Theme } from '@mui/material'
-import { formatCurrency } from './formatters'
+import { formatCurrency } from 'src/utils/formatters'
 
 /**
  * Get chart colors optimized for both light and dark modes

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { getMonthCalendarInfo } from '../calendarUtils'
+import { getMonthCalendarInfo } from 'src/utils/calendarUtils'
 
 describe('calendarUtils', () => {
   describe('getMonthCalendarInfo', () => {

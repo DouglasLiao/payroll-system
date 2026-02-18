@@ -1,1 +1,1 @@
-export { CustomMenuItem } from './CustomMenuItem'
+export { CustomMenuItem } from 'src/components/menu/CustomMenuItem'

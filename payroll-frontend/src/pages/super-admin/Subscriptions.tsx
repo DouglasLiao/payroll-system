@@ -1,7 +1,7 @@
 import { Box, Typography, Chip, type ChipProps } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
-import { getAllSubscriptions } from '../../services/superAdminApi'
-import { GenericTable } from '../../components/table'
+import { getAllSubscriptions } from 'src/services/superAdminApi'
+import { GenericTable } from 'src/components/table'
 import { useState } from 'react'
 
 const Subscriptions = () => {

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Grid, Typography, Box, Divider } from '@mui/material'
-import type { Provider } from '../../../types'
-import { formatCurrency } from '../../../utils/formatters'
+import type { Provider } from 'src/types'
+import { formatCurrency } from 'src/utils/formatters'
 
 interface CalculationsResult {
   totalAdditionals: number

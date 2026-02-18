@@ -7,11 +7,12 @@ import {
   Settings as SettingsIcon,
 } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getCompanies } from '../../services/superAdminApi'
-import api from '../../services/authApi' // Keep for create-admin specific call or move to superAdminApi
+import { getCompanies } from 'src/services/superAdminApi'
+import api from 'src/services/authApi' // Keep for create-admin specific call or move to superAdminApi
 import { enqueueSnackbar } from 'notistack'
-import { GenericTable, type Column } from '../../components/table'
-import { SearchField } from '../../components/search'
+import { GenericTable, type Column } from 'src/components/table'
+import { SearchField } from 'src/components/search'
+import type { Company } from 'src/types'
 
 export default function Companies() {
   const navigate = useNavigate()

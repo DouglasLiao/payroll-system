@@ -7,9 +7,9 @@
  *    continue to work without changes (backward compatibility)
  *
  * New code should import directly from the domain files:
- *   import { getPayrolls } from './payrollApi'
- *   import { getProviders } from './providerApi'
- *   import { getDashboardStats } from './dashboardApi'
+ *   import { getPayrolls } from 'src/services/payrollApi'
+ *   import { getProviders } from 'src/services/providerApi'
+ *   import { getDashboardStats } from 'src/services/dashboardApi'
  */
 
 import axios from 'axios'
@@ -27,15 +27,15 @@ export default api
 
 // ── Re-exports for backward compatibility ─────────────────────────────────────
 
-export type { ProviderFilters } from './providerApi'
+export type { ProviderFilters } from 'src/services/providerApi'
 export {
   getProviders,
   createProvider,
   updateProvider,
   deleteProvider,
-} from './providerApi'
+} from 'src/services/providerApi'
 
-export type { PayrollFilters, PayrollStats } from './payrollApi'
+export type { PayrollFilters, PayrollStats } from 'src/services/payrollApi'
 export {
   getPayrolls,
   getPayrollStats,
@@ -47,18 +47,18 @@ export {
   reopenPayroll,
   recalculatePayroll,
   downloadPayrollFile,
-} from './payrollApi'
+} from 'src/services/payrollApi'
 
-export type { DashboardFilters } from './dashboardApi'
+export type { DashboardFilters } from 'src/services/dashboardApi'
 export {
   getDashboardStats,
   downloadMonthlyReport,
   sendReportEmail,
-} from './dashboardApi'
+} from 'src/services/dashboardApi'
 
 // ── Legacy: Payments (kept here since not yet extracted) ──────────────────────
 
-import type { Payment, PaginatedResponse } from '../types'
+import type { Payment, PaginatedResponse } from 'src/types'
 
 export const getPayments = async () => {
   const { data } = await api.get<PaginatedResponse<Payment>>('/payments/')

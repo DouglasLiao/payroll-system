@@ -1,9 +1,9 @@
 import React from 'react'
 import { Grid, Typography, TextField } from '@mui/material'
 import type { Control } from 'react-hook-form'
-import type { Provider } from '../../../types'
-import { formatCurrency } from '../../../utils/formatters'
-import { NumericField } from '../fields/NumericField'
+import type { Provider } from 'src/types'
+import { formatCurrency } from 'src/utils/formatters'
+import { NumericField } from 'src/components/payroll/fields/NumericField'
 
 interface PayrollFormInputs {
   provider_id: number

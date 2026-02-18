@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Box, Skeleton } from '@mui/material'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from 'src/contexts/AuthContext'
 
 interface ProtectedRouteProps {
   children: ReactNode

@@ -13,16 +13,16 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useEffect, useState } from 'react'
-import { CustomMenuItem } from './CustomMenuItem'
-import { CPFInput } from './InputMasks'
+import { CustomMenuItem } from 'src/components/menu/CustomMenuItem'
+import { CPFInput } from 'src/components/inputs/InputMasks'
 import {
   validateCPF,
   validateCNPJ,
   onlyLetters,
   validateEmail,
   isPositiveNumber,
-} from '../utils/validators'
-import type { Provider } from '../types'
+} from 'src/utils/validators'
+import type { Provider } from 'src/types'
 
 // ── Schema ────────────────────────────────────────────────────────────────────
 

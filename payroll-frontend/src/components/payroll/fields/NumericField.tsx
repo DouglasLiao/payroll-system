@@ -1,7 +1,7 @@
 import React from 'react'
 import { Controller, type Control } from 'react-hook-form'
 import { TextField, type SxProps } from '@mui/material'
-import type { PayrollFormInputs } from '../sections/ContractDataSection'
+import type { PayrollFormInputs } from 'src/components/payroll/sections/ContractDataSection'
 
 interface NumericFieldProps {
   name: keyof PayrollFormInputs

@@ -16,7 +16,7 @@ import {
 } from '@mui/material'
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from 'src/contexts/AuthContext'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')

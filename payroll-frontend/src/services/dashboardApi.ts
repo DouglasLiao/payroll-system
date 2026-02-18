@@ -2,8 +2,8 @@
  * dashboardApi.ts — API calls for Dashboard and Reports domain
  */
 
-import api from './api'
-import type { EnhancedDashboardStats } from '../types'
+import api from 'src/services/api'
+import type { EnhancedDashboardStats } from 'src/types'
 
 export interface DashboardFilters {
   period?: '7d' | '30d' | '90d' | '1y' | 'all'

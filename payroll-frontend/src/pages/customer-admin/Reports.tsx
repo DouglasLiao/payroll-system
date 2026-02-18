@@ -16,7 +16,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs, { Dayjs } from 'dayjs'
 import 'dayjs/locale/pt-br'
-import { downloadMonthlyReport, sendReportEmail } from '../../services/api'
+import { downloadMonthlyReport, sendReportEmail } from 'src/services/api'
 import { useSnackbar } from 'notistack'
 import {
   Description as DescriptionIcon,

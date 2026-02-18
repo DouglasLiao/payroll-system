@@ -13,15 +13,15 @@ import {
   FormControl,
   InputLabel,
 } from '@mui/material'
-import { CustomMenuItem } from '../../components/menu'
+import { CustomMenuItem } from 'src/components/menu'
 import {
   Visibility as ViewIcon,
   Download as DownloadIcon,
   FilterList as FilterIcon,
 } from '@mui/icons-material'
-import { GenericTable } from '../../components/table'
+import { GenericTable } from 'src/components/table'
 import { useQuery } from '@tanstack/react-query'
-import api from '../../services/authApi'
+import api from 'src/services/authApi'
 
 interface Payroll {
   id: number

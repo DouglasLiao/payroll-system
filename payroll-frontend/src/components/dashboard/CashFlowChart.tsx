@@ -4,10 +4,10 @@ import {
   getChartColors,
   getBaseChartOptions,
   formatCompactCurrency,
-} from '../../utils/chartHelpers'
-import { formatCurrency } from '../../utils/formatters'
-import { getLastNMonthsFromData } from '../../utils/dashboardCalculations'
-import type { EnhancedDashboardStats } from '../../types'
+} from 'src/utils/chartHelpers'
+import { formatCurrency } from 'src/utils/formatters'
+import { getLastNMonthsFromData } from 'src/utils/dashboardCalculations'
+import type { EnhancedDashboardStats } from 'src/types'
 
 interface CashFlowChartProps {
   monthlyData: EnhancedDashboardStats['monthly_aggregation']

@@ -1,4 +1,4 @@
-export { PayrollDetailDialog } from './PayrollDetailDialog'
-export { PayrollFormDialog } from './PayrollFormDialog'
-export { ProviderDialog } from './ProviderDialog'
-export type { ProviderFormInputs } from './ProviderDialog'
+export { PayrollDetailDialog } from 'src/components/dialogs/PayrollDetailDialog'
+export { PayrollFormDialog } from 'src/components/dialogs/PayrollFormDialog'
+export { ProviderDialog } from 'src/components/dialogs/ProviderDialog'
+export type { ProviderFormInputs } from 'src/components/dialogs/ProviderDialog'

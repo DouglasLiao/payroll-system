@@ -1,7 +1,7 @@
 import { Grid } from '@mui/material'
-import { StatCard } from './StatCard'
+import { StatCard } from 'src/components/stats/StatCard'
 import { useQuery } from '@tanstack/react-query'
-import { getPayrollStats } from '../services/api'
+import { getPayrollStats } from 'src/services/payrollApi'
 
 export const PayrollStats = () => {
   const { data, isLoading } = useQuery({

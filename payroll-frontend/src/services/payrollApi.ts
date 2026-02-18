@@ -5,13 +5,13 @@
  * Each file imports from the shared axios instance in api.ts.
  */
 
-import api from './api'
+import api from 'src/services/api'
 import type {
   Payroll,
   PayrollDetail,
   PayrollCreateData,
   PaginatedResponse,
-} from '../types'
+} from 'src/types'
 
 export interface PayrollFilters {
   status?: string

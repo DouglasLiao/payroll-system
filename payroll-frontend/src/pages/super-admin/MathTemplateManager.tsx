@@ -21,7 +21,7 @@ import {
   InputLabel,
   Select,
 } from '@mui/material'
-import { CustomMenuItem } from '../../components/menu'
+import { CustomMenuItem } from 'src/components/menu'
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -34,12 +34,12 @@ import {
   createMathTemplate,
   updateMathTemplate,
   deleteMathTemplate,
-} from '../../services/superAdminApi'
+} from 'src/services/superAdminApi'
 import type {
   PayrollMathTemplate,
   TransportVoucherType,
   BusinessDaysRule,
-} from '../../types'
+} from 'src/types'
 
 const MathTemplateManager = () => {
   const [openDialog, setOpenDialog] = useState(false)

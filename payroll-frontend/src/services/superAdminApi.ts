@@ -4,7 +4,7 @@
  * All routes are under /users/ (moved from root in the users/ app refactor).
  */
 
-import api from './api'
+import api from 'src/services/api'
 import type {
   Company,
   PayrollMathTemplate,
@@ -12,7 +12,7 @@ import type {
   Subscription,
   SuperAdminStats,
   PaginatedResponse,
-} from '../types'
+} from 'src/types'
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 

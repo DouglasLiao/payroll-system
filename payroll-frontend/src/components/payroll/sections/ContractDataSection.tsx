@@ -5,8 +5,8 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import type { Dayjs } from 'dayjs'
 import { Controller, type Control, type FieldErrors } from 'react-hook-form'
-import type { Provider } from '../../../types'
-import { formatCurrency } from '../../../utils/formatters'
+import type { Provider } from 'src/types'
+import { formatCurrency } from 'src/utils/formatters'
 
 export interface PayrollFormInputs {
   name?: string

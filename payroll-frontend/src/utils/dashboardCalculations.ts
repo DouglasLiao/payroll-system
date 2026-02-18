@@ -3,7 +3,7 @@ import type {
   PayrollStats,
   MonthlyData,
   FinancialMetrics,
-} from '../types'
+} from 'src/types'
 
 /**
  * Calculate aggregate statistics from payroll data

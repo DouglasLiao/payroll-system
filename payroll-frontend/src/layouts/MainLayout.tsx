@@ -28,9 +28,9 @@ import {
   Settings as SettingsIcon,
   Description as DescriptionIcon,
 } from '@mui/icons-material'
-import { CustomMenuItem } from '../components/menu'
-import { useThemeContext } from '../contexts/ThemeContext'
-import { useAuth } from '../contexts/AuthContext'
+import { CustomMenuItem } from 'src/components/menu'
+import { useThemeContext } from 'src/contexts/ThemeContext'
+import { useAuth } from 'src/contexts/AuthContext'
 
 const DRAWER_WIDTH = 260
 const VIEW_PORT_WIDTH = 95

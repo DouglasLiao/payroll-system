@@ -6,7 +6,7 @@ import React, {
   useRef,
   type ReactNode,
 } from 'react'
-import { authApi, type User } from '../services/authApi'
+import { authApi, type User } from 'src/services/authApi'
 
 interface AuthContextType {
   user: User | null

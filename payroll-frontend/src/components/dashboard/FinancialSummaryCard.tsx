@@ -5,9 +5,9 @@ import {
   TrendingFlat,
   AccountBalance,
 } from '@mui/icons-material'
-import { formatCurrency } from '../../utils/formatters'
-import { getTrendColor, getTrendIndicator } from '../../utils/chartHelpers'
-import type { EnhancedDashboardStats } from '../../types'
+import { formatCurrency } from 'src/utils/formatters'
+import { getTrendColor, getTrendIndicator } from 'src/utils/chartHelpers'
+import type { EnhancedDashboardStats } from 'src/types'
 
 interface FinancialSummaryCardProps {
   stats?: EnhancedDashboardStats['stats']

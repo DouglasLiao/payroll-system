@@ -1,2 +1,2 @@
-export { StatCard } from './StatCard'
-export { PayrollStats } from './PayrollStats'
+export { StatCard } from 'src/components/stats/StatCard'
+export { PayrollStats } from 'src/components/stats/PayrollStats'

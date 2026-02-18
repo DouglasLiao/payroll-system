@@ -9,10 +9,10 @@ import {
 } from '@mui/material'
 import ReactApexChart from 'react-apexcharts'
 
-import { getChartColors, getBaseChartOptions } from '../../utils/chartHelpers'
-import { formatCurrency } from '../../utils/formatters'
-import { getLastNMonthsFromData } from '../../utils/dashboardCalculations'
-import type { EnhancedDashboardStats, ChartPeriod } from '../../types'
+import { getChartColors, getBaseChartOptions } from 'src/utils/chartHelpers'
+import { formatCurrency } from 'src/utils/formatters'
+import { getLastNMonthsFromData } from 'src/utils/dashboardCalculations'
+import type { EnhancedDashboardStats, ChartPeriod } from 'src/types'
 
 interface FinancialChartProps {
   monthlyData: EnhancedDashboardStats['monthly_aggregation']

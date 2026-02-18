@@ -10,9 +10,9 @@ import {
   getCompanies,
   approveCompany,
   rejectCompany,
-} from '../../services/superAdminApi'
-import { SearchField } from '../../components/search'
-import { GenericTable } from '../../components/table'
+} from 'src/services/superAdminApi'
+import { SearchField } from 'src/components/search'
+import { GenericTable } from 'src/components/table'
 
 const Approvals = () => {
   const { enqueueSnackbar } = useSnackbar()

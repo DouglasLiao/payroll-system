@@ -14,7 +14,7 @@ import {
   Description,
 } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
-import { getSuperAdminStats } from '../../services/superAdminApi'
+import { getSuperAdminStats } from 'src/services/superAdminApi'
 
 const Overview = () => {
   const {

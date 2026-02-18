@@ -1,6 +1,6 @@
 import { TextField, type TextFieldProps } from '@mui/material'
 import { forwardRef } from 'react'
-import { formatCPF, formatCNPJ } from '../utils/validators'
+import { formatCPF, formatCNPJ } from 'src/utils/validators'
 
 /**
  * CPF Input with automatic formatting mask (000.000.000-00)

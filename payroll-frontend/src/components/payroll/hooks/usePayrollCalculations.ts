@@ -1,4 +1,4 @@
-import type { Provider } from '../../../types'
+import type { Provider } from 'src/types'
 
 interface PayrollFormInputs {
   provider_id: number

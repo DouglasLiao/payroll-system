@@ -16,9 +16,9 @@ import {
   LockOpen,
   Edit,
 } from '@mui/icons-material'
-import type { PayrollDetail } from '../types'
-import { formatCurrency } from '../utils/formatters'
-import { StatusChip } from './StatusChip'
+import type { PayrollDetail } from 'src/types'
+import { formatCurrency } from 'src/utils/formatters'
+import { StatusChip } from 'src/components/table/StatusChip'
 
 interface PayrollDetailDialogProps {
   open: boolean

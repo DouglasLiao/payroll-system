@@ -28,8 +28,8 @@ import {
   Clear,
   Search,
 } from '@mui/icons-material'
-import type { Provider } from '../types'
-import { CustomMenuItem } from './CustomMenuItem'
+import type { Provider } from 'src/types'
+import { CustomMenuItem } from 'src/components/menu/CustomMenuItem'
 
 export interface PayrollFilters {
   status: string

@@ -2,8 +2,8 @@
  * providerApi.ts — API calls for Provider domain
  */
 
-import api from './api'
-import type { Provider, PaginatedResponse } from '../types'
+import api from 'src/services/api'
+import type { Provider, PaginatedResponse } from 'src/types'
 
 export interface ProviderFilters {
   page?: number

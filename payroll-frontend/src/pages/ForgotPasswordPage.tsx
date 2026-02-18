@@ -11,7 +11,7 @@ import {
   Fade,
 } from '@mui/material'
 import { Link } from 'react-router-dom'
-import { authApi } from '../services/authApi'
+import { authApi } from 'src/services/authApi'
 import { useMutation } from '@tanstack/react-query'
 
 const ForgotPasswordPage = () => {

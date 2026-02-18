@@ -12,9 +12,9 @@ import {
   Fade,
 } from '@mui/material'
 import { Link } from 'react-router-dom'
-import { authApi } from '../services/authApi'
+import { authApi } from 'src/services/authApi'
 import { useMutation } from '@tanstack/react-query'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from 'src/contexts/AuthContext'
 
 interface ApiError {
   response?: {

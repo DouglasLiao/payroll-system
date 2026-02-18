@@ -8,12 +8,10 @@ import {
   Container,
 } from '@mui/material'
 import { Add, Edit, Delete } from '@mui/icons-material'
-import { GenericTable } from '../../components/table'
-import { SearchField } from '../../components/search'
-import {
-  ProviderDialog,
-  type ProviderFormInputs,
-} from '../../components/dialogs'
+import { GenericTable } from 'src/components/table'
+import { SearchField } from 'src/components/search'
+import { ProviderDialog } from 'src/components/dialogs/ProviderDialog'
+import type { ProviderFormInputs } from 'src/components/dialogs/ProviderDialog'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSnackbar } from 'notistack'
 import {
@@ -21,8 +19,8 @@ import {
   createProvider,
   deleteProvider,
   updateProvider,
-} from '../../services/api'
-import type { Provider, PaginatedResponse } from '../../types'
+} from 'src/services/api'
+import type { Provider, PaginatedResponse } from 'src/types'
 
 const Providers = () => {
   const [open, setOpen] = useState(false)

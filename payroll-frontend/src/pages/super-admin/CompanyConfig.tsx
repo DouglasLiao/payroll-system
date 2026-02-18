@@ -28,14 +28,14 @@ import {
   applyTemplateToCompany,
   getMathTemplates,
   getCompany,
-} from '../../services/superAdminApi'
+} from 'src/services/superAdminApi'
 import type {
   PayrollMathTemplate,
   PayrollConfiguration,
   TransportVoucherType,
   BusinessDaysRule,
-} from '../../types'
-import { CustomMenuItem } from '../../components/menu'
+} from 'src/types'
+import { CustomMenuItem } from 'src/components/menu'
 
 const CompanyConfig = () => {
   const { id } = useParams()

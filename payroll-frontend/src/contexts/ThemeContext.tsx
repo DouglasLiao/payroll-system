@@ -9,7 +9,7 @@ import {
   ThemeProvider as MUIThemeProvider,
   type PaletteMode,
 } from '@mui/material'
-import { getTheme } from '../theme'
+import { getTheme } from 'src/theme'
 
 interface ThemeContextType {
   mode: PaletteMode

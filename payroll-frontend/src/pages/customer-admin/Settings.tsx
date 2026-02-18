@@ -22,8 +22,8 @@ import {
 import Grid from '@mui/material/Grid'
 import { useSnackbar } from 'notistack'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getProviders, updateProvider } from '../../services/api'
-import type { Provider } from '../../types'
+import { getProviders, updateProvider } from 'src/services/api'
+import type { Provider } from 'src/types'
 
 const Settings = () => {
   const { enqueueSnackbar } = useSnackbar()

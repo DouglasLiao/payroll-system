@@ -1,7 +1,7 @@
 import { Card, Typography, Box } from '@mui/material'
-import { StatusChip } from '../StatusChip'
-import { formatCurrency } from '../../utils/formatters'
-import type { Payroll } from '../../types'
+import { StatusChip } from 'src/components/table'
+import { formatCurrency } from 'src/utils/formatters'
+import type { Payroll } from 'src/types'
 
 interface RecentActivityCardProps {
   activities: Payroll[]
