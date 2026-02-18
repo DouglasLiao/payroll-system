@@ -10,7 +10,6 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem,
   Card,
   CardContent,
   Alert,
@@ -36,6 +35,7 @@ import type {
   TransportVoucherType,
   BusinessDaysRule,
 } from '../../types'
+import { CustomMenuItem } from '../../components/CustomMenuItem'
 
 const CompanyConfig = () => {
   const { id } = useParams()
@@ -188,9 +188,9 @@ const CompanyConfig = () => {
                     }
                   >
                     {templates.map((t: PayrollMathTemplate) => (
-                      <MenuItem key={t.id} value={String(t.id)}>
+                      <CustomMenuItem key={t.id} value={String(t.id)}>
                         {t.name}
-                      </MenuItem>
+                      </CustomMenuItem>
                     ))}
                   </Select>
                 </FormControl>
@@ -312,13 +312,15 @@ const CompanyConfig = () => {
                       })
                     }
                   >
-                    <MenuItem value="FIXED">Fixo (Valor Integrado)</MenuItem>
-                    <MenuItem value="DYNAMIC_PER_DAY">
+                    <CustomMenuItem value="FIXED">
+                      Fixo (Valor Integrado)
+                    </CustomMenuItem>
+                    <CustomMenuItem value="DYNAMIC_PER_DAY">
                       Dinâmico (Calculado por dia)
-                    </MenuItem>
-                    <MenuItem value="DYNAMIC_PER_TRIP">
+                    </CustomMenuItem>
+                    <CustomMenuItem value="DYNAMIC_PER_TRIP">
                       Dinâmico (Por viagem)
-                    </MenuItem>
+                    </CustomMenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -335,12 +337,12 @@ const CompanyConfig = () => {
                       })
                     }
                   >
-                    <MenuItem value="FIXED_30">
+                    <CustomMenuItem value="FIXED_30">
                       Comercial (30 dias fixo)
-                    </MenuItem>
-                    <MenuItem value="WORKALENDAR">
+                    </CustomMenuItem>
+                    <CustomMenuItem value="WORKALENDAR">
                       Calendário (Dias reais do mês)
-                    </MenuItem>
+                    </CustomMenuItem>
                   </Select>
                 </FormControl>
               </Grid>

@@ -4,28 +4,22 @@ import {
   Card,
   CardContent,
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Chip,
   IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   Select,
-  MenuItem,
   FormControl,
   InputLabel,
 } from '@mui/material'
+import { CustomMenuItem } from '../../components/CustomMenuItem'
 import {
   Visibility as ViewIcon,
   Download as DownloadIcon,
   FilterList as FilterIcon,
 } from '@mui/icons-material'
+import { GenericTable } from '../../components/GenericTable'
 import { useQuery } from '@tanstack/react-query'
 import api from '../../services/authApi'
 
@@ -43,6 +37,8 @@ export default function ProviderPayments() {
   const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null)
   const [filterMonth, setFilterMonth] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Fetch payrolls
   const { data: payrolls = [], isLoading } = useQuery({
@@ -60,6 +56,11 @@ export default function ProviderPayments() {
       return response.data.results || response.data
     },
   })
+
+  const paginatedPayrolls = payrolls.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  )
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -122,10 +123,10 @@ export default function ProviderPayments() {
                 onChange={(e) => setFilterMonth(e.target.value)}
                 label="Mês de Referência"
               >
-                <MenuItem value="">Todos</MenuItem>
-                <MenuItem value="01/2026">Janeiro/2026</MenuItem>
-                <MenuItem value="02/2026">Fevereiro/2026</MenuItem>
-                <MenuItem value="03/2026">Março/2026</MenuItem>
+                <CustomMenuItem value="">Todos</CustomMenuItem>
+                <CustomMenuItem value="01/2026">Janeiro/2026</CustomMenuItem>
+                <CustomMenuItem value="02/2026">Fevereiro/2026</CustomMenuItem>
+                <CustomMenuItem value="03/2026">Março/2026</CustomMenuItem>
               </Select>
             </FormControl>
             <FormControl sx={{ minWidth: 200 }}>
@@ -135,10 +136,10 @@ export default function ProviderPayments() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 label="Status"
               >
-                <MenuItem value="">Todos</MenuItem>
-                <MenuItem value="DRAFT">Rascunho</MenuItem>
-                <MenuItem value="CLOSED">Fechado</MenuItem>
-                <MenuItem value="PAID">Pago</MenuItem>
+                <CustomMenuItem value="">Todos</CustomMenuItem>
+                <CustomMenuItem value="DRAFT">Rascunho</CustomMenuItem>
+                <CustomMenuItem value="CLOSED">Fechado</CustomMenuItem>
+                <CustomMenuItem value="PAID">Pago</CustomMenuItem>
               </Select>
             </FormControl>
           </Box>
@@ -146,81 +147,87 @@ export default function ProviderPayments() {
       </Card>
 
       {/* Payrolls Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Referência</TableCell>
-              <TableCell>Colaborador</TableCell>
-              <TableCell align="right">Valor Líquido</TableCell>
-              <TableCell align="center">Status</TableCell>
-              <TableCell align="center">Data</TableCell>
-              <TableCell align="right">Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  Carregando...
-                </TableCell>
-              </TableRow>
-            ) : payrolls.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  Nenhum pagamento encontrado
-                </TableCell>
-              </TableRow>
-            ) : (
-              payrolls.map((payroll) => (
-                <TableRow key={payroll.id}>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={500}>
-                      {payroll.reference_month}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{payroll.provider_name}</TableCell>
-                  <TableCell align="right">
-                    <Typography
-                      variant="body2"
-                      fontWeight={600}
-                      color="primary"
-                    >
-                      {formatCurrency(payroll.net_value)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={payroll.status_display}
-                      color={getStatusColor(payroll.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Typography variant="caption">
-                      {new Date(payroll.created_at).toLocaleDateString('pt-BR')}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      onClick={() => setSelectedPayroll(payroll)}
-                    >
-                      <ViewIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDownload(payroll.id)}
-                    >
-                      <DownloadIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <GenericTable
+        data={paginatedPayrolls}
+        loading={isLoading}
+        keyExtractor={(p) => p.id}
+        totalCount={payrolls.length}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={(newRows) => {
+          setRowsPerPage(newRows)
+          setPage(0)
+        }}
+        columns={[
+          {
+            id: 'reference',
+            label: 'Referência',
+            render: (p) => (
+              <Typography variant="body2" fontWeight={500}>
+                {p.reference_month}
+              </Typography>
+            ),
+          },
+          { id: 'provider', label: 'Colaborador', accessor: 'provider_name' },
+          {
+            id: 'net_value',
+            label: 'Valor Líquido',
+            align: 'right',
+            render: (p) => (
+              <Typography variant="body2" fontWeight={600} color="primary">
+                {formatCurrency(p.net_value)}
+              </Typography>
+            ),
+          },
+          {
+            id: 'status',
+            label: 'Status',
+            align: 'center',
+            render: (p) => (
+              <Chip
+                label={p.status_display}
+                color={
+                  getStatusColor(p.status) as
+                    | 'default'
+                    | 'primary'
+                    | 'secondary'
+                    | 'error'
+                    | 'info'
+                    | 'success'
+                    | 'warning'
+                }
+                size="small"
+              />
+            ),
+          },
+          {
+            id: 'date',
+            label: 'Data',
+            align: 'center',
+            render: (p) => (
+              <Typography variant="caption">
+                {new Date(p.created_at).toLocaleDateString('pt-BR')}
+              </Typography>
+            ),
+          },
+          {
+            id: 'actions',
+            label: 'Ações',
+            align: 'right',
+            render: (p) => (
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <IconButton size="small" onClick={() => setSelectedPayroll(p)}>
+                  <ViewIcon />
+                </IconButton>
+                <IconButton size="small" onClick={() => handleDownload(p.id)}>
+                  <DownloadIcon />
+                </IconButton>
+              </Box>
+            ),
+          },
+        ]}
+      />
 
       {/* Details Dialog */}
       <Dialog

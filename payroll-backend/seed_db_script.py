@@ -171,6 +171,27 @@ def main():
     )
 
     # ==============================================================================
+    # 2.5 DUMMY COMPANIES FOR PAGINATION TESTING
+    # ==============================================================================
+    print("\nCreating 50 Dummy Companies...")
+    for i in range(1, 51):
+        dummy_company = Company.objects.create(
+            name=f"Company {i}",
+            cnpj=f"{i:02d}.000.000/0001-{i:02d}",
+            email=f"contact@company{i}.com",
+            phone=f"(11) 90000-{i:04d}",
+            is_active=True,
+        )
+        PayrollConfiguration.objects.create(company=dummy_company)
+        Subscription.objects.create(
+            company=dummy_company,
+            plan_type=PlanType.BASIC,
+            start_date=timezone.now().date(),
+            is_active=True,
+            end_date=timezone.now().date() + timedelta(days=365),
+        )
+
+    # ==============================================================================
     # 3. PROVIDERS & PAYROLLS (FOR CLIENT COMPANY)
     # ==============================================================================
     print(f"\nCreating 50 Providers for {client_company.name}...")

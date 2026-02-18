@@ -24,6 +24,7 @@ const api = axios.create({
 export interface ProviderFilters {
   page?: number
   page_size?: number
+  search?: string
 }
 
 export const getProviders = async (params?: ProviderFilters) => {

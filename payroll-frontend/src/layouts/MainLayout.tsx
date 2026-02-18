@@ -15,7 +15,6 @@ import {
   Divider,
   Chip,
   Menu,
-  MenuItem,
 } from '@mui/material'
 import {
   Menu as MenuIcon,
@@ -29,6 +28,7 @@ import {
   Settings as SettingsIcon,
   Description as DescriptionIcon,
 } from '@mui/icons-material'
+import { CustomMenuItem } from '../components/CustomMenuItem'
 import { useThemeContext } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -284,7 +284,7 @@ const MainLayout = () => {
                 </Box>
                 <Divider />
                 {user.company_name && (
-                  <MenuItem sx={{ py: 1.5 }}>
+                  <CustomMenuItem sx={{ py: 1.5 }}>
                     <ListItemIcon>
                       <BusinessIcon fontSize="small" />
                     </ListItemIcon>
@@ -298,15 +298,18 @@ const MainLayout = () => {
                         </Typography>
                       )}
                     </Box>
-                  </MenuItem>
+                  </CustomMenuItem>
                 )}
                 <Divider />
-                <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                <CustomMenuItem
+                  onClick={handleLogout}
+                  sx={{ color: 'error.main' }}
+                >
                   <ListItemIcon>
                     <LogoutIcon fontSize="small" color="error" />
                   </ListItemIcon>
                   Sair
-                </MenuItem>
+                </CustomMenuItem>
               </Menu>
             </Box>
           )}

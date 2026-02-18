@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   Box,
   Typography,
@@ -7,12 +7,12 @@ import {
   DialogTitle,
   DialogContent,
   TextField,
-  MenuItem,
   IconButton,
   Grid,
   Card,
   Container,
 } from '@mui/material'
+import { CustomMenuItem } from '../../components/CustomMenuItem'
 import {
   Add,
   Edit,
@@ -21,6 +21,7 @@ import {
   Error as ErrorIcon,
 } from '@mui/icons-material'
 import { GenericTable } from '../../components/GenericTable'
+import { SearchField } from '../../components/SearchField'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -126,22 +127,12 @@ const Providers = () => {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<
     'PIX' | 'TED' | 'TRANSFER'
   >('PIX')
   const [vtEnabled, setVtEnabled] = useState(false)
   const queryClient = useQueryClient()
   const { enqueueSnackbar } = useSnackbar()
-
-  // Debounce search term
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [searchTerm])
 
   const isEditMode = editingProvider !== null
 
@@ -155,8 +146,13 @@ const Providers = () => {
   const { data: providersData, isLoading } = useQuery<
     PaginatedResponse<Provider>
   >({
-    queryKey: ['providers', 'all'],
-    queryFn: () => getProviders({ page: 1, page_size: initialData!.count }),
+    queryKey: ['providers', 'all', searchTerm],
+    queryFn: () =>
+      getProviders({
+        page: 1,
+        page_size: initialData!.count,
+        search: searchTerm,
+      }),
     enabled: !!initialData?.count, // Only run when we have the count
   })
 
@@ -281,9 +277,9 @@ const Providers = () => {
     setPage(0)
   }
 
-  // Filter providers based on debounced search term
+  // Filter providers based on search term
   const filteredProviders = providersData?.results?.filter((provider) => {
-    const searchLower = debouncedSearchTerm.toLowerCase()
+    const searchLower = searchTerm.toLowerCase()
     return (
       provider.name.toLowerCase().includes(searchLower) ||
       provider.role.toLowerCase().includes(searchLower)
@@ -319,13 +315,10 @@ const Providers = () => {
 
       {/* Search Field */}
       <Box sx={{ mb: 2 }}>
-        <TextField
-          fullWidth
-          label="Buscar por nome ou cargo"
-          variant="outlined"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Digite o nome do colaborador ou cargo..."
+        <SearchField
+          onSearch={setSearchTerm}
+          placeholder="Buscar por nome ou cargo..."
+          width={300}
         />
       </Box>
 
@@ -483,9 +476,11 @@ const Providers = () => {
                         )
                       }}
                     >
-                      <MenuItem value="PIX">PIX</MenuItem>
-                      <MenuItem value="TED">TED</MenuItem>
-                      <MenuItem value="TRANSFER">Bank Transfer</MenuItem>
+                      <CustomMenuItem value="PIX">PIX</CustomMenuItem>
+                      <CustomMenuItem value="TED">TED</CustomMenuItem>
+                      <CustomMenuItem value="TRANSFER">
+                        Bank Transfer
+                      </CustomMenuItem>
                     </TextField>
                   )}
                 />

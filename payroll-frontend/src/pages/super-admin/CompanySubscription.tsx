@@ -9,7 +9,6 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem,
   TextField,
   Chip,
   Card,
@@ -28,6 +27,7 @@ import {
   renewSubscription,
   getCompany,
 } from '../../services/superAdminApi'
+import { CustomMenuItem } from '../../components/CustomMenuItem'
 
 const CompanySubscription = () => {
   const { id } = useParams()
@@ -234,12 +234,18 @@ const CompanySubscription = () => {
                       setFormData({ ...formData, plan_type: e.target.value })
                     }
                   >
-                    <MenuItem value="BASIC">Basic (Até 5 prestadores)</MenuItem>
-                    <MenuItem value="PRO">Pro (Até 20 prestadores)</MenuItem>
-                    <MenuItem value="ENTERPRISE">
+                    <CustomMenuItem value="BASIC">
+                      Basic (Até 5 prestadores)
+                    </CustomMenuItem>
+                    <CustomMenuItem value="PRO">
+                      Pro (Até 20 prestadores)
+                    </CustomMenuItem>
+                    <CustomMenuItem value="ENTERPRISE">
                       Enterprise (Até 50 prestadores)
-                    </MenuItem>
-                    <MenuItem value="UNLIMITED">Unlimited (Ilimitado)</MenuItem>
+                    </CustomMenuItem>
+                    <CustomMenuItem value="UNLIMITED">
+                      Unlimited (Ilimitado)
+                    </CustomMenuItem>
                   </Select>
                 </FormControl>
               </Grid>

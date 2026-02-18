@@ -234,6 +234,7 @@ export interface Company {
   is_active: boolean
   admin_count: number
   provider_count: number
+  subscription_end_date?: string | null
   created_at: string
 }
 

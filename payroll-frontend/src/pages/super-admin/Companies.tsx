@@ -1,89 +1,33 @@
 import { useState } from 'react'
-import {
-  Box,
-  Typography,
-  Button,
-  TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Switch,
-} from '@mui/material'
+import { Box, Typography, IconButton } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import {
-  Add as AddIcon,
   Delete as DeleteIcon,
   Business as BusinessIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
   Settings as SettingsIcon,
-  Receipt as ReceiptIcon,
 } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSnackbar } from 'notistack'
-import {
-  createCompany,
-  toggleCompanyStatus,
-  // deleteCompany, // TODO: Implement in API if needed
-} from '../../services/superAdminApi'
+import { getCompanies } from '../../services/superAdminApi'
 import api from '../../services/authApi' // Keep for create-admin specific call or move to superAdminApi
-import type { Company } from '../../types'
+import { enqueueSnackbar } from 'notistack'
+import { GenericTable, type Column } from '../../components/GenericTable'
+import { SearchField } from '../../components/SearchField'
 
 export default function Companies() {
   const navigate = useNavigate()
-  const [openCompanyDialog, setOpenCompanyDialog] = useState(false)
-  const [openAdminDialog, setOpenAdminDialog] = useState(false)
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
-  const { enqueueSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
-
-  // Company form state
-  const [companyForm, setCompanyForm] = useState({
-    name: '',
-    cnpj: '',
-    email: '',
-    phone: '',
-  })
-
-  // Admin form state
-  const [adminForm, setAdminForm] = useState({
-    username: '',
-    email: '',
-    password: '',
-    first_name: '',
-    last_name: '',
-  })
+  const [page, setPage] = useState(0)
+  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [search, setSearch] = useState('')
 
   // Fetch companies
   const { data, isLoading } = useQuery({
-    queryKey: ['companies'],
-    queryFn: () => getCompanies({ page_size: 100 }), // Fetch all for now
+    queryKey: ['companies', page, rowsPerPage, search],
+    queryFn: () =>
+      getCompanies({ page: page + 1, page_size: rowsPerPage, search }),
   })
 
   const companies = data?.results || []
-
-  // Create company mutation
-  const createCompanyMutation = useMutation({
-    mutationFn: createCompany,
-    onSuccess: () => {
-      enqueueSnackbar('Empresa criada com sucesso!', { variant: 'success' })
-      queryClient.invalidateQueries({ queryKey: ['companies'] })
-      setOpenCompanyDialog(false)
-      setCompanyForm({ name: '', cnpj: '', email: '', phone: '' })
-    },
-    onError: () => {
-      enqueueSnackbar('Erro ao criar empresa', { variant: 'error' })
-    },
-  })
 
   // Delete company mutation
   const deleteCompanyMutation = useMutation({
@@ -99,63 +43,76 @@ export default function Companies() {
     },
   })
 
-  // Create admin mutation
-  const createAdminMutation = useMutation({
-    mutationFn: async (data: typeof adminForm) => {
-      return await api.post(
-        `/companies/${selectedCompany?.id}/create-admin/`,
-        data
-      )
-    },
-    onSuccess: () => {
-      enqueueSnackbar('Administrador criado com sucesso!', {
-        variant: 'success',
-      })
-      queryClient.invalidateQueries({ queryKey: ['companies'] })
-      setOpenAdminDialog(false)
-      setAdminForm({
-        username: '',
-        email: '',
-        password: '',
-        first_name: '',
-        last_name: '',
-      })
-      setSelectedCompany(null)
-    },
-    onError: () => {
-      enqueueSnackbar('Erro ao criar administrador', { variant: 'error' })
-    },
-  })
-
-  const handleCreateCompany = () => {
-    createCompanyMutation.mutate(companyForm)
-  }
-
   const handleDeleteCompany = (id: number) => {
     if (confirm('Tem certeza que deseja deletar esta empresa?')) {
       deleteCompanyMutation.mutate(id)
     }
   }
 
-  const handleCreateAdmin = () => {
-    createAdminMutation.mutate(adminForm)
-  }
-
-  // Toggle status mutation
-  const toggleStatusMutation = useMutation({
-    mutationFn: toggleCompanyStatus,
-    onSuccess: (data) => {
-      enqueueSnackbar(data.message, { variant: 'success' })
-      queryClient.invalidateQueries({ queryKey: ['companies'] })
+  const columns: Column<Company>[] = [
+    {
+      id: 'name',
+      label: 'Empresa',
+      render: (company) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <BusinessIcon color="primary" />
+          <Typography variant="body2" fontWeight={500}>
+            {company.name}
+          </Typography>
+        </Box>
+      ),
     },
-    onError: () => {
-      enqueueSnackbar('Erro ao alterar status da empresa', { variant: 'error' })
+    {
+      id: 'cnpj',
+      label: 'CNPJ',
+      accessor: 'cnpj',
     },
-  })
-
-  const handleToggleStatus = (id: number) => {
-    toggleStatusMutation.mutate(id)
-  }
+    {
+      id: 'start_date',
+      label: 'Data de Início',
+      render: (company) => new Date(company.created_at).toLocaleDateString(),
+    },
+    {
+      id: 'license',
+      label: 'Licença',
+      render: (company) =>
+        company.subscription_end_date
+          ? new Date(company.subscription_end_date).toLocaleDateString()
+          : '-',
+    },
+    {
+      id: 'edit',
+      label: 'Editar',
+      align: 'center',
+      render: (company) => (
+        <IconButton
+          size="small"
+          color="primary"
+          title="Configurações"
+          onClick={() =>
+            navigate(`/super-admin/companies/${company.id}/config`)
+          }
+        >
+          <SettingsIcon fontSize="small" />
+        </IconButton>
+      ),
+    },
+    {
+      id: 'actions',
+      label: 'Deleção',
+      align: 'right',
+      render: (company) => (
+        <IconButton
+          size="small"
+          color="error"
+          onClick={() => handleDeleteCompany(company.id)}
+          disabled={company.id === 1}
+        >
+          <DeleteIcon />
+        </IconButton>
+      ),
+    },
+  ]
 
   return (
     <Box>
@@ -170,261 +127,29 @@ export default function Companies() {
         <Typography variant="h4" fontWeight="bold">
           Gerenciamento de Empresas
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setOpenCompanyDialog(true)}
-        >
-          Nova Empresa
-        </Button>
+        <SearchField
+          onSearch={setSearch}
+          placeholder="Buscar por nome ou CNPJ..."
+          width={300}
+        />
       </Box>
 
-      {/* Companies Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Empresa</TableCell>
-              <TableCell>CNPJ</TableCell>
-              <TableCell>Contato</TableCell>
-              <TableCell align="center">Admins</TableCell>
-              <TableCell align="center">Colaboradores</TableCell>
-              <TableCell align="center">Status</TableCell>
-              <TableCell align="right">Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  Carregando...
-                </TableCell>
-              </TableRow>
-            ) : companies.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  Nenhuma empresa cadastrada
-                </TableCell>
-              </TableRow>
-            ) : (
-              companies.map((company) => (
-                <TableRow key={company.id}>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <BusinessIcon color="primary" />
-                      <Typography variant="body2" fontWeight={500}>
-                        {company.name}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{company.cnpj}</TableCell>
-                  <TableCell>
-                    <Box>
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-                      >
-                        <EmailIcon sx={{ fontSize: 14 }} />
-                        <Typography variant="caption">
-                          {company.email}
-                        </Typography>
-                      </Box>
-                      {company.phone && (
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                          }}
-                        >
-                          <PhoneIcon sx={{ fontSize: 14 }} />
-                          <Typography variant="caption">
-                            {company.phone}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell align="center">{company.admin_count}</TableCell>
-                  <TableCell align="center">{company.provider_count}</TableCell>
-                  <TableCell align="center">
-                    <Switch
-                      checked={company.is_active}
-                      onChange={() => handleToggleStatus(company.id)}
-                      color="success"
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      title="Configurações"
-                      onClick={() =>
-                        navigate(`/super-admin/companies/${company.id}/config`)
-                      }
-                    >
-                      <SettingsIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="success"
-                      title="Assinatura"
-                      onClick={() =>
-                        navigate(
-                          `/super-admin/companies/${company.id}/subscription`
-                        )
-                      }
-                    >
-                      <ReceiptIcon />
-                    </IconButton>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        setSelectedCompany(company)
-                        setOpenAdminDialog(true)
-                      }}
-                      sx={{ ml: 1, mr: 1 }}
-                    >
-                      + Admin
-                    </Button>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleDeleteCompany(company.id)}
-                      disabled={company.id === 1}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Create Company Dialog */}
-      <Dialog
-        open={openCompanyDialog}
-        onClose={() => setOpenCompanyDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Nova Empresa</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-            <TextField
-              label="Nome da Empresa"
-              value={companyForm.name}
-              onChange={(e) =>
-                setCompanyForm({ ...companyForm, name: e.target.value })
-              }
-              fullWidth
-              required
-            />
-            <TextField
-              label="CNPJ"
-              value={companyForm.cnpj}
-              onChange={(e) =>
-                setCompanyForm({ ...companyForm, cnpj: e.target.value })
-              }
-              fullWidth
-              required
-            />
-            <TextField
-              label="Email"
-              type="email"
-              value={companyForm.email}
-              onChange={(e) =>
-                setCompanyForm({ ...companyForm, email: e.target.value })
-              }
-              fullWidth
-              required
-            />
-            <TextField
-              label="Telefone"
-              value={companyForm.phone}
-              onChange={(e) =>
-                setCompanyForm({ ...companyForm, phone: e.target.value })
-              }
-              fullWidth
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCompanyDialog(false)}>Cancelar</Button>
-          <Button onClick={handleCreateCompany} variant="contained">
-            Criar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Create Admin Dialog */}
-      <Dialog
-        open={openAdminDialog}
-        onClose={() => setOpenAdminDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Novo Administrador - {selectedCompany?.name}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-            <TextField
-              label="Username (email)"
-              value={adminForm.username}
-              onChange={(e) =>
-                setAdminForm({ ...adminForm, username: e.target.value })
-              }
-              fullWidth
-              required
-            />
-            <TextField
-              label="Email"
-              type="email"
-              value={adminForm.email}
-              onChange={(e) =>
-                setAdminForm({ ...adminForm, email: e.target.value })
-              }
-              fullWidth
-              required
-            />
-            <TextField
-              label="Senha"
-              type="password"
-              value={adminForm.password}
-              onChange={(e) =>
-                setAdminForm({ ...adminForm, password: e.target.value })
-              }
-              fullWidth
-              required
-            />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="Nome"
-                value={adminForm.first_name}
-                onChange={(e) =>
-                  setAdminForm({ ...adminForm, first_name: e.target.value })
-                }
-                fullWidth
-              />
-              <TextField
-                label="Sobrenome"
-                value={adminForm.last_name}
-                onChange={(e) =>
-                  setAdminForm({ ...adminForm, last_name: e.target.value })
-                }
-                fullWidth
-              />
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenAdminDialog(false)}>Cancelar</Button>
-          <Button onClick={handleCreateAdmin} variant="contained">
-            Criar Administrador
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <GenericTable
+        data={companies}
+        columns={columns}
+        keyExtractor={(item) => item.id}
+        loading={isLoading}
+        totalCount={data?.count || 0}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={(newPage) => setPage(newPage)}
+        onRowsPerPageChange={(newRowsPerPage) => {
+          setRowsPerPage(newRowsPerPage)
+          setPage(0)
+        }}
+        rowsPerPageOptions={[10, 25, 50, 100]}
+        emptyMessage="Nenhuma empresa cadastrada"
+      />
     </Box>
   )
 }

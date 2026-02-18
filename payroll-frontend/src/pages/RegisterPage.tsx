@@ -11,13 +11,23 @@ import {
   CircularProgress,
   Fade,
 } from '@mui/material'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { authApi } from '../services/authApi'
 import { useMutation } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 
+interface ApiError {
+  response?: {
+    data?: {
+      username?: string[]
+      password?: string[]
+      email?: string[]
+      non_field_errors?: string[]
+    }
+  }
+}
+
 const RegisterPage = () => {
-  const navigate = useNavigate()
   const { logout } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
@@ -76,6 +86,8 @@ const RegisterPage = () => {
     registerMutation.mutate(formData)
   }
 
+  const error = registerMutation.error as ApiError
+
   return (
     <Box
       sx={{
@@ -127,21 +139,14 @@ const RegisterPage = () => {
 
                 {registerMutation.isError && (
                   <Alert severity="error" sx={{ mb: 2 }}>
-                    {/* Tentar extrair mensagem de erro específica do backend */}
-                    {(registerMutation.error as any)?.response?.data?.username
-                      ? (registerMutation.error as any).response.data
-                          .username[0]
-                      : (registerMutation.error as any)?.response?.data
-                            ?.password
-                        ? (registerMutation.error as any).response.data
-                            .password[0]
-                        : (registerMutation.error as any)?.response?.data?.email
-                          ? (registerMutation.error as any).response.data
-                              .email[0]
-                          : (registerMutation.error as any)?.response?.data
-                                ?.non_field_errors
-                            ? (registerMutation.error as any).response.data
-                                .non_field_errors[0]
+                    {error?.response?.data?.username
+                      ? error.response.data.username[0]
+                      : error?.response?.data?.password
+                        ? error.response.data.password[0]
+                        : error?.response?.data?.email
+                          ? error.response.data.email[0]
+                          : error?.response?.data?.non_field_errors
+                            ? error.response.data.non_field_errors[0]
                             : 'Erro ao criar conta. Verifique os dados e tente novamente.'}
                   </Alert>
                 )}

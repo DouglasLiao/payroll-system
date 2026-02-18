@@ -48,6 +48,7 @@ class CompanySerializer(serializers.ModelSerializer):
 
     admin_count = serializers.SerializerMethodField()
     provider_count = serializers.SerializerMethodField()
+    subscription_end_date = serializers.SerializerMethodField()
 
     class Meta:
         model = Company
@@ -60,6 +61,7 @@ class CompanySerializer(serializers.ModelSerializer):
             "is_active",
             "admin_count",
             "provider_count",
+            "subscription_end_date",
             "created_at",
         ]
 
@@ -68,6 +70,11 @@ class CompanySerializer(serializers.ModelSerializer):
 
     def get_provider_count(self, obj):
         return obj.providers.count()
+
+    def get_subscription_end_date(self, obj):
+        if hasattr(obj, "subscription"):
+            return obj.subscription.end_date
+        return None
 
 
 # ==============================================================================

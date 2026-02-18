@@ -2,7 +2,6 @@ import { useState } from 'react'
 import {
   Card,
   CardContent,
-  MenuItem,
   Button,
   Box,
   Chip,
@@ -30,6 +29,7 @@ import {
   Search,
 } from '@mui/icons-material'
 import type { Provider } from '../types'
+import { CustomMenuItem } from './CustomMenuItem'
 
 export interface PayrollFilters {
   status: string
@@ -186,10 +186,10 @@ export const PayrollFiltersComponent = ({
                 label="Status"
                 onChange={handleStatusChange}
               >
-                <MenuItem value="all">
+                <CustomMenuItem value="all">
                   <em>Todos os Status</em>
-                </MenuItem>
-                <MenuItem value="DRAFT">
+                </CustomMenuItem>
+                <CustomMenuItem value="DRAFT">
                   <Chip
                     size="small"
                     label="Rascunho"
@@ -198,8 +198,8 @@ export const PayrollFiltersComponent = ({
                     sx={{ mr: 1 }}
                   />
                   Rascunho
-                </MenuItem>
-                <MenuItem value="CLOSED">
+                </CustomMenuItem>
+                <CustomMenuItem value="CLOSED">
                   <Chip
                     size="small"
                     label="Fechada"
@@ -208,8 +208,8 @@ export const PayrollFiltersComponent = ({
                     sx={{ mr: 1 }}
                   />
                   Fechada
-                </MenuItem>
-                <MenuItem value="PAID">
+                </CustomMenuItem>
+                <CustomMenuItem value="PAID">
                   <Chip
                     size="small"
                     label="Paga"
@@ -218,7 +218,7 @@ export const PayrollFiltersComponent = ({
                     sx={{ mr: 1 }}
                   />
                   Paga
-                </MenuItem>
+                </CustomMenuItem>
               </Select>
             </FormControl>
 

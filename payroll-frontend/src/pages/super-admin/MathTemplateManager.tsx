@@ -20,8 +20,8 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem,
 } from '@mui/material'
+import { CustomMenuItem } from '../../components/CustomMenuItem'
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -331,13 +331,13 @@ const MathTemplateManager = () => {
                     })
                   }
                 >
-                  <MenuItem value="FIXED">Fixo</MenuItem>
-                  <MenuItem value="DYNAMIC_PER_DAY">
+                  <CustomMenuItem value="FIXED">Fixo</CustomMenuItem>
+                  <CustomMenuItem value="DYNAMIC_PER_DAY">
                     Dinâmico (por dia)
-                  </MenuItem>
-                  <MenuItem value="DYNAMIC_PER_TRIP">
+                  </CustomMenuItem>
+                  <CustomMenuItem value="DYNAMIC_PER_TRIP">
                     Dinâmico (por viagem)
-                  </MenuItem>
+                  </CustomMenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -354,8 +354,12 @@ const MathTemplateManager = () => {
                     })
                   }
                 >
-                  <MenuItem value="FIXED_30">Comercial (30 dias)</MenuItem>
-                  <MenuItem value="WORKALENDAR">Calendário Real</MenuItem>
+                  <CustomMenuItem value="FIXED_30">
+                    Comercial (30 dias)
+                  </CustomMenuItem>
+                  <CustomMenuItem value="WORKALENDAR">
+                    Calendário Real
+                  </CustomMenuItem>
                 </Select>
               </FormControl>
             </Grid>
