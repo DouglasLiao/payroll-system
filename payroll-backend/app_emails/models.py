@@ -1,7 +1,5 @@
 from django.db import models
-from django.utils import timezone
 import uuid
-from site_manage.models import Provider
 from users.models import Company
 
 

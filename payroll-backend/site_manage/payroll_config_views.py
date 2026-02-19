@@ -1,8 +1,8 @@
-from rest_framework import viewsets, status, permissions, mixins
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from django.db.models import Count, Sum
+from django.db.models import Sum
 from django.utils import timezone
 from decimal import Decimal
 
@@ -12,7 +12,6 @@ from .models import (
     Subscription,
     Company,
     Provider,
-    Payroll,
     PlanType,
 )
 from .serializers import (

@@ -5,7 +5,6 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.conf import settings
 from .serializers import UserSerializer
-from .permissions import require_role, super_admin_only, customer_admin_only
 
 
 # ==============================================================================

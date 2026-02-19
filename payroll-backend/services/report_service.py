@@ -4,7 +4,7 @@ import csv
 from decimal import Decimal
 from datetime import datetime
 
-from site_manage.models import Payroll, Provider
+from site_manage.models import Payroll
 
 logger = logging.getLogger(__name__)
 

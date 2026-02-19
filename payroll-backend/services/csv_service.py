@@ -5,7 +5,6 @@ Substitui o antigo ExcelService conforme solicitação de uso de formatos aberto
 
 import csv
 from io import StringIO
-from decimal import Decimal
 import unicodedata
 
 

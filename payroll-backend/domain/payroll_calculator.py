@@ -135,7 +135,6 @@ def calcular_dias_trabalhados(
         >>> calcular_dias_trabalhados('01/2026', hired_date=date(2026, 1, 20))
         12  # Trabalhou apenas de 20 a 31
     """
-    from calendar import monthrange
 
     if absence_days < 0:
         raise ValueError("Dias de falta não podem ser negativos")

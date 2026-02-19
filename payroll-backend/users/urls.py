@@ -32,9 +32,8 @@ from .views import (
     PayrollConfigurationViewSet,
     SubscriptionViewSet,
     SuperAdminStatsViewSet,
+    CompanyViewSet,
 )
-
-from .company_views import CompanyViewSet
 
 
 router = DefaultRouter()

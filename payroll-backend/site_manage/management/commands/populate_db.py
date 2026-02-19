@@ -18,7 +18,6 @@ from site_manage.models import (
     Provider,
     Payroll,
     PayrollStatus,
-    PaymentMethod,
     PayrollConfiguration,
 )
 from users.models import (
@@ -90,7 +89,6 @@ class Command(BaseCommand):
         # ==============================================================================
         self.stdout.write("\nCreating Super Admin Company (ID=1)...")
         sa_company = Company.objects.create(
-            id=1,
             name="Payroll System Admin",
             cnpj="00.000.000/0001-00",
             email="admin@payrollsystem.com",
@@ -146,7 +144,6 @@ class Command(BaseCommand):
         # ==============================================================================
         self.stdout.write("\nCreating Client Company (ID=2)...")
         client_company = Company.objects.create(
-            id=2,
             name="Tech Solutions Ltda",
             cnpj="12.345.678/0001-90",
             email="contact@techsolutions.com",

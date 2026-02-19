@@ -10,8 +10,7 @@ Regras:
 - Views apenas orquestram: chamam selectors/services e serializam respostas
 """
 
-from django.db.models import QuerySet, Sum, Count, Q, Avg
-from django.db.models.functions import TruncMonth
+from django.db.models import QuerySet, Sum, Q
 from decimal import Decimal
 from typing import Optional
 from django.utils import timezone
@@ -27,7 +26,6 @@ from users.models import (
     Company,
     Subscription,
     User,
-    UserRole,
 )
 
 

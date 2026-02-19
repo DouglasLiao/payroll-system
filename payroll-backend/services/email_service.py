@@ -1,5 +1,4 @@
 import logging
-import base64
 from app_emails.services import EmailSender
 
 logger = logging.getLogger(__name__)

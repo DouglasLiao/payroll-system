@@ -10,7 +10,6 @@ from users.models import (
     UserRole,
 )
 from decimal import Decimal
-from django.utils import timezone
 
 
 class TestPayrollConfigurationIntegration(APITestCase):

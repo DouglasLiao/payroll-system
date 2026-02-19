@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Company, Subscription, PlanType, PasswordResetToken
+from .models import User, Company, Subscription, PasswordResetToken
 
 
 @admin.register(User)
