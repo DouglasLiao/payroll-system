@@ -9,14 +9,16 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
 from site_manage.models import (
-    Company,
-    User,
     Provider,
     Payroll,
     PayrollStatus,
-    UserRole,
     PaymentMethod,
     PayrollConfiguration,
+)
+from users.models import (
+    Company,
+    User,
+    UserRole,
     Subscription,
     PlanType,
 )

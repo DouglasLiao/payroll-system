@@ -5,9 +5,9 @@ from django.db import transaction
 from django.utils import timezone
 from django.template.loader import render_to_string
 
-from site_manage.models import (
+from site_manage.models import PayrollConfiguration
+from users.models import (
     Company,
-    PayrollConfiguration,
     PlanType,
     Subscription,
     User,

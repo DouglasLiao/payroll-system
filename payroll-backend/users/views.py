@@ -50,10 +50,12 @@ from utils.redis_publisher import event_publisher
 from .permissions import IsSuperAdmin
 from .serializers import (
     CompanySerializer,
-    PayrollConfigurationSerializer,
-    PayrollMathTemplateSerializer,
     SubscriptionSerializer,
     UserSerializer,
+)
+from site_manage.serializers import (
+    PayrollConfigurationSerializer,
+    PayrollMathTemplateSerializer,
 )
 
 logger = logging.getLogger(__name__)

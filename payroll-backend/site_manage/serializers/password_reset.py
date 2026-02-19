@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from site_manage.models import User, PasswordResetToken
+from users.models import User, PasswordResetToken
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):

@@ -4,7 +4,7 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
-from site_manage.models import User
+from users.models import User
 
 
 def check_user(username):

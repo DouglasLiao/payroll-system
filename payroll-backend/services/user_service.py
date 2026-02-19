@@ -26,12 +26,14 @@ from django.db import transaction
 from django.utils import timezone
 
 from site_manage.models import (
-    Company,
-    PasswordResetToken,
     PayrollConfiguration,
     PayrollMathTemplate,
-    PlanType,
     Provider,
+)
+from users.models import (
+    Company,
+    PasswordResetToken,
+    PlanType,
     Subscription,
     User,
     UserRole,

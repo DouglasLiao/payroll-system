@@ -5,10 +5,11 @@ echo "🗑️  Removendo banco de dados antigo..."
 rm -f db.sqlite3
 
 echo "📦 Removendo migrations antigas..."
-find migrations -type f -name "*.py" ! -name "__init__.py" -delete
+find . -path "*/migrations/*.py" -not -name "__init__.py" -not -path "./venv/*" -delete
 
 echo "🔨 Criando novas migrations..."
-./venv/bin/python manage.py makemigrations
+echo "🔨 Criando novas migrations..."
+./venv/bin/python manage.py makemigrations users site_manage app_emails
 
 echo "🚀 Aplicando migrations..."
 ./venv/bin/python manage.py migrate

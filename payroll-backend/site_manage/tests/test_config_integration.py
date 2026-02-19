@@ -1,11 +1,13 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from site_manage.models import (
+    PayrollConfiguration,
+    PayrollMathTemplate,
+)
+from users.models import (
     Company,
     User,
     UserRole,
-    PayrollConfiguration,
-    PayrollMathTemplate,
 )
 from decimal import Decimal
 from django.utils import timezone

@@ -18,7 +18,7 @@ from site_manage.selectors import (
     user_list_for_company,
     provider_list_for_user,
 )
-from site_manage.models import UserRole
+from users.models import UserRole
 from site_manage.serializers import ProviderSerializer
 
 from .permissions import IsSuperAdmin

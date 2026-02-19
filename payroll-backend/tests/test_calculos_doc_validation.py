@@ -23,7 +23,8 @@ import django
 
 django.setup()
 
-from site_manage.models import Provider, Payroll, Company
+from site_manage.models import Provider, Payroll
+from users.models import Company
 from services.payroll_service import PayrollService, calcular_dias_mes
 
 

@@ -9,17 +9,10 @@ CORREÇÕES APLICADAS baseadas em engenharia reversa:
 - Caso 2: Lógica especial para funcionários com entrada parcial
 """
 
-import os
+import pytest
 from decimal import Decimal
-
-# Configurar Django
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
-
-import django
-
-django.setup()
-
-from site_manage.models import Provider, Payroll, PayrollStatus, Company
+from site_manage.models import Provider, Payroll, PayrollStatus
+from users.models import Company
 from services.payroll_service import PayrollService
 
 
@@ -41,6 +34,7 @@ def setup_test_data():
     return company
 
 
+@pytest.mark.django_db
 def test_case_1_corrected():
     """
     CASO 1: Dados Reais de Validação - CORRIGIDO
@@ -71,7 +65,7 @@ def test_case_1_corrected():
         monthly_hours=carga_horaria,
         advance_enabled=True,
         advance_percentage=Decimal("40.00"),  # 40% de adiantamento
-        vt_value=Decimal("30.82"),  # Vale transporte
+        vt_fare=Decimal("30.82"),  # Vale transporte (adaptado para fare)
         payment_method="PIX",
         pix_key="teste1@email.com",
     )
@@ -81,7 +75,7 @@ def test_case_1_corrected():
     print(
         f"  Adiantamento: 40% = R$ {(salario * Decimal('0.40')).quantize(Decimal('0.01'))}"
     )
-    print(f"  Vale transporte: R$ {provider.vt_value}")
+    print(f"  Vale transporte (Tarifa): R$ {provider.vt_fare}")
 
     # Dados de entrada CORRETOS
     horas_extras = Decimal("4.52")
@@ -164,6 +158,7 @@ def test_case_1_corrected():
     return resultado
 
 
+@pytest.mark.django_db
 def test_case_2_analysis():
     """
     CASO 2: Análise do Caso de Funcionário Proporcional
@@ -209,7 +204,7 @@ def test_case_2_analysis():
         monthly_value=salario_proporcional,
         monthly_hours=carga_horaria_proporcional,
         advance_enabled=False,
-        vt_value=Decimal("0.00"),
+        vt_fare=Decimal("0.00"),
         payment_method="PIX",
         pix_key="teste2@email.com",
     )
@@ -233,44 +228,3 @@ def test_case_2_analysis():
     print("=" * 70)
 
     return False  # Não pode passar com a lógica atual
-
-
-def run_all_validation_tests():
-    """Executa todos os testes de validação"""
-    print("\n" + "=" * 70)
-    print("TESTES DE VALIDAÇÃO COM DADOS REAIS - VERSÃO CORRIGIDA")
-    print("=" * 70)
-
-    try:
-        resultado1 = test_case_1_corrected()
-        resultado2 = test_case_2_analysis()
-
-        print("\n\n" + "=" * 70)
-        print("RESUMO DOS TESTES")
-        print("=" * 70)
-        print(f"Caso 1 (Corrigido): {'✅ PASSOU' if resultado1 else '❌ FALHOU'}")
-        print(
-            f"Caso 2 (Análise): {'✅ PASSOU' if resultado2 else '⚠️  REQUER REGRA ESPECIAL'}"
-        )
-        print("=" * 70)
-
-        if resultado1:
-            print("\n✅ Caso 1: Cálculos validados com os parâmetros corretos!")
-            print("⚠️  Caso 2: Identificada necessidade de regra especial para")
-            print("    funcionários com entrada parcial no mês.")
-
-        return resultado1
-
-    except Exception as e:
-        print("\n" + "=" * 70)
-        print(f"❌ ERRO DURANTE EXECUÇÃO DOS TESTES: {e}")
-        print("=" * 70)
-        import traceback
-
-        traceback.print_exc()
-        return False
-
-
-if __name__ == "__main__":
-    success = run_all_validation_tests()
-    exit(0 if success else 1)

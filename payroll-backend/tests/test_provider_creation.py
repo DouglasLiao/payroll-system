@@ -1,21 +1,16 @@
-import os
-import sys
-import django
+import pytest
 from decimal import Decimal
-
-sys.path.append(os.getcwd())
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
-django.setup()
-
 from site_manage.serializers import ProviderSerializer
-from site_manage.models import Company
+from users.models import Company
 
 
+@pytest.mark.django_db
 def test_provider_creation():
     print("\n" + "=" * 70)
     print("TEST: Provider Creation Validation")
     print("=" * 70)
 
+    # Ensure a company exists
     company = Company.objects.first()
     if not company:
         company = Company.objects.create(
@@ -36,10 +31,6 @@ def test_provider_creation():
         "company": company.id,  # Serializer expects company if not read_only? No, read_only_fields = ["company"]
     }
 
-    # Since 'company' is read_only, we don't pass it in data if we are using ModelSerializer directly without context?
-    # Wait, in the ViewSet, perform_create usually injects the company.
-    # Let's see how the view handles it. But first let's just check validation.
-
     serializer = ProviderSerializer(data=data)
     if serializer.is_valid():
         print("✅ Serializer Valid!")
@@ -54,7 +45,3 @@ def test_provider_creation():
     else:
         print("❌ Serializer Invalid!")
         print(serializer.errors)
-
-
-if __name__ == "__main__":
-    test_provider_creation()

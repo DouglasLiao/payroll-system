@@ -17,12 +17,14 @@ from typing import Optional
 from django.utils import timezone
 
 from site_manage.models import (
-    Company,
     PayrollConfiguration,
     PayrollMathTemplate,
     Provider,
     Payroll,
     PayrollStatus,
+)
+from users.models import (
+    Company,
     Subscription,
     User,
     UserRole,

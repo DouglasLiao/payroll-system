@@ -7,7 +7,7 @@ from django.utils import timezone
 from datetime import timedelta
 from unittest.mock import patch, MagicMock
 
-from site_manage.models import User, PasswordResetToken
+from users.models import User, PasswordResetToken
 
 
 class PasswordResetTests(TestCase):

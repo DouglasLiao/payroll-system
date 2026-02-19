@@ -123,7 +123,7 @@ else:
     ]
 
 # Custom User Model
-AUTH_USER_MODEL = "site_manage.User"
+AUTH_USER_MODEL = "users.User"
 
 
 # Internationalization

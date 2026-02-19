@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
-from site_manage.models import User, Company, UserRole
+from users.models import User, Company, UserRole
 from django.contrib.auth.hashers import make_password
 
 

@@ -8,7 +8,8 @@ sys.path.append(os.getcwd())
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
-from site_manage.models import Provider, Payroll, PayrollStatus, Company
+from site_manage.models import Provider, Payroll, PayrollStatus
+from users.models import Company
 from services.payroll_service import PayrollService
 
 

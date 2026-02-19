@@ -1,32 +1,13 @@
-"""
-Testes de integração para o PayrollService
-
-Testa a criação, gestão e ciclo de vida completo de folhas de pagamento,
-integrando modelos Django e funções de cálculo.
-"""
-
-import os
+import pytest
 from decimal import Decimal
-
-import sys
-
-sys.path.append(os.getcwd())
-
-# Configurar Django
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
-
-import django
-
-django.setup()
-
 from site_manage.models import (
     Provider,
     Payroll,
     PayrollItem,
     PayrollStatus,
     ItemType,
-    Company,
 )
+from users.models import Company
 from services.payroll_service import PayrollService
 
 
@@ -61,6 +42,7 @@ def setup_test_data():
     return provider
 
 
+@pytest.mark.django_db
 def test_create_payroll():
     """Testa criação de folha de pagamento"""
     print("\n" + "=" * 70)
@@ -176,7 +158,7 @@ def test_create_payroll():
     return payroll
 
 
-def test_close_payroll(payroll):
+def _step_close_payroll(payroll):
     """Testa fechamento de folha"""
     print("\n" + "=" * 70)
     print("TESTE 2: Fechar Folha de Pagamento")
@@ -205,7 +187,7 @@ def test_close_payroll(payroll):
     return closed_payroll
 
 
-def test_mark_as_paid(payroll):
+def _step_mark_as_paid(payroll):
     """Testa marcação como pago"""
     print("\n" + "=" * 70)
     print("TESTE 3: Marcar Folha como Paga")
@@ -227,6 +209,7 @@ def test_mark_as_paid(payroll):
     return paid_payroll
 
 
+@pytest.mark.django_db
 def test_recalculate_payroll():
     """Testa recálculo de folha"""
     print("\n" + "=" * 70)
@@ -278,7 +261,7 @@ def test_recalculate_payroll():
     print("\n✅ TESTE 4 PASSOU!")
 
 
-def test_get_payroll_details(payroll):
+def _step_get_payroll_details(payroll):
     """Testa obtenção de detalhes da folha"""
     print("\n" + "=" * 70)
     print("TESTE 5: Obter Detalhes da Folha")
@@ -304,6 +287,7 @@ def test_get_payroll_details(payroll):
     print("\n✅ TESTE 5 PASSOU!")
 
 
+@pytest.mark.django_db
 def test_duplicate_payroll_error():
     """Testa erro ao criar folha duplicada"""
     print("\n" + "=" * 70)
@@ -328,6 +312,7 @@ def test_duplicate_payroll_error():
     print("\n✅ TESTE 6 PASSOU!")
 
 
+@pytest.mark.django_db
 def test_vt_estoppel_calculation():
     """Testa regra de estorno de VT (apenas dias de falta)"""
     print("\n" + "=" * 70)
@@ -397,6 +382,7 @@ def test_vt_estoppel_calculation():
     print("\n✅ TESTE 7 PASSOU!")
 
 
+@pytest.mark.django_db
 def test_provider_updates_auto_refresh_payrolls():
     """Testa se alteração no prestador atualiza a folha em Draft automaticamente (Sinais)"""
     print("\n" + "=" * 70)
@@ -439,52 +425,26 @@ def test_provider_updates_auto_refresh_payrolls():
     print("\n✅ TESTE 8 PASSOU!")
 
 
-def run_all_tests():
-    """Executa todos os testes"""
+@pytest.mark.django_db
+def test_lifecycle_chain():
+    """Executa os testes dependentes em sequência"""
     print("=" * 70)
-    print("INICIANDO TESTES DE INTEGRAÇÃO - PAYROLL SERVICE")
+    print("INICIANDO TESTES DE CICLO DE VIDA")
     print("=" * 70)
 
-    try:
-        # Teste 1: Criar folha
-        payroll = test_create_payroll()
+    # 1. Criar (chama a função de teste explicitamente, mas ela é um teste também)
+    # Para evitar rodar test_create_payroll duas vezes (uma pelo pytest, outra aqui),
+    # idealmente deveríamos isolar a lógica.
+    # Mas como setup_test_data limpa o banco, rodar duas vezes não quebra, só é redundante.
+    # Vamos rodar a lógica aqui.
 
-        # Teste 2: Fechar folha
-        closed_payroll = test_close_payroll(payroll)
+    payroll = test_create_payroll()
 
-        # Teste 5: Obter detalhes (antes de marcar como pago)
-        test_get_payroll_details(closed_payroll)
+    # 2. Fechar
+    closed_payroll = _step_close_payroll(payroll)
 
-        # Teste 3: Marcar como pago
-        test_mark_as_paid(closed_payroll)
+    # 5. Obter detalhes
+    _step_get_payroll_details(closed_payroll)
 
-        # Teste 4: Recalcular folha
-        test_recalculate_payroll()
-
-        # Teste 6: Erro duplicata
-        test_duplicate_payroll_error()
-
-        # Teste 7: VT Estorno
-        test_vt_estoppel_calculation()
-
-        # Teste 8: Auto Update
-        test_provider_updates_auto_refresh_payrolls()
-
-        print("\n" + "=" * 70)
-        print("✅ TODOS OS 6 TESTES PASSARAM COM SUCESSO!")
-        print("=" * 70)
-        return True
-
-    except Exception as e:
-        print("\n" + "=" * 70)
-        print(f"❌ TESTE FALHOU: {e}")
-        print("=" * 70)
-        import traceback
-
-        traceback.print_exc()
-        return False
-
-
-if __name__ == "__main__":
-    success = run_all_tests()
-    exit(0 if success else 1)
+    # 3. Marcar como pago
+    _step_mark_as_paid(closed_payroll)
