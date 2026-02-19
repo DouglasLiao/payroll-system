@@ -21,6 +21,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import ValidationError
 
 from .models import Payment, Provider, Payroll
 from .permissions import IsCustomerAdminOrReadOnly
@@ -34,6 +35,8 @@ from .serializers import (
     PayrollDetailSerializer,
     PayrollSerializer,
     ProviderSerializer,
+    PayrollUpdateSerializer,
+    PayrollCreateSerializer,
 )
 from services.payroll_service import PayrollService
 from services.email_service import EmailService
@@ -82,8 +85,6 @@ class ProviderViewSet(viewsets.ModelViewSet):
         try:
             self.perform_create(serializer)
         except Exception as e:
-            from rest_framework.exceptions import ValidationError
-
             if isinstance(e, ValidationError):
                 # DRF ValidationError can be a list or dict. Normalize to detail for frontend.
                 msg = (
@@ -105,8 +106,6 @@ class ProviderViewSet(viewsets.ModelViewSet):
             company = self.request.user.company
 
             if not subscription_can_add_provider(company=company):
-                from rest_framework.exceptions import ValidationError
-
                 raise ValidationError(
                     "Limite de prestadores atingido. "
                     "Faça o upgrade do seu plano para adicionar mais prestadores."
@@ -159,8 +158,6 @@ class PayrollViewSet(viewsets.ModelViewSet):
         if self.action == "retrieve":
             return PayrollDetailSerializer
         if self.action in ["update", "partial_update"]:
-            from .serializers import PayrollUpdateSerializer
-
             return PayrollUpdateSerializer
         return PayrollSerializer
 
@@ -198,8 +195,6 @@ class PayrollViewSet(viewsets.ModelViewSet):
 
         POST /payrolls/calculate/
         """
-        from .serializers import PayrollCreateSerializer
-
         if request.user.role != "CUSTOMER_ADMIN":
             return Response(
                 {"error": "Apenas Customer Admin pode criar folhas de pagamento."},

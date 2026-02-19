@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from django.db import transaction
 from django.utils import timezone
+from django.template.loader import render_to_string
 
 from site_manage.models import (
     Company,
@@ -273,10 +274,13 @@ class CompanyService:
                         f"O cadastro da empresa {company.name} foi aprovado!\n"
                         f"Você já pode acessar o sistema."
                     ),
-                    html_content=(
-                        f"<h2>Cadastro Aprovado!</h2>"
-                        f"<p>Olá <strong>{admin_user.first_name}</strong>,</p>"
-                        f"<p>A empresa <strong>{company.name}</strong> foi aprovada. Acesse o sistema.</p>"
+                    html_content=render_to_string(
+                        "emails/company_approved.html",
+                        {
+                            "first_name": admin_user.first_name,
+                            "company_name": company.name,
+                            "login_url": "http://localhost:5173/login",  # TODO: get from settings
+                        },
                     ),
                 )
         except Exception as e:
@@ -300,10 +304,12 @@ class CompanyService:
                         f"Olá {admin_user.first_name},\n\n"
                         f"O cadastro da empresa {company.name} não foi aprovado."
                     ),
-                    html_content=(
-                        f"<h2>Cadastro Reprovado</h2>"
-                        f"<p>Olá <strong>{admin_user.first_name}</strong>,</p>"
-                        f"<p>O cadastro de <strong>{company.name}</strong> não foi aprovado.</p>"
+                    html_content=render_to_string(
+                        "emails/company_rejected.html",
+                        {
+                            "first_name": admin_user.first_name,
+                            "company_name": company.name,
+                        },
                     ),
                 )
         except Exception as e:

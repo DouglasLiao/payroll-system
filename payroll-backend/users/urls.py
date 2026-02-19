@@ -27,13 +27,15 @@ from .views import (
     register,
     password_reset_request,
     password_reset_confirm,
-    # ViewSets
-    CompanyViewSet,
+    # ViewSets,
     PayrollMathTemplateViewSet,
     PayrollConfigurationViewSet,
     SubscriptionViewSet,
     SuperAdminStatsViewSet,
 )
+
+from .company_views import CompanyViewSet
+
 
 router = DefaultRouter()
 router.register(r"companies", CompanyViewSet, basename="company")

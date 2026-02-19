@@ -51,8 +51,11 @@ class EmailService:
                     }
                 )
 
-            # Use html_content as body with simple wrapping, and text_content as body
-            html_content = f"<p>{body.replace(chr(10), '<br>')}</p>"
+            # Render HTML body from template
+            from django.template.loader import render_to_string
+
+            context = {"body": body}
+            html_content = render_to_string("emails/monthly_report.html", context)
 
             return self.sender.send_email(
                 to_email=recipient_email,
