@@ -147,10 +147,24 @@ def _calcular_valores_folha(payroll: Payroll) -> dict:
         # Empresa sem configuração — usa defaults do domain calculator
         pass
 
+    from domain.payroll_calculator import calcular_estorno_vt
+
     # ── Cálculo Principal ─────────────────────────────────────────────────────
-    vt_para_calculo = (
-        resultado["vt_value"] if resultado["vt_value"] > 0 else payroll.vt_discount
-    )
+    # VT agora é calculado como ESTORNO dos dias faltados (se houver faltas)
+    if payroll.absence_days > 0 and payroll.provider.vt_enabled:
+        vt_para_calculo = calcular_estorno_vt(
+            viagens_por_dia=payroll.provider.vt_trips_per_day,
+            tarifa_passagem=payroll.provider.vt_fare,
+            dias_falta=payroll.absence_days,
+        )
+    elif payroll.vt_discount > 0 and not payroll.provider.vt_enabled:
+        # Manter compatibilidade se for um valor manual legado/fixo
+        vt_para_calculo = payroll.vt_discount
+    else:
+        vt_para_calculo = Decimal("0.00")
+
+    # Atualizar o objeto com o valor calculado para referência
+    resultado["vt_value"] = vt_para_calculo
 
     advance_value = payroll.advance_value
     percentual_adiantamento = (
@@ -172,6 +186,7 @@ def _calcular_valores_folha(payroll: Payroll) -> dict:
         ),
         dias_uteis_mes=dias_uteis,
         domingos_e_feriados_mes=domingos_feriados,
+        absence_days=payroll.absence_days,  # Novo parâmetro 1/30
         **calc_kwargs,
     )
 
@@ -410,11 +425,16 @@ class PayrollService:
             )
 
         if payroll.vt_value > 0:
+            # Descrição mais clara sobre o estorno se houver faltas
+            desc_vt = "Vale transporte"
+            if payroll.absence_days > 0:
+                desc_vt = f"Estorno VT não utilizado ({payroll.absence_days} dias)"
+
             items.append(
                 PayrollItem(
                     payroll=payroll,
                     type=ItemType.DEBIT,
-                    description="Vale transporte",
+                    description=desc_vt,
                     amount=payroll.vt_value,
                 )
             )
@@ -424,7 +444,7 @@ class PayrollService:
                 PayrollItem(
                     payroll=payroll,
                     type=ItemType.DEBIT,
-                    description="Vale transporte",
+                    description="Vale transporte (manual)",
                     amount=payroll.vt_discount,
                 )
             )
@@ -531,12 +551,15 @@ class PayrollService:
         return payroll
 
     @transaction.atomic
-    def recalculate_payroll(self, payroll_id: int, **updates) -> Payroll:
+    def recalculate_payroll(
+        self, payroll_id: int, sync_provider_data: bool = False, **updates
+    ) -> Payroll:
         """
         Recalcula a folha com novos valores (apenas se estiver em DRAFT).
 
         Args:
             payroll_id: ID da folha
+            sync_provider_data: Se True, atualiza dados base (salário, VT) do Prestador
             **updates: Campos a serem atualizados (ex: overtime_hours_50=10)
 
         Returns:
@@ -571,6 +594,26 @@ class PayrollService:
             "provider_id",
             "hired_date",
         ]
+
+        if sync_provider_data:
+            # Atualizar dados base do prestador
+            provider = payroll.provider
+            payroll.base_value = provider.monthly_value
+
+            # Recalcular adiantamento se habilitado
+            if provider.advance_enabled:
+                payroll.advance_value = (
+                    provider.monthly_value
+                    * provider.advance_percentage
+                    / Decimal("100")
+                ).quantize(Decimal("0.01"))
+            else:
+                payroll.advance_value = Decimal("0.00")
+
+            # Atualizar defaults de VT se não estiverem travados (aqui assume-se refresh completo)
+            # Mas o VT é calculado dinamicamente no _calcular_valores_folha pegando do provider.
+            # O campo vt_discount é legacy, mas se for usado, atualizamos.
+            payroll.vt_discount = provider.vt_fare
 
         for field, value in updates.items():
             if field not in allowed_fields:

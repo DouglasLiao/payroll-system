@@ -234,6 +234,40 @@ def calcular_vale_transporte(
     return vt_total
 
 
+def calcular_estorno_vt(
+    viagens_por_dia: int,
+    tarifa_passagem: Decimal,
+    dias_falta: int,
+) -> Decimal:
+    """
+    Calcula o estorno de Vale Transporte baseado nos dias de falta.
+
+    O VT é considerado um benefício pago à parte/antecipado.
+    Na folha, apenas descontamos (estornamos) o valor referente aos dias NÃO trabalhados.
+
+    Fórmula: Estorno = viagens_por_dia × tarifa × dias_falta
+
+    Args:
+        viagens_por_dia: Número de viagens por dia
+        tarifa_passagem: Valor da passagem
+        dias_falta: Número de dias que o colaborador faltou
+
+    Returns:
+        Valor a ser descontado (estornado) da folha
+    """
+    if dias_falta <= 0:
+        return Decimal("0.00")
+
+    if viagens_por_dia <= 0 or tarifa_passagem <= 0:
+        return Decimal("0.00")
+
+    estorno = (
+        Decimal(viagens_por_dia) * tarifa_passagem * Decimal(dias_falta)
+    ).quantize(Decimal("0.01"))
+
+    return estorno
+
+
 def calcular_valor_hora(
     valor_contrato_mensal: Decimal, carga_horaria_mensal: int = CARGA_HORARIA_PADRAO
 ) -> Decimal:
@@ -665,6 +699,7 @@ def calcular_folha_completa(
     multiplicador_extras: Decimal = DEFAULT_MULT_HORA_EXTRA,
     multiplicador_feriado: Decimal = DEFAULT_MULT_FERIADO,
     multiplicador_noturno: Decimal = DEFAULT_MULT_NOTURNO,
+    absence_days: int = 0,  # Novo parâmetro para cálculo correto de faltas (1/30)
 ) -> Dict[str, Decimal]:
     """
     Calcula todos os valores da folha de pagamento PJ de uma só vez,
@@ -714,7 +749,15 @@ def calcular_folha_completa(
 
     # Descontos (SEM DSR sobre faltas - conceito CLT)
     atraso_desconto = calcular_desconto_atraso(minutos_atraso, valor_hora)
-    falta_desconto = calcular_desconto_falta(horas_falta, valor_hora)
+
+    # Cálculo de Faltas: Prioriza absence_days (Regra 1/30), fallback para horas
+    if absence_days > 0:
+        falta_desconto = calcular_desconto_falta_por_dia(
+            absence_days, valor_contrato_mensal
+        )
+    else:
+        # Fallback / Compatibilidade
+        falta_desconto = calcular_desconto_falta(horas_falta, valor_hora)
 
     total_descontos_calc = calcular_total_descontos(
         atraso_desconto, falta_desconto, vale_transporte, descontos_manuais

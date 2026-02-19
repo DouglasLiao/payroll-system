@@ -154,7 +154,7 @@ Tambeḿ é considerado o dia que ele vai para o escritorio.
 
 ex.
 ele foi 20 dias para o escritorio. (na teoria)
-mas ele faltas 1 dia
+mas ele faltou 1 dia
 
 então é 19\* a passagem
 
