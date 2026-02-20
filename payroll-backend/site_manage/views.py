@@ -38,9 +38,8 @@ from .serializers import (
     PayrollUpdateSerializer,
     PayrollCreateSerializer,
 )
-from services.payroll_service import PayrollService
-from services.email_service import EmailService
-
+from site_manage.services.payroll_service import PayrollService
+from site_manage.services.email_service import EmailService
 
 # ==============================================================================
 # PROVIDERS
@@ -338,7 +337,7 @@ class PayrollViewSet(viewsets.ModelViewSet):
 
         GET /payrolls/{id}/export-file/
         """
-        from services.excel_service import ExcelService
+        from site_manage.services.excel_service import ExcelService
         from django.http import Http404
 
         try:
@@ -369,7 +368,7 @@ class PayrollViewSet(viewsets.ModelViewSet):
 
         GET /payrolls/monthly-report/?reference_month=MM/YYYY
         """
-        from services.report_service import ReportService
+        from site_manage.services.report_service import ReportService
 
         reference_month = request.query_params.get("reference_month")
 
@@ -410,7 +409,7 @@ class PayrollViewSet(viewsets.ModelViewSet):
         POST /payrolls/email-report/
         Body: { "reference_month": "MM/YYYY", "email": "optional@email.com" }
         """
-        from services.report_service import ReportService
+        from site_manage.services.report_service import ReportService
 
         reference_month = request.data.get("reference_month")
         email_address = request.data.get("email") or request.user.email

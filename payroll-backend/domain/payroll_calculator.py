@@ -149,7 +149,7 @@ def calcular_dias_trabalhados(
 
     # Get total business days in month
     # Import here to avoid circular dependency
-    from services.payroll_service import calcular_dias_mes
+    from site_manage.services.payroll_service import calcular_dias_mes
 
     # calcular_dias_mes returns (dias_uteis, domingos_e_feriados)
     # We need format as string for the function

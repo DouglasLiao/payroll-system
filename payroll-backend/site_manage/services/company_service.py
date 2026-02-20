@@ -13,7 +13,7 @@ from users.models import (
     User,
     UserRole,
 )
-from services.user_service import (
+from users.services.user_service import (
     EmailAlreadyExistsError,
     UsernameAlreadyExistsError,
     CompanyAlreadyActiveError,

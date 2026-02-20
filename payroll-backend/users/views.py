@@ -25,7 +25,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 # ── Services ──────────────────────────────────────────────────────────────────
-from services.user_service import (
+from users.services.user_service import (
     InvalidPasswordError,
     InvalidTokenError,
     PayrollConfigService,
@@ -58,7 +58,7 @@ from .serializers import (
 
 # ── Selectors (read-only queries) ─────────────────────────────────────────────
 
-from services.company_service import (
+from site_manage.services.company_service import (
     CompanyService,
     CompanyAlreadyActiveError,
 )
