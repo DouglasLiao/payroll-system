@@ -1,8 +1,10 @@
 import logging
-from django.core.mail import EmailMultiAlternatives
+
 from django.conf import settings
-from django.template import Template, Context
+from django.core.mail import EmailMultiAlternatives
+from django.template import Context, Template
 from django.utils import timezone
+
 from .models import EmailLog, EmailTemplate
 
 logger = logging.getLogger(__name__)

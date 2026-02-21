@@ -1,15 +1,16 @@
-from django.db.models import QuerySet, Sum, Q
 from decimal import Decimal
 from typing import Optional
+
+from django.db.models import Q, QuerySet, Sum
 from django.utils import timezone
 
+from site_manage.integration import get_provider_count_for_company
+from users.integration import get_super_admin_stats_integration
 from users.models import (
     Company,
     Subscription,
     User,
 )
-from site_manage.integration import get_provider_count_for_company
-from users.integration import get_super_admin_stats_integration
 
 # ==============================================================================
 # SUBSCRIPTION SELECTORS

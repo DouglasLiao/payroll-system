@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from users.models import User, Company, Subscription
 
+from users.models import Company, Subscription, User
 
 # ==============================================================================
 # AUTHENTICATION SERIALIZERS

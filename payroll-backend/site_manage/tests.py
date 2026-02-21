@@ -1,9 +1,10 @@
+from django.contrib.auth.hashers import make_password
 from django.test import TestCase
 from django.urls import reverse
-from rest_framework.test import APIClient
 from rest_framework import status
-from users.models import User, Company, UserRole
-from django.contrib.auth.hashers import make_password
+from rest_framework.test import APIClient
+
+from users.models import Company, User, UserRole
 
 
 class AuthenticationEndpointsTestCase(TestCase):

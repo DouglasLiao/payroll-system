@@ -18,23 +18,23 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from site_manage.infrastructure.models import Payment, Provider, Payroll
-from site_manage.permissions import IsCustomerAdminOrReadOnly
+from site_manage.api.serializers import (
+    PayrollCreateSerializer,
+    PayrollDetailSerializer,
+    PayrollSerializer,
+    PayrollUpdateSerializer,
+    ProviderSerializer,
+)
+from site_manage.application.commands.email_service import EmailService
+from site_manage.application.commands.payroll_service import PayrollService
 from site_manage.application.queries.selectors import (
     dashboard_stats_for_company,
     payroll_list_for_user,
     provider_list_for_user,
 )
+from site_manage.infrastructure.models import Payment, Payroll, Provider
+from site_manage.permissions import IsCustomerAdminOrReadOnly
 from users.application.queries.selectors import subscription_can_add_provider
-from site_manage.api.serializers import (
-    PayrollDetailSerializer,
-    PayrollSerializer,
-    ProviderSerializer,
-    PayrollUpdateSerializer,
-    PayrollCreateSerializer,
-)
-from site_manage.application.commands.payroll_service import PayrollService
-from site_manage.application.commands.email_service import EmailService
 
 # ==============================================================================
 # PROVIDERS
@@ -605,8 +605,9 @@ class DashboardView(APIView):
         stats = dashboard_stats_for_company(company_id=user.company.id)
 
         # Agregação mensal
-        from django.db.models import Count, Sum
         from decimal import Decimal
+
+        from django.db.models import Count, Sum
 
         company_payrolls = Payroll.objects.filter(provider__company=user.company)
         if months_in_range:

@@ -1,28 +1,30 @@
 import os
-import django
 import random
 from datetime import date, timedelta
 from decimal import Decimal
+
+import django
 
 # Setup Django Environment
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
+from django.utils import timezone
+
+from site_manage.application.commands.payroll_service import PayrollService
 from site_manage.models import (
-    Provider,
     Payroll,
-    PayrollStatus,
     PayrollConfiguration,
+    PayrollStatus,
+    Provider,
 )
 from users.models import (
     Company,
+    PlanType,
+    Subscription,
     User,
     UserRole,
-    Subscription,
-    PlanType,
 )
-from django.utils import timezone
-from site_manage.application.commands.payroll_service import PayrollService
 
 
 def date_range(start_date, end_date):

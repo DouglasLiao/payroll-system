@@ -24,19 +24,19 @@ from django.urls import path
 
 from .views import (
     DashboardView,
-    generate_receipt,
-    ProviderListCreateAPIView,
-    ProviderDetailAPIView,
-    PayrollListAPIView,
-    PayrollDetailAPIView,
     PayrollCalculateAPIView,
     PayrollCloseAPIView,
-    PayrollMarkPaidAPIView,
-    PayrollReopenAPIView,
-    PayrollExportFileAPIView,
-    PayrollMonthlyReportAPIView,
+    PayrollDetailAPIView,
     PayrollEmailReportAPIView,
+    PayrollExportFileAPIView,
+    PayrollListAPIView,
+    PayrollMarkPaidAPIView,
+    PayrollMonthlyReportAPIView,
+    PayrollReopenAPIView,
     PayrollStatsAPIView,
+    ProviderDetailAPIView,
+    ProviderListCreateAPIView,
+    generate_receipt,
 )
 
 urlpatterns = [

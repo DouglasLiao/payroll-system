@@ -1,8 +1,8 @@
-from django.db import models
-from django.contrib.auth.models import AbstractUser, UserManager
 from decimal import Decimal
-from django.utils import timezone
 
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.db import models
+from django.utils import timezone
 
 # ==============================================================================
 # COMPANY MODEL

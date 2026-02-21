@@ -1,8 +1,7 @@
-from rest_framework import permissions
-from rest_framework.response import Response
-from rest_framework import status
 from functools import wraps
 
+from rest_framework import permissions, status
+from rest_framework.response import Response
 
 # ==============================================================================
 # PERMISSION CLASSES
@@ -72,7 +71,7 @@ def require_role(*allowed_roles):
             if request.user.role not in allowed_roles:
                 return Response(
                     {
-                        "error": f'Acesso negado. Roles permitidas: {", ".join(allowed_roles)}'
+                        "error": f"Acesso negado. Roles permitidas: {', '.join(allowed_roles)}"
                     },
                     status=status.HTTP_403_FORBIDDEN,
                 )

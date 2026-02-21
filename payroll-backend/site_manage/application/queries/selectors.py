@@ -10,20 +10,20 @@ Regras:
 - Views apenas orquestram: chamam selectors/services e serializam respostas
 """
 
-from django.db.models import QuerySet, Sum, Q
 from decimal import Decimal
 from typing import Optional
+
+from django.db.models import Q, QuerySet, Sum
 from django.utils import timezone
 
 from site_manage.infrastructure.models import (
+    Payroll,
     PayrollConfiguration,
     PayrollMathTemplate,
-    Provider,
-    Payroll,
     PayrollStatus,
+    Provider,
 )
 from users.models import User
-
 
 # ==============================================================================
 # PAYROLL SELECTORS

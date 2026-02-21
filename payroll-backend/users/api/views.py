@@ -17,7 +17,6 @@ Sections:
 import logging
 
 from django.conf import settings
-
 from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -25,29 +24,37 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-# ── Services ──────────────────────────────────────────────────────────────────
-from users.application.commands.user_service import (
-    InvalidPasswordError,
-    InvalidTokenError,
-    PayrollConfigService,
-    SubscriptionService,
-    UserService,
-    UserServiceError,
-    EmailAlreadyExistsError,
-    UsernameAlreadyExistsError,
+from site_manage.api.serializers import (
+    PayrollConfigurationSerializer,
+    ProviderSerializer,
 )
-
-
 from site_manage.application.queries.selectors import (
     math_template_get_by_id,
     provider_list_for_user,
 )
+
+# ── Selectors (read-only queries) ─────────────────────────────────────────────
+from users.application.commands.company_manager import CompanyManager
+
+# ── Services ──────────────────────────────────────────────────────────────────
+from users.application.commands.user_service import (
+    CompanyAlreadyActiveError,
+    EmailAlreadyExistsError,
+    InvalidPasswordError,
+    InvalidTokenError,
+    PayrollConfigService,
+    SubscriptionService,
+    UsernameAlreadyExistsError,
+    UserService,
+    UserServiceError,
+)
 from users.application.queries.selectors import (
     company_get_by_id,
-    super_admin_stats,
     company_list_filtered,
+    super_admin_stats,
     user_list_for_company,
 )
+from users.models import UserRole
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 from utils.redis_publisher import event_publisher
@@ -58,18 +65,6 @@ from .serializers import (
     SubscriptionSerializer,
     UserSerializer,
 )
-
-# ── Selectors (read-only queries) ─────────────────────────────────────────────
-
-from users.application.commands.company_manager import CompanyManager
-from users.application.commands.user_service import CompanyAlreadyActiveError
-
-from users.models import UserRole
-from site_manage.api.serializers import (
-    ProviderSerializer,
-    PayrollConfigurationSerializer,
-)
-
 
 logger = logging.getLogger(__name__)
 
@@ -411,6 +406,7 @@ class CompanyDetailAPIView(APIView):
 
     def _get_object(self, pk):
         from django.shortcuts import get_object_or_404
+
         from users.infrastructure.models import Company
 
         return get_object_or_404(Company, pk=pk)
@@ -451,6 +447,7 @@ class CompanyApproveAPIView(APIView):
 
     def post(self, request, pk):
         from django.shortcuts import get_object_or_404
+
         from users.infrastructure.models import Company
 
         company = get_object_or_404(Company, pk=pk)
@@ -473,6 +470,7 @@ class CompanyToggleStatusAPIView(APIView):
 
     def post(self, request, pk):
         from django.shortcuts import get_object_or_404
+
         from users.infrastructure.models import Company
 
         company = get_object_or_404(Company, pk=pk)
@@ -494,6 +492,7 @@ class CompanyRejectAPIView(APIView):
 
     def post(self, request, pk):
         from django.shortcuts import get_object_or_404
+
         from users.infrastructure.models import Company
 
         company = get_object_or_404(Company, pk=pk)
@@ -512,6 +511,7 @@ class CompanyCreateAdminAPIView(APIView):
 
     def post(self, request, pk):
         from django.shortcuts import get_object_or_404
+
         from users.infrastructure.models import Company
 
         company = get_object_or_404(Company, pk=pk)
@@ -547,6 +547,7 @@ class CompanyAdminsAPIView(APIView):
 
     def get(self, request, pk):
         from django.shortcuts import get_object_or_404
+
         from users.infrastructure.models import Company
 
         company = get_object_or_404(Company, pk=pk)
@@ -561,6 +562,7 @@ class CompanyProvidersAPIView(APIView):
 
     def get(self, request, pk):
         from django.shortcuts import get_object_or_404
+
         from users.infrastructure.models import Company
 
         company = get_object_or_404(Company, pk=pk)
@@ -569,7 +571,8 @@ class CompanyProvidersAPIView(APIView):
 
 
 from django.shortcuts import get_object_or_404
-from site_manage.infrastructure.models import PayrollMathTemplate, PayrollConfiguration
+
+from site_manage.infrastructure.models import PayrollConfiguration, PayrollMathTemplate
 
 
 class PayrollMathTemplateListCreateAPIView(APIView):
@@ -578,8 +581,8 @@ class PayrollMathTemplateListCreateAPIView(APIView):
     permission_classes = [IsSuperAdmin]
 
     def get(self, request):
-        from site_manage.application.queries.selectors import math_template_list
         from site_manage.api.serializers import PayrollMathTemplateSerializer
+        from site_manage.application.queries.selectors import math_template_list
 
         return Response(
             PayrollMathTemplateSerializer(math_template_list(), many=True).data
@@ -655,8 +658,8 @@ class PayrollConfigurationListCreateAPIView(APIView):
     permission_classes = [IsSuperAdmin]
 
     def get(self, request):
-        from site_manage.application.queries.selectors import payroll_config_list
         from site_manage.api.serializers import PayrollConfigurationSerializer
+        from site_manage.application.queries.selectors import payroll_config_list
 
         qs = payroll_config_list(company_id=request.query_params.get("company_id"))
         return Response(PayrollConfigurationSerializer(qs, many=True).data)

@@ -15,38 +15,38 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
+    CompanyAdminsAPIView,
+    CompanyApproveAPIView,
+    CompanyCreateAdminAPIView,
+    CompanyDetailAPIView,
+    # Companies
+    CompanyListAPIView,
+    CompanyProvidersAPIView,
+    CompanyRejectAPIView,
+    CompanyToggleStatusAPIView,
     # Auth
     CustomTokenObtainPairView,
-    current_user,
-    change_password,
-    update_timeout_preference,
-    logout,
-    # Registration & Password Reset
-    check_email,
-    register,
-    password_reset_request,
-    password_reset_confirm,
+    PayrollConfigurationApplyTemplateAPIView,
+    PayrollConfigurationDetailAPIView,
+    PayrollConfigurationListCreateAPIView,
+    PayrollMathTemplateDetailAPIView,
     # Config
     PayrollMathTemplateListCreateAPIView,
-    PayrollMathTemplateDetailAPIView,
-    PayrollConfigurationListCreateAPIView,
-    PayrollConfigurationDetailAPIView,
-    PayrollConfigurationApplyTemplateAPIView,
+    SubscriptionDetailAPIView,
     # Subscriptions
     SubscriptionListAPIView,
-    SubscriptionDetailAPIView,
     SubscriptionRenewAPIView,
     # Stats
     SuperAdminStatsAPIView,
-    # Companies
-    CompanyListAPIView,
-    CompanyDetailAPIView,
-    CompanyApproveAPIView,
-    CompanyToggleStatusAPIView,
-    CompanyRejectAPIView,
-    CompanyCreateAdminAPIView,
-    CompanyAdminsAPIView,
-    CompanyProvidersAPIView,
+    change_password,
+    # Registration & Password Reset
+    check_email,
+    current_user,
+    logout,
+    password_reset_confirm,
+    password_reset_request,
+    register,
+    update_timeout_preference,
 )
 
 urlpatterns = [

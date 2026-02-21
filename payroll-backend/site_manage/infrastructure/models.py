@@ -1,10 +1,11 @@
-from django.db import models
 from decimal import Decimal
+
+from django.db import models
+
 from users.models import (
     Company,
     User,
 )
-
 
 # ==============================================================================
 # CONFIGURATION & SUBSCRIPTION MODELS

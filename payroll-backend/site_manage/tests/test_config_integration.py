@@ -1,17 +1,19 @@
-from rest_framework.test import APITestCase
+from decimal import Decimal
+
 from rest_framework import status
+from rest_framework.test import APITestCase
+
 from site_manage.api.serializers import (
-    ProviderSerializer,
-    PayrollConfigurationSerializer,
     PayrollConfiguration,
+    PayrollConfigurationSerializer,
     PayrollMathTemplate,
+    ProviderSerializer,
 )
 from users.models import (
     Company,
     User,
     UserRole,
 )
-from decimal import Decimal
 
 
 class TestPayrollConfigurationIntegration(APITestCase):

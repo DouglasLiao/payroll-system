@@ -1,13 +1,13 @@
 from rest_framework import serializers
+
 from site_manage.infrastructure.models import (
-    Provider,
     Payment,
     Payroll,
+    PayrollConfiguration,
     PayrollItem,
     PayrollMathTemplate,
-    PayrollConfiguration,
+    Provider,
 )
-
 
 # ==============================================================================
 # CONFIGURATION & SUBSCRIPTION SERIALIZERS

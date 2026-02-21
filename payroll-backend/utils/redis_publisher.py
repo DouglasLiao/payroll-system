@@ -2,9 +2,10 @@
 Redis utility for publishing events to email service
 """
 
-import redis
 import json
 import logging
+
+import redis
 from django.conf import settings
 
 logger = logging.getLogger(__name__)

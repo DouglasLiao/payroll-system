@@ -10,10 +10,9 @@ Os conceitos de "horas extras" e "DSR" são tratados apenas como regras
 contratuais/comerciais, sem amparo legal trabalhista.
 """
 
+from calendar import monthrange
 from decimal import Decimal
 from typing import Dict
-from calendar import monthrange
-
 
 # ==============================================================================
 # CONSTANTES PADRÃO (Legado/Defaults)

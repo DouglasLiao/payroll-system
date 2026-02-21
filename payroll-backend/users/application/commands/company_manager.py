@@ -2,21 +2,21 @@ import logging
 from datetime import timedelta
 
 from django.db import transaction
-from django.utils import timezone
 from django.template.loader import render_to_string
+from django.utils import timezone
 
 from site_manage.integration import create_default_payroll_config
+from users.application.commands.user_service import (
+    CompanyAlreadyActiveError,
+    EmailAlreadyExistsError,
+    UsernameAlreadyExistsError,
+)
 from users.models import (
     Company,
     PlanType,
     Subscription,
     User,
     UserRole,
-)
-from users.application.commands.user_service import (
-    EmailAlreadyExistsError,
-    UsernameAlreadyExistsError,
-    CompanyAlreadyActiveError,
 )
 
 logger = logging.getLogger(__name__)

@@ -1,11 +1,11 @@
 from users.infrastructure.models import (
     Company,
+    CustomUserManager,
+    PasswordResetToken,
+    PlanType,
+    Subscription,
     User,
     UserRole,
-    CustomUserManager,
-    Subscription,
-    PlanType,
-    PasswordResetToken,
 )
 
 __all__ = [

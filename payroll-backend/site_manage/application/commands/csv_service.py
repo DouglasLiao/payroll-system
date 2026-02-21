@@ -4,8 +4,8 @@ Substitui o antigo ExcelService conforme solicitação de uso de formatos aberto
 """
 
 import csv
-from io import StringIO
 import unicodedata
+from io import StringIO
 
 
 class CsvService:

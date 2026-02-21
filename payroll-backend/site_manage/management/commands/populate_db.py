@@ -8,26 +8,27 @@ Recria o ambiente de testes com:
 - Folhas de Pagamento (histórico 2025-2026)
 """
 
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-from decimal import Decimal
 import random
 from datetime import date, timedelta
+from decimal import Decimal
 
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from site_manage.application.commands.payroll_service import PayrollService
 from site_manage.infrastructure.models import (
-    Provider,
     Payroll,
-    PayrollStatus,
     PayrollConfiguration,
+    PayrollStatus,
+    Provider,
 )
 from users.models import (
     Company,
+    PlanType,
+    Subscription,
     User,
     UserRole,
-    Subscription,
-    PlanType,
 )
-from site_manage.application.commands.payroll_service import PayrollService
 
 
 def date_range(start_date, end_date):

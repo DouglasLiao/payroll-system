@@ -10,19 +10,21 @@ Seguindo o Django-Styleguide:
 - Toda lógica de cálculo é centralizada aqui
 """
 
+import calendar
+from datetime import datetime
 from decimal import Decimal
 from typing import Dict, Optional
+
 from django.db import transaction
 from django.utils import timezone
 from workalendar.america import Brazil
-import calendar
-from datetime import datetime
+
 from site_manage.infrastructure.models import (
-    Provider,
+    ItemType,
     Payroll,
     PayrollItem,
     PayrollStatus,
-    ItemType,
+    Provider,
 )
 
 
@@ -96,10 +98,10 @@ def _calcular_valores_folha(payroll: Payroll) -> dict:
         Dicionário com todos os campos calculados
     """
     from site_manage.domain.payroll_calculator import (
+        calcular_dias_trabalhados,
         calcular_folha_completa,
         calcular_salario_proporcional,
         calcular_vale_transporte,
-        calcular_dias_trabalhados,
     )
 
     resultado = {}
