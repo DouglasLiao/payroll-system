@@ -15,18 +15,14 @@ from decimal import Decimal
 from typing import Optional
 from django.utils import timezone
 
-from site_manage.models import (
+from site_manage.infrastructure.models import (
     PayrollConfiguration,
     PayrollMathTemplate,
     Provider,
     Payroll,
     PayrollStatus,
 )
-from users.models import (
-    Company,
-    Subscription,
-    User,
-)
+from users.models import User
 
 
 # ==============================================================================
@@ -121,7 +117,7 @@ def payroll_filter(
 # ==============================================================================
 
 
-def dashboard_stats_for_company(*, company: Company) -> dict:
+def dashboard_stats_for_company(*, company_id: int) -> dict:
     """
     Calcula as estatísticas do dashboard para uma empresa.
 
@@ -132,8 +128,8 @@ def dashboard_stats_for_company(*, company: Company) -> dict:
         financial: { total_value, pending_value, paid_value, average_payroll },
     }
     """
-    providers_qs = Provider.objects.filter(company=company)
-    payrolls_qs = Payroll.objects.filter(provider__company=company)
+    providers_qs = Provider.objects.filter(company_id=company_id)
+    payrolls_qs = Payroll.objects.filter(provider__company_id=company_id)
 
     total_providers = providers_qs.count()
     total_payrolls = payrolls_qs.count()
@@ -165,47 +161,6 @@ def dashboard_stats_for_company(*, company: Company) -> dict:
             "pending_value": float(pending_value),
             "paid_value": float(paid_value),
             "average_payroll": float(average_payroll),
-        },
-    }
-
-
-def dashboard_stats_for_super_admin() -> dict:
-    """
-    Estatísticas globais para o Super Admin.
-
-    Returns:
-        Dicionário com estatísticas de todas as empresas
-    """
-    total_companies = Company.objects.count()
-    active_companies = Company.objects.filter(is_active=True).count()
-    total_providers = Provider.objects.count()
-    total_payrolls = Payroll.objects.count()
-
-    total_net = Payroll.objects.aggregate(total=Sum("net_value"))["total"] or Decimal(
-        "0"
-    )
-    total_paid = Payroll.objects.filter(status=PayrollStatus.PAID).aggregate(
-        total=Sum("net_value")
-    )["total"] or Decimal("0")
-
-    active_subscriptions = Subscription.objects.filter(is_active=True).count()
-
-    return {
-        "companies": {
-            "total": total_companies,
-            "active": active_companies,
-            "inactive": total_companies - active_companies,
-        },
-        "providers": {
-            "total": total_providers,
-        },
-        "payrolls": {
-            "total": total_payrolls,
-            "total_net": total_net,
-            "total_paid": total_paid,
-        },
-        "subscriptions": {
-            "active": active_subscriptions,
         },
     }
 
@@ -252,137 +207,8 @@ def provider_get_by_id(*, provider_id: int, user: User) -> Optional[Provider]:
 
 
 # ==============================================================================
-# SUBSCRIPTION SELECTORS
-# ==============================================================================
-
-
-def subscription_get_active_for_company(*, company: Company) -> Optional[Subscription]:
-    """
-    Retorna a assinatura ativa de uma empresa.
-
-    Args:
-        company: Empresa
-
-    Returns:
-        Instância de Subscription ou None
-    """
-    return Subscription.objects.filter(company=company, is_active=True).first()
-
-
-def subscription_can_add_provider(*, company: Company) -> bool:
-    """
-    Verifica se a empresa pode adicionar mais prestadores.
-
-    Args:
-        company: Empresa
-
-    Returns:
-        True se pode adicionar, False se atingiu o limite
-    """
-    subscription = subscription_get_active_for_company(company=company)
-    if not subscription:
-        return False
-
-    current_count = Provider.objects.filter(company=company).count()
-    return current_count < subscription.max_providers
-
-
-# ==============================================================================
-# USER SELECTORS
-# ==============================================================================
-
-
-def user_list_for_company(*, company: Company, role: Optional[str] = None) -> QuerySet:
-    """
-    Retorna usuários de uma empresa, opcionalmente filtrados por papel.
-
-    Args:
-        company: Empresa
-        role: Papel do usuário (UserRole.CUSTOMER_ADMIN, etc.) — opcional
-
-    Returns:
-        QuerySet de User
-    """
-    qs = User.objects.filter(company=company).order_by("username")
-    if role:
-        qs = qs.filter(role=role)
-    return qs
-
-
-# ==============================================================================
-# COMPANY SELECTORS
-# ==============================================================================
-
-
-def company_list_filtered(
-    *,
-    is_active: Optional[bool] = None,
-    search: Optional[str] = None,
-) -> QuerySet:
-    """
-    Retorna empresas com filtros opcionais.
-
-    Args:
-        is_active: Filtro por status ativo/inativo
-        search: Filtro por nome ou CNPJ (case-insensitive)
-
-    Returns:
-        QuerySet de Company ordenado por nome
-    """
-    qs = Company.objects.all().order_by("name")
-    if is_active is not None:
-        qs = qs.filter(is_active=is_active)
-    if search:
-        qs = qs.filter(Q(name__icontains=search) | Q(cnpj__icontains=search))
-    return qs
-
-
-# ==============================================================================
-# SUPER ADMIN STATS SELECTOR
-# ==============================================================================
-
-
-def super_admin_stats() -> dict:
-    """
-    Calcula as estatísticas globais para o Dashboard do Super Admin.
-
-    Centraliza todas as queries de agregação que antes estavam inline na view.
-
-    Returns:
-        Dicionário com estatísticas de todas as empresas
-    """
-    today = timezone.now().date()
-
-    total_companies = Company.objects.count()
-    total_providers = Provider.objects.count()
-    active_subscriptions = Subscription.objects.filter(
-        is_active=True, end_date__gte=today
-    ).count()
-    mrr = Subscription.objects.filter(is_active=True, end_date__gte=today).aggregate(
-        total=Sum("price")
-    )["total"] or Decimal("0.00")
-    pending_approvals = Company.objects.filter(is_active=False).count()
-
-    return {
-        "total_companies": total_companies,
-        "total_providers": total_providers,
-        "active_subscriptions": active_subscriptions,
-        "mrr": mrr,
-        "pending_approvals": pending_approvals,
-    }
-
-
-# ==============================================================================
 # LOOKUP SELECTORS (get-by-id)
 # ==============================================================================
-
-
-def company_get_by_id(*, company_id) -> Optional[Company]:
-    """
-    Retorna uma empresa pelo ID ou None se não encontrada.
-    Substitui get_object_or_404(Company, pk=...) nas views.
-    """
-    return Company.objects.filter(pk=company_id).first()
 
 
 def math_template_get_by_id(*, template_id) -> Optional[PayrollMathTemplate]:
@@ -422,22 +248,6 @@ def payroll_config_list(*, company_id=None) -> QuerySet:
         QuerySet de PayrollConfiguration
     """
     qs = PayrollConfiguration.objects.all()
-    if company_id:
-        qs = qs.filter(company_id=company_id)
-    return qs
-
-
-def subscription_list(*, company_id=None) -> QuerySet:
-    """
-    Retorna assinaturas, opcionalmente filtradas por empresa.
-
-    Args:
-        company_id: ID da empresa (opcional)
-
-    Returns:
-        QuerySet de Subscription ordenado por data de criação decrescente
-    """
-    qs = Subscription.objects.all().order_by("-created_at")
     if company_id:
         qs = qs.filter(company_id=company_id)
     return qs

@@ -22,10 +22,11 @@ from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 # ── Services ──────────────────────────────────────────────────────────────────
-from users.services.user_service import (
+from users.application.commands.user_service import (
     InvalidPasswordError,
     InvalidTokenError,
     PayrollConfigService,
@@ -37,13 +38,15 @@ from users.services.user_service import (
 )
 
 
-from site_manage.selectors import (
-    company_get_by_id,
+from site_manage.application.queries.selectors import (
     math_template_get_by_id,
+    provider_list_for_user,
+)
+from users.application.queries.selectors import (
+    company_get_by_id,
     super_admin_stats,
     company_list_filtered,
     user_list_for_company,
-    provider_list_for_user,
 )
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
@@ -58,13 +61,14 @@ from .serializers import (
 
 # ── Selectors (read-only queries) ─────────────────────────────────────────────
 
-from site_manage.services.company_service import (
-    CompanyService,
-    CompanyAlreadyActiveError,
-)
+from users.application.commands.company_manager import CompanyManager
+from users.application.commands.user_service import CompanyAlreadyActiveError
 
 from users.models import UserRole
-from site_manage.serializers import ProviderSerializer
+from site_manage.api.serializers import (
+    ProviderSerializer,
+    PayrollConfigurationSerializer,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -272,7 +276,7 @@ def register(request):
     d = serializer.validated_data
 
     try:
-        company, user = CompanyService.register_company(
+        company, user = CompanyManager.register_company(
             company_name=d["company_name"],
             company_cnpj=d["company_cnpj"],
             company_phone=d.get("company_phone", ""),
@@ -291,7 +295,7 @@ def register(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    CompanyService.notify_registration(company=company, user=user)
+    CompanyManager.notify_registration(company=company, user=user)
 
     return Response(
         {
@@ -382,55 +386,97 @@ def password_reset_confirm(request):
 # ==============================================================================
 
 
-class CompanyViewSet(viewsets.ModelViewSet):
-    """
-    Gerenciamento de empresas — apenas Super Admin.
-    Reads via selectors, writes via CompanyService/UserService.
-    """
+class CompanyListAPIView(APIView):
+    """GET /users/companies/"""
 
-    serializer_class = CompanySerializer
     permission_classes = [IsAuthenticated, IsSuperAdmin]
 
-    def get_queryset(self):
-        params = self.request.query_params
+    def get(self, request):
+        params = request.query_params
         is_active_raw = params.get("is_active")
         is_active = None
         if is_active_raw is not None:
             is_active = is_active_raw.lower() in ["true", "1"]
-        return company_list_filtered(
+        qs = company_list_filtered(
             is_active=is_active,
             search=params.get("search"),
         )
+        return Response(CompanySerializer(qs, many=True).data)
 
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.id == 1:
+
+class CompanyDetailAPIView(APIView):
+    """GET/PUT/PATCH/DELETE /users/companies/<pk>/"""
+
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def _get_object(self, pk):
+        from django.shortcuts import get_object_or_404
+        from users.infrastructure.models import Company
+
+        return get_object_or_404(Company, pk=pk)
+
+    def get(self, request, pk):
+        company = self._get_object(pk)
+        return Response(CompanySerializer(company).data)
+
+    def put(self, request, pk):
+        company = self._get_object(pk)
+        serializer = CompanySerializer(company, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        company = self._get_object(pk)
+        serializer = CompanySerializer(company, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        company = self._get_object(pk)
+        if company.id == 1:
             return Response(
                 {"error": "A empresa Super Admin não pode ser excluída."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        return super().destroy(request, *args, **kwargs)
+        company.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=["post"])
-    def approve(self, request, pk=None):
-        """POST /users/companies/{id}/approve/"""
-        company = self.get_object()
+
+class CompanyApproveAPIView(APIView):
+    """POST /users/companies/<pk>/approve/"""
+
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def post(self, request, pk):
+        from django.shortcuts import get_object_or_404
+        from users.infrastructure.models import Company
+
+        company = get_object_or_404(Company, pk=pk)
         try:
-            company = CompanyService.approve_company(company=company)
+            company = CompanyManager.approve_company(company=company)
         except CompanyAlreadyActiveError as e:
             return Response({"message": str(e)}, status=status.HTTP_200_OK)
 
-        CompanyService.notify_approval(company=company)
+        CompanyManager.notify_approval(company=company)
         return Response(
             {"message": f"Empresa {company.name} aprovada com sucesso!"},
             status=status.HTTP_200_OK,
         )
 
-    @action(detail=True, methods=["post"], url_path="toggle-status")
-    def toggle_status(self, request, pk=None):
-        """POST /users/companies/{id}/toggle-status/"""
-        company = self.get_object()
-        company = CompanyService.toggle_company_status(company=company)
+
+class CompanyToggleStatusAPIView(APIView):
+    """POST /users/companies/<pk>/toggle-status/"""
+
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def post(self, request, pk):
+        from django.shortcuts import get_object_or_404
+        from users.infrastructure.models import Company
+
+        company = get_object_or_404(Company, pk=pk)
+        company = CompanyManager.toggle_company_status(company=company)
         status_msg = "ativada" if company.is_active else "desativada"
         return Response(
             {
@@ -440,21 +486,35 @@ class CompanyViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
-    @action(detail=True, methods=["post"], url_path="reject")
-    def reject(self, request, pk=None):
-        """POST /users/companies/{id}/reject/"""
-        company = self.get_object()
-        CompanyService.notify_rejection(company=company)
-        company_name = CompanyService.reject_company(company=company)
+
+class CompanyRejectAPIView(APIView):
+    """POST /users/companies/<pk>/reject/"""
+
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def post(self, request, pk):
+        from django.shortcuts import get_object_or_404
+        from users.infrastructure.models import Company
+
+        company = get_object_or_404(Company, pk=pk)
+        CompanyManager.notify_rejection(company=company)
+        company_name = CompanyManager.reject_company(company=company)
         return Response(
             {"message": f"Empresa {company_name} rejeitada e removida com sucesso!"},
             status=status.HTTP_200_OK,
         )
 
-    @action(detail=True, methods=["post"], url_path="create-admin")
-    def create_admin(self, request, pk=None):
-        """POST /users/companies/{id}/create-admin/"""
-        company = self.get_object()
+
+class CompanyCreateAdminAPIView(APIView):
+    """POST /users/companies/<pk>/create-admin/"""
+
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def post(self, request, pk):
+        from django.shortcuts import get_object_or_404
+        from users.infrastructure.models import Company
+
+        company = get_object_or_404(Company, pk=pk)
         username = request.data.get("username")
         email = request.data.get("email")
         password = request.data.get("password")
@@ -479,75 +539,185 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=["get"])
-    def admins(self, request, pk=None):
-        """GET /users/companies/{id}/admins/"""
-        company = self.get_object()
+
+class CompanyAdminsAPIView(APIView):
+    """GET /users/companies/<pk>/admins/"""
+
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request, pk):
+        from django.shortcuts import get_object_or_404
+        from users.infrastructure.models import Company
+
+        company = get_object_or_404(Company, pk=pk)
         admins = user_list_for_company(company=company, role=UserRole.CUSTOMER_ADMIN)
         return Response(UserSerializer(admins, many=True).data)
 
-    @action(detail=True, methods=["get"])
-    def providers(self, request, pk=None):
-        """GET /users/companies/{id}/providers/"""
-        company = self.get_object()
+
+class CompanyProvidersAPIView(APIView):
+    """GET /users/companies/<pk>/providers/"""
+
+    permission_classes = [IsAuthenticated, IsSuperAdmin]
+
+    def get(self, request, pk):
+        from django.shortcuts import get_object_or_404
+        from users.infrastructure.models import Company
+
+        company = get_object_or_404(Company, pk=pk)
         providers = provider_list_for_user(user=request.user).filter(company=company)
         return Response(ProviderSerializer(providers, many=True).data)
 
 
-class PayrollMathTemplateViewSet(viewsets.ModelViewSet):
-    """CRUD completo para Templates de Cálculo — apenas Super Admin."""
+from django.shortcuts import get_object_or_404
+from site_manage.infrastructure.models import PayrollMathTemplate, PayrollConfiguration
+
+
+class PayrollMathTemplateListCreateAPIView(APIView):
+    """GET/POST /users/math-templates/"""
 
     permission_classes = [IsSuperAdmin]
 
-    def get_serializer_class(self):
-        from site_manage.serializers import PayrollMathTemplateSerializer
+    def get(self, request):
+        from site_manage.application.queries.selectors import math_template_list
+        from site_manage.api.serializers import PayrollMathTemplateSerializer
 
-        return PayrollMathTemplateSerializer
+        return Response(
+            PayrollMathTemplateSerializer(math_template_list(), many=True).data
+        )
 
-    def get_queryset(self):
-        from site_manage.selectors import math_template_list
+    def post(self, request):
+        from site_manage.api.serializers import PayrollMathTemplateSerializer
 
-        return math_template_list()
+        serializer = PayrollMathTemplateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if getattr(instance, "is_default", False):
+
+class PayrollMathTemplateDetailAPIView(APIView):
+    """GET/PUT/PATCH/DELETE /users/math-templates/<pk>/"""
+
+    permission_classes = [IsSuperAdmin]
+
+    def _get_object(self, pk):
+        return get_object_or_404(PayrollMathTemplate, pk=pk)
+
+    def get(self, request, pk):
+        from site_manage.api.serializers import PayrollMathTemplateSerializer
+
+        template = self._get_object(pk)
+        return Response(PayrollMathTemplateSerializer(template).data)
+
+    def put(self, request, pk):
+        from site_manage.api.serializers import PayrollMathTemplateSerializer
+
+        template = self._get_object(pk)
+        if getattr(template, "is_default", False):
             return Response(
                 {"error": "Não é possível alterar o template padrão do sistema."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        return super().update(request, *args, **kwargs)
+        serializer = PayrollMathTemplateSerializer(template, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if getattr(instance, "is_default", False):
+    def patch(self, request, pk):
+        from site_manage.api.serializers import PayrollMathTemplateSerializer
+
+        template = self._get_object(pk)
+        if getattr(template, "is_default", False):
+            return Response(
+                {"error": "Não é possível alterar o template padrão do sistema."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        serializer = PayrollMathTemplateSerializer(
+            template, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        template = self._get_object(pk)
+        if getattr(template, "is_default", False):
             return Response(
                 {"error": "Não é possível excluir o template padrão do sistema."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        return super().destroy(request, *args, **kwargs)
+        template.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PayrollConfigurationViewSet(viewsets.ModelViewSet):
-    """Gerenciamento de configurações de folha das empresas."""
+class PayrollConfigurationListCreateAPIView(APIView):
+    """GET/POST /users/payroll-configs/"""
 
     permission_classes = [IsSuperAdmin]
 
-    def get_serializer_class(self):
-        from site_manage.serializers import PayrollConfigurationSerializer
+    def get(self, request):
+        from site_manage.application.queries.selectors import payroll_config_list
+        from site_manage.api.serializers import PayrollConfigurationSerializer
 
-        return PayrollConfigurationSerializer
+        qs = payroll_config_list(company_id=request.query_params.get("company_id"))
+        return Response(PayrollConfigurationSerializer(qs, many=True).data)
 
-    def get_queryset(self):
-        from site_manage.selectors import payroll_config_list
+    def post(self, request):
+        from site_manage.api.serializers import PayrollConfigurationSerializer
 
-        return payroll_config_list(
-            company_id=self.request.query_params.get("company_id")
+        serializer = PayrollConfigurationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class PayrollConfigurationDetailAPIView(APIView):
+    """GET/PUT/PATCH/DELETE /users/payroll-configs/<pk>/"""
+
+    permission_classes = [IsSuperAdmin]
+
+    def _get_object(self, pk):
+        return get_object_or_404(PayrollConfiguration, pk=pk)
+
+    def get(self, request, pk):
+        from site_manage.api.serializers import PayrollConfigurationSerializer
+
+        config = self._get_object(pk)
+        return Response(PayrollConfigurationSerializer(config).data)
+
+    def put(self, request, pk):
+        from site_manage.api.serializers import PayrollConfigurationSerializer
+
+        config = self._get_object(pk)
+        serializer = PayrollConfigurationSerializer(config, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        from site_manage.api.serializers import PayrollConfigurationSerializer
+
+        config = self._get_object(pk)
+        serializer = PayrollConfigurationSerializer(
+            config, data=request.data, partial=True
         )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
-    @action(detail=False, methods=["post"], url_path="apply-template")
-    def apply_template(self, request):
-        """Body: { "company_id": 1, "template_id": 1 }"""
+    def delete(self, request, pk):
+        config = self._get_object(pk)
+        config.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PayrollConfigurationApplyTemplateAPIView(APIView):
+    """POST /users/payroll-configs/apply-template/"""
+
+    permission_classes = [IsSuperAdmin]
+
+    def post(self, request):
+        from site_manage.api.serializers import PayrollConfigurationSerializer
+
         company_id = request.data.get("company_id")
         template_id = request.data.get("template_id")
 
@@ -570,39 +740,79 @@ class PayrollConfigurationViewSet(viewsets.ModelViewSet):
             )
 
         config = PayrollConfigService.apply_template(company=company, template=template)
-        return Response(self.get_serializer(config).data, status=status.HTTP_200_OK)
+        return Response(
+            PayrollConfigurationSerializer(config).data, status=status.HTTP_200_OK
+        )
 
 
 # ==============================================================================
 # 5. SUBSCRIPTIONS
 # ==============================================================================
 
+from users.application.queries.selectors import subscription_list
+from users.infrastructure.models import Subscription
 
-class SubscriptionViewSet(viewsets.ModelViewSet):
-    """Gerenciamento de Assinaturas — apenas Super Admin."""
 
-    serializer_class = SubscriptionSerializer
+class SubscriptionListAPIView(APIView):
+    """GET /users/subscriptions/ - Lista assinaturas"""
+
     permission_classes = [IsSuperAdmin]
 
-    def get_queryset(self):
-        from site_manage.selectors import subscription_list
+    def get(self, request):
+        qs = subscription_list(company_id=request.query_params.get("company_id"))
+        serializer = SubscriptionSerializer(qs, many=True)
+        return Response(serializer.data)
 
-        return subscription_list(company_id=self.request.query_params.get("company_id"))
 
-    @action(detail=True, methods=["post"], url_path="renew")
-    def renew(self, request, pk=None):
-        """Body: { "plan_type": "PRO", "end_date": "2030-12-31" (opcional) }"""
-        subscription = self.get_object()
+class SubscriptionDetailAPIView(APIView):
+    """GET/PUT/PATCH/DELETE /users/subscriptions/<pk>/"""
+
+    permission_classes = [IsSuperAdmin]
+
+    def _get_object(self, pk):
+        return get_object_or_404(Subscription, pk=pk)
+
+    def get(self, request, pk):
+        sub = self._get_object(pk)
+        return Response(SubscriptionSerializer(sub).data)
+
+    def put(self, request, pk):
+        sub = self._get_object(pk)
+        serializer = SubscriptionSerializer(sub, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        sub = self._get_object(pk)
+        serializer = SubscriptionSerializer(sub, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        sub = self._get_object(pk)
+        sub.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SubscriptionRenewAPIView(APIView):
+    """POST /users/subscriptions/<pk>/renew/"""
+
+    permission_classes = [IsSuperAdmin]
+
+    def post(self, request, pk):
+        sub = get_object_or_404(Subscription, pk=pk)
         try:
-            subscription = SubscriptionService.renew_subscription(
-                subscription=subscription,
+            sub = SubscriptionService.renew_subscription(
+                subscription=sub,
                 plan_type=request.data.get("plan_type"),
                 end_date=request.data.get("end_date"),
             )
         except UserServiceError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(self.get_serializer(subscription).data)
+        return Response(SubscriptionSerializer(sub).data)
 
 
 # ==============================================================================
@@ -610,10 +820,10 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 # ==============================================================================
 
 
-class SuperAdminStatsViewSet(viewsets.ViewSet):
+class SuperAdminStatsAPIView(APIView):
     """Estatísticas globais para o Dashboard do Super Admin."""
 
     permission_classes = [IsSuperAdmin]
 
-    def list(self, request):
+    def get(self, request):
         return Response(super_admin_stats())

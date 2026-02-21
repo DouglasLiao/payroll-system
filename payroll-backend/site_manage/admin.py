@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Provider, Payment, Payroll, PayrollItem
+from .infrastructure.models import Provider, Payment, Payroll, PayrollItem
 
 
 @admin.register(Provider)

@@ -15,10 +15,10 @@ class PasswordResetTests(TestCase):
         self.user = User.objects.create_user(
             username="testuser", email="test@example.com", password="oldpassword123"
         )
-        self.request_url = reverse("password_reset_request")
-        self.confirm_url = reverse("password_reset_confirm")
+        self.request_url = reverse("users_password_reset_request")
+        self.confirm_url = reverse("users_password_reset_confirm")
 
-    @patch("site_manage.views.event_publisher.publish_password_reset_requested")
+    @patch("users.api.views.event_publisher.publish_password_reset_requested")
     def test_request_reset_valid_email(self, mock_publish):
         """Test requesting reset with valid email"""
         data = {"email": "test@example.com"}
@@ -38,7 +38,7 @@ class PasswordResetTests(TestCase):
         self.assertEqual(call_args[1]["user_email"], "test@example.com")
         self.assertEqual(call_args[1]["token"], token.token)
 
-    @patch("site_manage.views.event_publisher.publish_password_reset_requested")
+    @patch("users.api.views.event_publisher.publish_password_reset_requested")
     def test_request_reset_invalid_email(self, mock_publish):
         """Test requesting reset with non-existent email"""
         data = {"email": "doesnotexist@example.com"}

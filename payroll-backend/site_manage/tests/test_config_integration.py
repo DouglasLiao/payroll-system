@@ -1,6 +1,8 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
-from site_manage.models import (
+from site_manage.api.serializers import (
+    ProviderSerializer,
+    PayrollConfigurationSerializer,
     PayrollConfiguration,
     PayrollMathTemplate,
 )
@@ -36,8 +38,8 @@ class TestPayrollConfigurationIntegration(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Handle pagination
-        results = response.data.get("results", response.data)
+        # Handle simple list response
+        results = response.data
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["overtime_percentage"], "50.00")  # Default
 

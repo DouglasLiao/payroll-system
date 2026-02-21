@@ -14,7 +14,7 @@ from decimal import Decimal
 import random
 from datetime import date, timedelta
 
-from site_manage.models import (
+from site_manage.infrastructure.models import (
     Provider,
     Payroll,
     PayrollStatus,
@@ -27,7 +27,7 @@ from users.models import (
     Subscription,
     PlanType,
 )
-from site_manage.services.payroll_service import PayrollService
+from site_manage.application.commands.payroll_service import PayrollService
 
 
 def date_range(start_date, end_date):

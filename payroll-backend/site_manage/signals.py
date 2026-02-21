@@ -1,7 +1,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Provider, Payroll, PayrollStatus
-from site_manage.services.payroll_service import PayrollService
+from .infrastructure.models import Provider, Payroll, PayrollStatus
+from site_manage.application.commands.payroll_service import PayrollService
 
 
 @receiver(post_save, sender=Provider)

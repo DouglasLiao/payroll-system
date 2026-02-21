@@ -17,7 +17,13 @@ from django.utils import timezone
 from workalendar.america import Brazil
 import calendar
 from datetime import datetime
-from site_manage.models import Provider, Payroll, PayrollItem, PayrollStatus, ItemType
+from site_manage.infrastructure.models import (
+    Provider,
+    Payroll,
+    PayrollItem,
+    PayrollStatus,
+    ItemType,
+)
 
 
 def calcular_dias_mes(reference_month: str) -> tuple[int, int]:
@@ -89,7 +95,7 @@ def _calcular_valores_folha(payroll: Payroll) -> dict:
     Returns:
         Dicionário com todos os campos calculados
     """
-    from domain.payroll_calculator import (
+    from site_manage.domain.payroll_calculator import (
         calcular_folha_completa,
         calcular_salario_proporcional,
         calcular_vale_transporte,
@@ -145,7 +151,7 @@ def _calcular_valores_folha(payroll: Payroll) -> dict:
         )
     except Exception:
         # Empresa sem configuração — usa defaults do sistema
-        from site_manage.models import PayrollMathTemplate
+        from site_manage.infrastructure.models import PayrollMathTemplate
 
         default_template = PayrollMathTemplate.objects.filter(is_default=True).first()
         if not default_template:
@@ -169,7 +175,7 @@ def _calcular_valores_folha(payroll: Payroll) -> dict:
             default_template.night_shift_percentage / Decimal("100")
         )
 
-    from domain.payroll_calculator import calcular_estorno_vt
+    from site_manage.domain.payroll_calculator import calcular_estorno_vt
 
     # ── Cálculo Principal ─────────────────────────────────────────────────────
     # VT agora é calculado como ESTORNO dos dias faltados (se houver faltas)

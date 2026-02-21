@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.template.loader import render_to_string
 
-from site_manage.models import PayrollConfiguration
+from site_manage.integration import create_default_payroll_config
 from users.models import (
     Company,
     PlanType,
@@ -13,7 +13,7 @@ from users.models import (
     User,
     UserRole,
 )
-from users.services.user_service import (
+from users.application.commands.user_service import (
     EmailAlreadyExistsError,
     UsernameAlreadyExistsError,
     CompanyAlreadyActiveError,
@@ -22,12 +22,7 @@ from users.services.user_service import (
 logger = logging.getLogger(__name__)
 
 
-# ==============================================================================
-# COMPANY SERVICE
-# ==============================================================================
-
-
-class CompanyService:
+class CompanyManager:
     """
     Serviço responsável pela lógica de negócio de empresas.
 
@@ -52,32 +47,6 @@ class CompanyService:
         admin_first_name: str = "",
         admin_last_name: str = "",
     ) -> tuple[Company, User]:
-        """
-        Registra uma nova empresa com seu Customer Admin e assinatura Trial.
-
-        Cria atomicamente:
-        1. Company (is_active=False, aguardando aprovação)
-        2. PayrollConfiguration (defaults do sistema)
-        3. Subscription (plano TRIAL, 90 dias)
-        4. User (role=CUSTOMER_ADMIN)
-
-        Args:
-            company_name: Nome da empresa
-            company_cnpj: CNPJ da empresa
-            company_phone: Telefone (opcional)
-            admin_username: Username do administrador
-            admin_email: Email do administrador
-            admin_password: Senha do administrador
-            admin_first_name: Primeiro nome (opcional)
-            admin_last_name: Sobrenome (opcional)
-
-        Returns:
-            Tupla (Company, User) criados
-
-        Raises:
-            EmailAlreadyExistsError: Se o email já estiver cadastrado
-            UsernameAlreadyExistsError: Se o username já existir
-        """
         if User.objects.filter(email=admin_email).exists():
             raise EmailAlreadyExistsError(f"Email '{admin_email}' já está cadastrado.")
 
@@ -93,8 +62,8 @@ class CompanyService:
             is_active=False,
         )
 
-        # 2. Configuração de folha com defaults
-        PayrollConfiguration.objects.create(company=company)
+        # 2. Configuração de folha com defaults (via integration para não acoplar model do site_manage)
+        create_default_payroll_config(company_id=company.id)
 
         # 3. Assinatura Trial (90 dias)
         trial_defaults = Subscription.get_plan_defaults(PlanType.TRIAL)
@@ -120,7 +89,7 @@ class CompanyService:
         )
 
         logger.info(
-            f"[CompanyService] Empresa registrada: {company.name} (CNPJ: {company.cnpj}) "
+            f"[CompanyManager] Empresa registrada: {company.name} (CNPJ: {company.cnpj}) "
             f"| Admin: {user.username}"
         )
         return company, user
@@ -128,18 +97,6 @@ class CompanyService:
     @staticmethod
     @transaction.atomic
     def approve_company(*, company: Company) -> Company:
-        """
-        Aprova uma empresa pendente, ativando-a e sua assinatura.
-
-        Args:
-            company: Empresa a ser aprovada
-
-        Returns:
-            Empresa atualizada
-
-        Raises:
-            CompanyAlreadyActiveError: Se a empresa já estiver ativa
-        """
         if company.is_active:
             raise CompanyAlreadyActiveError(f"Empresa '{company.name}' já está ativa.")
 
@@ -167,53 +124,30 @@ class CompanyService:
                 is_active=True,
             )
 
-        # Garante que a configuração de folha existe
-        if not hasattr(company, "payroll_config"):
-            PayrollConfiguration.objects.create(company=company)
+        # Garante que a configuração de folha existe (via integration)
+        create_default_payroll_config(company_id=company.id)
 
-        logger.info(f"[CompanyService] Empresa aprovada: {company.name}")
+        logger.info(f"[CompanyManager] Empresa aprovada: {company.name}")
         return company
 
     @staticmethod
     def toggle_company_status(*, company: Company) -> Company:
-        """
-        Alterna o status ativo/inativo de uma empresa.
-
-        Args:
-            company: Empresa a ter o status alternado
-
-        Returns:
-            Empresa com status atualizado
-        """
         company.is_active = not company.is_active
         company.save(update_fields=["is_active", "updated_at"])
         status_str = "ativada" if company.is_active else "desativada"
-        logger.info(f"[CompanyService] Empresa {status_str}: {company.name}")
+        logger.info(f"[CompanyManager] Empresa {status_str}: {company.name}")
         return company
 
     @staticmethod
     @transaction.atomic
     def reject_company(*, company: Company) -> str:
-        """
-        Rejeita e remove permanentemente uma empresa e todos os seus dados.
-
-        Args:
-            company: Empresa a ser rejeitada
-
-        Returns:
-            Nome da empresa removida (para uso em mensagens de resposta)
-        """
         company_name = company.name
         company.delete()
-        logger.info(f"[CompanyService] Empresa rejeitada e removida: {company_name}")
+        logger.info(f"[CompanyManager] Empresa rejeitada e removida: {company_name}")
         return company_name
 
     @staticmethod
     def notify_registration(*, company: Company, user: User) -> None:
-        """
-        Notifica Super Admins e o novo usuário após registro.
-        Best-effort: erros de email são apenas logados.
-        """
         try:
             from app_emails.services import EmailSender
 
@@ -252,15 +186,11 @@ class CompanyService:
             )
         except Exception as e:
             logger.error(
-                f"[CompanyService.notify_registration] Falha ao enviar email: {e}"
+                f"[CompanyManager.notify_registration] Falha ao enviar email: {e}"
             )
 
     @staticmethod
     def notify_approval(*, company: Company) -> None:
-        """
-        Notifica o Customer Admin após aprovação da empresa.
-        Best-effort: erros de email são apenas logados.
-        """
         try:
             from app_emails.services import EmailSender
 
@@ -284,14 +214,10 @@ class CompanyService:
                     ),
                 )
         except Exception as e:
-            logger.error(f"[CompanyService.notify_approval] Falha ao enviar email: {e}")
+            logger.error(f"[CompanyManager.notify_approval] Falha ao enviar email: {e}")
 
     @staticmethod
     def notify_rejection(*, company: Company) -> None:
-        """
-        Notifica o Customer Admin antes da rejeição da empresa.
-        Best-effort: erros de email são apenas logados.
-        """
         try:
             from app_emails.services import EmailSender
 
@@ -314,5 +240,5 @@ class CompanyService:
                 )
         except Exception as e:
             logger.error(
-                f"[CompanyService.notify_rejection] Falha ao enviar email: {e}"
+                f"[CompanyManager.notify_rejection] Falha ao enviar email: {e}"
             )

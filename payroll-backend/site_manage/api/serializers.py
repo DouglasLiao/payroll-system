@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import (
+from site_manage.infrastructure.models import (
     Provider,
     Payment,
     Payroll,

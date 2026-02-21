@@ -6,4 +6,5 @@ class SiteManageConfig(AppConfig):
     name = "site_manage"
 
     def ready(self):
-        pass
+        # Implicitly load models from infrastructure so Django registries find them
+        import site_manage.infrastructure.models  # noqa

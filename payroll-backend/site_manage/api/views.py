@@ -13,106 +13,147 @@ ViewSets:
 from datetime import datetime, timedelta
 
 from django.http import HttpResponse
-
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
-from rest_framework.filters import OrderingFilter
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import ValidationError
 
-from .models import Payment, Provider, Payroll
-from .permissions import IsCustomerAdminOrReadOnly
-from .selectors import (
+from site_manage.infrastructure.models import Payment, Provider, Payroll
+from site_manage.permissions import IsCustomerAdminOrReadOnly
+from site_manage.application.queries.selectors import (
     dashboard_stats_for_company,
     payroll_list_for_user,
     provider_list_for_user,
-    subscription_can_add_provider,
 )
-from .serializers import (
+from users.application.queries.selectors import subscription_can_add_provider
+from site_manage.api.serializers import (
     PayrollDetailSerializer,
     PayrollSerializer,
     ProviderSerializer,
     PayrollUpdateSerializer,
     PayrollCreateSerializer,
 )
-from site_manage.services.payroll_service import PayrollService
-from site_manage.services.email_service import EmailService
+from site_manage.application.commands.payroll_service import PayrollService
+from site_manage.application.commands.email_service import EmailService
 
 # ==============================================================================
 # PROVIDERS
 # ==============================================================================
 
 
-class ProviderViewSet(viewsets.ModelViewSet):
+class ProviderListCreateAPIView(APIView):
     """
-    ViewSet protegido para gerenciar Providers com multi-tenancy.
+    Lista Providers do tenant ou cria novo.
 
-    Permissions:
-    - Customer Admin: pode criar, editar e deletar providers da sua empresa
-    - Provider: pode apenas visualizar seu próprio perfil
-    - Super Admin: acesso total (todas as empresas)
-
-    Routes:
-      GET    /providers/           → list
-      POST   /providers/           → create
-      GET    /providers/{id}/      → retrieve
-      PUT    /providers/{id}/      → update
-      PATCH  /providers/{id}/      → partial_update
-      DELETE /providers/{id}/      → destroy
+    GET /providers/
+    POST /providers/
     """
 
-    queryset = Provider.objects.all()  # Necessário para o router
-    serializer_class = ProviderSerializer
     permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_fields = ["role", "payment_method"]
-    ordering_fields = ["name", "monthly_value", "created_at"]
-    ordering = ["name"]
 
-    def get_queryset(self):
-        """Filtrar providers por empresa do usuário via selector."""
-        return provider_list_for_user(user=self.request.user).order_by("name")
+    def get(self, request, *args, **kwargs):
+        # Seleciona de acordo com tenant/user rules
+        providers = provider_list_for_user(user=request.user).order_by("name")
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        # Filtros manuais básicos compatíveis com DjangoFilterBackend legados
+        role_filter = request.query_params.get("role")
+        if role_filter:
+            providers = providers.filter(role=role_filter)
+
+        payment_method_filter = request.query_params.get("payment_method")
+        if payment_method_filter:
+            providers = providers.filter(payment_method=payment_method_filter)
+
+        serializer = ProviderSerializer(providers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        serializer = ProviderSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            self.perform_create(serializer)
-        except Exception as e:
-            if isinstance(e, ValidationError):
-                # DRF ValidationError can be a list or dict. Normalize to detail for frontend.
-                msg = (
-                    e.detail[0]
-                    if isinstance(e.detail, list) and e.detail
-                    else str(e.detail)
-                )
-                return Response({"detail": msg}, status=status.HTTP_400_BAD_REQUEST)
-            raise e
-
-        headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
-
-    def perform_create(self, serializer):
-        """Ao criar provider, associar à empresa do Customer Admin."""
-        if self.request.user.role == "CUSTOMER_ADMIN":
-            company = self.request.user.company
-
+        # Associa à empresa do Admin
+        if request.user.role == "CUSTOMER_ADMIN":
+            company = request.user.company
             if not subscription_can_add_provider(company=company):
-                raise ValidationError(
-                    "Limite de prestadores atingido. "
-                    "Faça o upgrade do seu plano para adicionar mais prestadores."
+                return Response(
+                    {
+                        "detail": "Limite de prestadores atingido. Faça o upgrade do seu plano para complementar."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-
             serializer.save(company=company)
         else:
             serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ProviderDetailAPIView(APIView):
+    """
+    Consulta, Atualiza ou Exclui um Provider específico.
+
+    GET /providers/{id}/
+    PUT /providers/{id}/
+    PATCH /providers/{id}/
+    DELETE /providers/{id}/
+    """
+
+    permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
+
+    def get_object(self, request, pk):
+        try:
+            # Garante tenant isolation
+            provider = provider_list_for_user(user=request.user).get(pk=pk)
+            return provider
+        except Provider.DoesNotExist:
+            return None
+
+    def get(self, request, pk, *args, **kwargs):
+        provider = self.get_object(request, pk)
+        if not provider:
+            return Response(
+                {"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = ProviderSerializer(provider)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk, *args, **kwargs):
+        provider = self.get_object(request, pk)
+        if not provider:
+            return Response(
+                {"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = ProviderSerializer(provider, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk, *args, **kwargs):
+        provider = self.get_object(request, pk)
+        if not provider:
+            return Response(
+                {"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = ProviderSerializer(provider, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, *args, **kwargs):
+        provider = self.get_object(request, pk)
+        if not provider:
+            return Response(
+                {"detail": "Não encontrado."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        provider.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # ==============================================================================
@@ -120,80 +161,98 @@ class ProviderViewSet(viewsets.ModelViewSet):
 # ==============================================================================
 
 
-class PayrollViewSet(viewsets.ModelViewSet):
+class PayrollListAPIView(APIView):
     """
-    ViewSet protegido para gerenciar Payrolls com multi-tenancy.
-
-    Permissions:
-    - Customer Admin: pode gerenciar payrolls dos providers da sua empresa
-    - Provider: pode apenas visualizar seus próprios payrolls
-    - Super Admin: acesso total
-
-    Routes:
-      GET    /payrolls/                      → list
-      GET    /payrolls/{id}/                 → retrieve
-      PUT    /payrolls/{id}/                 → update
-      PATCH  /payrolls/{id}/                 → partial_update
-      DELETE /payrolls/{id}/                 → destroy
-      POST   /payrolls/calculate/            → calculate (criar + calcular)
-      POST   /payrolls/{id}/close/           → close_payroll
-      POST   /payrolls/{id}/mark-as-paid/    → mark_as_paid
-      POST   /payrolls/{id}/reopen/          → reopen_payroll
-      GET    /payrolls/{id}/export-file/     → export_file (.xlsx)
-      GET    /payrolls/monthly-report/       → monthly_report (.csv)
-      POST   /payrolls/email-report/         → email_report
-      GET    /payrolls/stats/                → stats
+    Lista de Payrolls do tenant.
+    GET /payrolls/
     """
 
-    queryset = Payroll.objects.all()  # Necessário para o router
     permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_fields = ["status", "reference_month", "provider"]
-    ordering_fields = ["reference_month", "created_at", "net_value"]
-    ordering = ["-reference_month", "provider__name"]
 
-    def get_serializer_class(self):
-        """Retorna serializer apropriado baseado na action."""
-        if self.action == "retrieve":
-            return PayrollDetailSerializer
-        if self.action in ["update", "partial_update"]:
-            return PayrollUpdateSerializer
-        return PayrollSerializer
+    def get(self, request, *args, **kwargs):
+        payrolls = payroll_list_for_user(user=request.user).order_by(
+            "-reference_month", "provider__name"
+        )
 
-    def get_queryset(self):
-        """Filtrar payrolls por empresa do usuário via selector."""
-        return payroll_list_for_user(user=self.request.user)
+        # Filtros manuais básicos compensando DjangoFilterBackend
+        status_filter = request.query_params.get("status")
+        if status_filter:
+            payrolls = payrolls.filter(status=status_filter)
 
-    def perform_update(self, serializer):
-        """Sobrescreve o update padrão para usar o PayrollService e recalcular valores."""
+        ref_month_filter = request.query_params.get("reference_month")
+        if ref_month_filter:
+            payrolls = payrolls.filter(reference_month=ref_month_filter)
+
+        provider_filter = request.query_params.get("provider")
+        if provider_filter:
+            payrolls = payrolls.filter(provider_id=provider_filter)
+
+        serializer = PayrollSerializer(payrolls, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PayrollDetailAPIView(APIView):
+    """
+    Consulta ou atualiza os detalhes de Payout usando Serializers limitados ou serviços de refatoração.
+    GET /payrolls/{id}/
+    PUT /payrolls/{id}/
+    PATCH /payrolls/{id}/
+    DELETE /payrolls/{id}/
+    """
+
+    permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
+
+    def get_object(self, request, pk):
+        from django.http import Http404
+
+        try:
+            return payroll_list_for_user(user=request.user).get(pk=pk)
+        except Payroll.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, *args, **kwargs):
+        payroll = self.get_object(request, pk)
+        serializer = PayrollDetailSerializer(payroll)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def perform_update(self, instance, validated_data):
         service = PayrollService()
-        service.recalculate_payroll(serializer.instance.id, **serializer.validated_data)
+        service.recalculate_payroll(instance.id, **validated_data)
 
-    def update(self, request, *args, **kwargs):
-        """
-        Sobrescreve update para retornar o objeto completo serializado,
-        não apenas os campos editados (já que PayrollUpdateSerializer é limitado).
-        """
-        partial = kwargs.pop("partial", False)
-        instance = self.get_object()
+    def put(self, request, pk, *args, **kwargs):
+        return self._update(request, pk, partial=False)
 
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+    def patch(self, request, pk, *args, **kwargs):
+        return self._update(request, pk, partial=True)
 
-        instance.refresh_from_db()
-        read_serializer = PayrollDetailSerializer(instance)
-        return Response(read_serializer.data)
+    def _update(self, request, pk, partial):
+        instance = self.get_object(request, pk)
+        serializer = PayrollUpdateSerializer(
+            instance, data=request.data, partial=partial
+        )
+        if serializer.is_valid():
+            self.perform_update(instance, serializer.validated_data)
+            instance.refresh_from_db()
+            return Response(
+                PayrollDetailSerializer(instance).data, status=status.HTTP_200_OK
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # ── Actions ────────────────────────────────────────────────────────────────
+    def delete(self, request, pk, *args, **kwargs):
+        instance = self.get_object(request, pk)
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, methods=["post"], url_path="calculate")
-    def calculate(self, request):
-        """
-        Cria e calcula uma nova folha de pagamento via PayrollService.
 
-        POST /payrolls/calculate/
-        """
+class PayrollCalculateAPIView(APIView):
+    """
+    Cria e calcula nova folha.
+    POST /payrolls/calculate/
+    """
+
+    permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
+
+    def post(self, request, *args, **kwargs):
         if request.user.role != "CUSTOMER_ADMIN":
             return Response(
                 {"error": "Apenas Customer Admin pode criar folhas de pagamento."},
@@ -201,10 +260,10 @@ class PayrollViewSet(viewsets.ModelViewSet):
             )
 
         serializer = PayrollCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         provider_id = serializer.validated_data["provider_id"]
-
         try:
             provider = Provider.objects.get(id=provider_id)
             if provider.company != request.user.company:
@@ -220,8 +279,7 @@ class PayrollViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            service = PayrollService()
-            payroll = service.create_payroll(
+            payroll = PayrollService().create_payroll(
                 provider_id=provider_id,
                 reference_month=serializer.validated_data["reference_month"],
                 overtime_hours_50=serializer.validated_data.get("overtime_hours_50", 0),
@@ -240,25 +298,32 @@ class PayrollViewSet(viewsets.ModelViewSet):
             PayrollDetailSerializer(payroll).data, status=status.HTTP_201_CREATED
         )
 
-    @action(detail=True, methods=["post"], url_path="close")
-    def close_payroll(self, request, pk=None):
-        """
-        Fecha uma folha de pagamento (DRAFT → CLOSED) via PayrollService.
 
-        POST /payrolls/{id}/close/
-        """
+class PayrollCloseAPIView(APIView):
+    """
+    Fecha a folha. (DRAFT → CLOSED)
+    POST /payrolls/{id}/close/
+    """
+
+    permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
+
+    def post(self, request, pk, *args, **kwargs):
         if request.user.role != "CUSTOMER_ADMIN":
             return Response(
-                {"error": "Apenas Customer Admin pode fechar folhas de pagamento."},
+                {"error": "Apenas Customer Admin pode fechar folhas."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        payroll = self.get_object()
+        try:
+            payroll = payroll_list_for_user(user=request.user).get(pk=pk)
+        except Payroll.DoesNotExist:
+            return Response(
+                {"error": "Folha não encontrada."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         if payroll.provider.company != request.user.company:
             return Response(
-                {"error": "Você não tem permissão para fechar esta folha."},
-                status=status.HTTP_403_FORBIDDEN,
+                {"error": "Sem permissão."}, status=status.HTTP_403_FORBIDDEN
             )
 
         try:
@@ -270,25 +335,27 @@ class PayrollViewSet(viewsets.ModelViewSet):
             PayrollDetailSerializer(payroll).data, status=status.HTTP_200_OK
         )
 
-    @action(detail=True, methods=["post"], url_path="mark-as-paid")
-    def mark_as_paid(self, request, pk=None):
-        """
-        Marca uma folha como paga (CLOSED → PAID) via PayrollService.
 
-        POST /payrolls/{id}/mark-as-paid/
-        """
+class PayrollMarkPaidAPIView(APIView):
+    """
+    Marca como paga. (CLOSED → PAID)
+    POST /payrolls/{id}/mark-as-paid/
+    """
+
+    permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
+
+    def post(self, request, pk, *args, **kwargs):
         if request.user.role != "CUSTOMER_ADMIN":
             return Response(
-                {"error": "Apenas Customer Admin pode marcar folhas como pagas."},
+                {"error": "Apenas Customer Admin pode marcar como paga."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        payroll = self.get_object()
-
-        if payroll.provider.company != request.user.company:
+        try:
+            payroll = payroll_list_for_user(user=request.user).get(pk=pk)
+        except Payroll.DoesNotExist:
             return Response(
-                {"error": "Você não tem permissão para atualizar esta folha."},
-                status=status.HTTP_403_FORBIDDEN,
+                {"error": "Folha não encontrada."}, status=status.HTTP_404_NOT_FOUND
             )
 
         try:
@@ -300,25 +367,27 @@ class PayrollViewSet(viewsets.ModelViewSet):
             PayrollDetailSerializer(payroll).data, status=status.HTTP_200_OK
         )
 
-    @action(detail=True, methods=["post"], url_path="reopen")
-    def reopen_payroll(self, request, pk=None):
-        """
-        Reabre uma folha fechada (CLOSED → DRAFT) via PayrollService.
 
-        POST /payrolls/{id}/reopen/
-        """
+class PayrollReopenAPIView(APIView):
+    """
+    Reabre folha fechada. (CLOSED → DRAFT)
+    POST /payrolls/{id}/reopen/
+    """
+
+    permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
+
+    def post(self, request, pk, *args, **kwargs):
         if request.user.role != "CUSTOMER_ADMIN":
             return Response(
-                {"error": "Apenas Customer Admin pode reabrir folhas de pagamento."},
+                {"error": "Apenas Customer Admin pode reabrir."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        payroll = self.get_object()
-
-        if payroll.provider.company != request.user.company:
+        try:
+            payroll = payroll_list_for_user(user=request.user).get(pk=pk)
+        except Payroll.DoesNotExist:
             return Response(
-                {"error": "Você não tem permissão para reabrir esta folha."},
-                status=status.HTTP_403_FORBIDDEN,
+                {"error": "Folha não encontrada."}, status=status.HTTP_404_NOT_FOUND
             )
 
         try:
@@ -330,18 +399,20 @@ class PayrollViewSet(viewsets.ModelViewSet):
             PayrollDetailSerializer(payroll).data, status=status.HTTP_200_OK
         )
 
-    @action(detail=True, methods=["get"], url_path="export-file")
-    def export_file(self, request, pk=None):
-        """
-        Exporta a folha de pagamento em formato de planilha (.xlsx).
 
-        GET /payrolls/{id}/export-file/
-        """
-        from site_manage.services.excel_service import ExcelService
-        from django.http import Http404
+class PayrollExportFileAPIView(APIView):
+    """
+    Exporta ficheiro Excel.
+    GET /payrolls/{id}/export-file/
+    """
+
+    permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
+
+    def get(self, request, pk, *args, **kwargs):
+        from site_manage.application.commands.excel_service import ExcelService
 
         try:
-            payroll = self.get_object()
+            payroll = payroll_list_for_user(user=request.user).get(pk=pk)
             excel_service = ExcelService()
             file_content = excel_service.generate_payroll_excel(payroll)
             filename = excel_service.get_filename(payroll)
@@ -352,36 +423,37 @@ class PayrollViewSet(viewsets.ModelViewSet):
             )
             response["Content-Disposition"] = f'attachment; filename="{filename}"'
             return response
-
-        except Http404:
-            raise
+        except Payroll.DoesNotExist:
+            return Response(
+                {"error": "Folha não encontrada."}, status=status.HTTP_404_NOT_FOUND
+            )
         except Exception as e:
             return Response(
-                {"error": f"Erro ao gerar arquivo: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=["get"], url_path="monthly-report")
-    def monthly_report(self, request):
-        """
-        Gera um relatório CSV consolidado para um mês específico.
 
-        GET /payrolls/monthly-report/?reference_month=MM/YYYY
-        """
-        from site_manage.services.report_service import ReportService
+class PayrollMonthlyReportAPIView(APIView):
+    """
+    Relatório mensal em CSV.
+    GET /payrolls/monthly-report/
+    """
+
+    permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        from site_manage.application.commands.report_service import ReportService
 
         reference_month = request.query_params.get("reference_month")
 
         if not reference_month:
             return Response(
-                {"error": "Parâmetro reference_month é obrigatório (formato MM/YYYY)"},
+                {"error": "Parâmetro reference_month é obrigatório"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
         if request.user.role != "CUSTOMER_ADMIN":
             return Response(
-                {"error": "Apenas Customer Admin pode gerar relatórios mensais."},
-                status=status.HTTP_403_FORBIDDEN,
+                {"error": "Apenas Customer Admin."}, status=status.HTTP_403_FORBIDDEN
             )
 
         try:
@@ -394,44 +466,34 @@ class PayrollViewSet(viewsets.ModelViewSet):
             )
             response["Content-Disposition"] = f'attachment; filename="{filename}"'
             return response
-
         except Exception as e:
             return Response(
-                {"error": f"Erro ao gerar relatório: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=["post"], url_path="email-report")
-    def email_report(self, request):
-        """
-        Gera e envia por e-mail um relatório mensal.
 
-        POST /payrolls/email-report/
-        Body: { "reference_month": "MM/YYYY", "email": "optional@email.com" }
-        """
-        from site_manage.services.report_service import ReportService
+class PayrollEmailReportAPIView(APIView):
+    """
+    Envia relatório por email.
+    POST /payrolls/email-report/
+    """
+
+    permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
+
+    def post(self, request, *args, **kwargs):
+        from site_manage.application.commands.report_service import ReportService
 
         reference_month = request.data.get("reference_month")
         email_address = request.data.get("email") or request.user.email
 
-        if not reference_month:
+        if not reference_month or not email_address:
             return Response(
-                {"error": "Parâmetro reference_month é obrigatório."},
+                {"error": "Mes e email necessarios."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        if not email_address:
-            return Response(
-                {
-                    "error": "E-mail não fornecido e usuário não possui e-mail cadastrado."
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         if request.user.role != "CUSTOMER_ADMIN":
             return Response(
-                {"error": "Apenas Customer Admin pode enviar relatórios."},
-                status=status.HTTP_403_FORBIDDEN,
+                {"error": "Apenas Customer Admin."}, status=status.HTTP_403_FORBIDDEN
             )
 
         try:
@@ -442,40 +504,34 @@ class PayrollViewSet(viewsets.ModelViewSet):
 
             success = EmailService().send_report_email(
                 recipient_email=email_address,
-                subject=f"Relatorio Mensal de Folha de Pagamento - {reference_month}",
-                body=(
-                    f"Prezado(a),\n\nSegue em anexo o relatorio mensal consolidado "
-                    f"referente ao mes {reference_month}.\n\nAtenciosamente,\nSistema de Folha de Pagamento"
-                ),
+                subject=f"Relatorio Folha - {reference_month}",
+                body="Em anexo o relatorio.",
                 attachment_name=filename,
                 attachment_content=file_content.getvalue(),
                 content_type="text/csv",
             )
-
             if success:
-                return Response(
-                    {"message": f"Relatório enviado com sucesso para {email_address}!"}
-                )
-            else:
-                return Response(
-                    {"error": "Falha ao enviar e-mail. Verifique os logs do sistema."},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
-
-        except Exception as e:
+                return Response({"message": f"Enviado para {email_address}!"})
             return Response(
-                {"error": f"Erro ao processar solicitação: {str(e)}"},
+                {"error": "Falha ao enviar."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
-    @action(detail=False, methods=["get"], url_path="stats")
-    def stats(self, request):
-        """
-        Retorna estatísticas gerais de payrolls (independente de filtros de paginação).
 
-        GET /payrolls/stats/
-        """
-        queryset = self.get_queryset()
+class PayrollStatsAPIView(APIView):
+    """
+    Stats de status das folhas.
+    GET /payrolls/stats/
+    """
+
+    permission_classes = [IsAuthenticated, IsCustomerAdminOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        queryset = payroll_list_for_user(user=request.user)
         return Response(
             {
                 "total": queryset.count(),
@@ -546,7 +602,7 @@ class DashboardView(APIView):
                 current = current + relativedelta(months=1)
 
         # Stats via selector
-        stats = dashboard_stats_for_company(company=user.company)
+        stats = dashboard_stats_for_company(company_id=user.company.id)
 
         # Agregação mensal
         from django.db.models import Count, Sum
