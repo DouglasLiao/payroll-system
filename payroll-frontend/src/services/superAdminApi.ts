@@ -85,10 +85,10 @@ export const toggleCompanyStatus = async (id: number) => {
 // ── Payroll Config ────────────────────────────────────────────────────────────
 
 export const getPayrollConfig = async (companyId: number) => {
-  const { data } = await api.get<PayrollConfiguration[]>(
+  const { data } = await api.get<PaginatedResponse<PayrollConfiguration>>(
     `/users/payroll-configs/?company_id=${companyId}`
   )
-  return data[0]
+  return data.results ? data.results[0] : (data as any)[0]
 }
 
 export const updatePayrollConfig = async (

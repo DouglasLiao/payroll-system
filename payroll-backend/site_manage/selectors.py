@@ -395,7 +395,19 @@ def math_template_get_by_id(*, template_id) -> Optional[PayrollMathTemplate]:
 def math_template_list() -> QuerySet:
     """
     Retorna todos os templates de cálculo ordenados por nome.
+    Garante que o template Padrão exista antes de retornar.
     """
+    default_template = PayrollMathTemplate.objects.filter(is_default=True).first()
+    if not default_template:
+        PayrollMathTemplate.objects.create(
+            name="Padrão",
+            description="Template padrão inalterável do sistema.",
+            is_default=True,
+            overtime_percentage=Decimal("50.00"),
+            night_shift_percentage=Decimal("20.00"),
+            holiday_percentage=Decimal("100.00"),
+            advance_percentage=Decimal("40.00"),
+        )
     return PayrollMathTemplate.objects.all().order_by("name")
 
 

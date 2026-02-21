@@ -12,11 +12,7 @@ contratuais/comerciais, sem amparo legal trabalhista.
 
 from decimal import Decimal
 from typing import Dict
-
-
-# ==============================================================================
-# CONSTANTES PADRÃO
-# ==============================================================================
+from calendar import monthrange
 
 
 # ==============================================================================
@@ -65,8 +61,6 @@ def calcular_salario_proporcional(
         >>> calcular_salario_proporcional(Decimal('2200'), date(2026, 1, 20), '01/2026')
         (Decimal('851.61'), 12, 31)  # 12 dias trabalhados de 31
     """
-    from calendar import monthrange
-
     # Parsear reference_month
     if "/" in reference_month:
         mes, ano = reference_month.split("/")

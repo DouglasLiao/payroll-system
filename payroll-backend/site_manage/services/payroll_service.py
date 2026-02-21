@@ -144,8 +144,30 @@ def _calcular_valores_folha(payroll: Payroll) -> dict:
             config.night_shift_percentage / Decimal("100")
         )
     except Exception:
-        # Empresa sem configuração — usa defaults do domain calculator
-        pass
+        # Empresa sem configuração — usa defaults do sistema
+        from site_manage.models import PayrollMathTemplate
+
+        default_template = PayrollMathTemplate.objects.filter(is_default=True).first()
+        if not default_template:
+            default_template = PayrollMathTemplate.objects.create(
+                name="Padrão",
+                description="Template padrão inalterável do sistema.",
+                is_default=True,
+                overtime_percentage=Decimal("50.00"),
+                night_shift_percentage=Decimal("20.00"),
+                holiday_percentage=Decimal("100.00"),
+                advance_percentage=Decimal("40.00"),
+            )
+
+        calc_kwargs["multiplicador_extras"] = Decimal("1") + (
+            default_template.overtime_percentage / Decimal("100")
+        )
+        calc_kwargs["multiplicador_feriado"] = Decimal("1") + (
+            default_template.holiday_percentage / Decimal("100")
+        )
+        calc_kwargs["multiplicador_noturno"] = Decimal("1") + (
+            default_template.night_shift_percentage / Decimal("100")
+        )
 
     from domain.payroll_calculator import calcular_estorno_vt
 

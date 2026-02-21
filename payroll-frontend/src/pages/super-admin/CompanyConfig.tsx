@@ -89,6 +89,45 @@ const CompanyConfig = () => {
     }
   }, [config])
 
+  // Auto-select template based on config and available templates
+  useEffect(() => {
+    if (templates.length > 0) {
+      if (config) {
+        // Try to find a template that matches the current config
+        const matchingTemplate = templates.find(
+          (t: PayrollMathTemplate) =>
+            t.overtime_percentage === config.overtime_percentage &&
+            t.night_shift_percentage === config.night_shift_percentage &&
+            t.holiday_percentage === config.holiday_percentage &&
+            t.advance_percentage === config.advance_percentage &&
+            t.transport_voucher_type === config.transport_voucher_type &&
+            t.business_days_rule === config.business_days_rule
+        )
+
+        if (matchingTemplate) {
+          setSelectedTemplate(String(matchingTemplate.id))
+        } else {
+          // If the config is customized and doesn't match any, fallback to default
+          const defaultTemplate = templates.find(
+            (t: PayrollMathTemplate) => t.is_default
+          )
+          if (defaultTemplate && !selectedTemplate) {
+            setSelectedTemplate(String(defaultTemplate.id))
+          }
+        }
+      } else {
+        // No config yet, fallback to default template
+        const defaultTemplate = templates.find(
+          (t: PayrollMathTemplate) => t.is_default
+        )
+        if (defaultTemplate && !selectedTemplate) {
+          setSelectedTemplate(String(defaultTemplate.id))
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config, templates])
+
   // Update Mutation
   const updateMutation = useMutation({
     mutationFn: (data: Partial<PayrollConfiguration>) =>
@@ -111,7 +150,6 @@ const CompanyConfig = () => {
     onSuccess: () => {
       enqueueSnackbar('Template aplicado com sucesso!', { variant: 'success' })
       queryClient.invalidateQueries({ queryKey: ['payrollConfig', companyId] })
-      setSelectedTemplate('')
     },
     onError: () => {
       enqueueSnackbar('Erro ao aplicar template.', { variant: 'error' })
@@ -189,7 +227,7 @@ const CompanyConfig = () => {
                   >
                     {templates.map((t: PayrollMathTemplate) => (
                       <CustomMenuItem key={t.id} value={String(t.id)}>
-                        {t.name}
+                        {t.name} {t.is_default ? '(Padrão do Sistema)' : ''}
                       </CustomMenuItem>
                     ))}
                   </Select>

@@ -26,6 +26,7 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSnackbar } from 'notistack'
@@ -195,7 +196,30 @@ const MathTemplateManager = () => {
               templates.map((t: PayrollMathTemplate) => (
                 <TableRow key={t.id}>
                   <TableCell>
-                    <Typography variant="subtitle2">{t.name}</Typography>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ display: 'flex', alignItems: 'center' }}
+                    >
+                      {t.name}
+                      {t.is_default && (
+                        <Box
+                          component="span"
+                          sx={{
+                            ml: 1,
+                            px: 1,
+                            py: 0.25,
+                            bgcolor: 'primary.main',
+                            color: 'primary.contrastText',
+                            borderRadius: 1,
+                            fontSize: '0.65rem',
+                            fontWeight: 'bold',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          Padrão
+                        </Box>
+                      )}
+                    </Typography>
                     <Typography variant="caption" color="textSecondary">
                       {t.description}
                     </Typography>
@@ -206,8 +230,12 @@ const MathTemplateManager = () => {
                   <TableCell>{t.advance_percentage}%</TableCell>
                   <TableCell>{t.transport_voucher_type}</TableCell>
                   <TableCell align="right">
-                    <IconButton size="small" onClick={() => handleOpenEdit(t)}>
-                      <EditIcon />
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpenEdit(t)}
+                      title={t.is_default ? 'Visualizar' : 'Editar'}
+                    >
+                      {t.is_default ? <VisibilityIcon /> : <EditIcon />}
                     </IconButton>
                     <IconButton
                       size="small"
@@ -216,6 +244,12 @@ const MathTemplateManager = () => {
                         if (confirm('Excluir este template?'))
                           deleteMutation.mutate(t.id)
                       }}
+                      disabled={t.is_default}
+                      title={
+                        t.is_default
+                          ? 'Template padrão não pode ser excluído'
+                          : 'Excluir'
+                      }
                     >
                       <DeleteIcon />
                     </IconButton>
@@ -235,7 +269,11 @@ const MathTemplateManager = () => {
         fullWidth
       >
         <DialogTitle>
-          {selectedTemplate ? 'Editar Template' : 'Novo Template'}
+          {selectedTemplate?.is_default
+            ? 'Visualizar Template Padrão'
+            : selectedTemplate
+              ? 'Editar Template'
+              : 'Novo Template'}
         </DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2} sx={{ pt: 1 }}>
@@ -243,6 +281,7 @@ const MathTemplateManager = () => {
               <TextField
                 label="Nome do Template"
                 fullWidth
+                disabled={!!selectedTemplate?.is_default}
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
@@ -255,6 +294,7 @@ const MathTemplateManager = () => {
                 fullWidth
                 multiline
                 rows={2}
+                disabled={!!selectedTemplate?.is_default}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -266,6 +306,7 @@ const MathTemplateManager = () => {
                 label="Hora Extra (%)"
                 type="number"
                 fullWidth
+                disabled={!!selectedTemplate?.is_default}
                 value={formData.overtime_percentage}
                 onChange={(e) =>
                   setFormData({
@@ -280,6 +321,7 @@ const MathTemplateManager = () => {
                 label="Feriado (%)"
                 type="number"
                 fullWidth
+                disabled={!!selectedTemplate?.is_default}
                 value={formData.holiday_percentage}
                 onChange={(e) =>
                   setFormData({
@@ -294,6 +336,7 @@ const MathTemplateManager = () => {
                 label="Adicional Noturno (%)"
                 type="number"
                 fullWidth
+                disabled={!!selectedTemplate?.is_default}
                 value={formData.night_shift_percentage}
                 onChange={(e) =>
                   setFormData({
@@ -308,6 +351,7 @@ const MathTemplateManager = () => {
                 label="Adiantamento Padrão (%)"
                 type="number"
                 fullWidth
+                disabled={!!selectedTemplate?.is_default}
                 value={formData.advance_percentage}
                 onChange={(e) =>
                   setFormData({
@@ -323,6 +367,7 @@ const MathTemplateManager = () => {
                 <Select
                   value={formData.transport_voucher_type}
                   label="Tipo de Vale Transporte"
+                  disabled={!!selectedTemplate?.is_default}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -347,6 +392,7 @@ const MathTemplateManager = () => {
                 <Select
                   value={formData.business_days_rule}
                   label="Regra Dias Úteis"
+                  disabled={!!selectedTemplate?.is_default}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -366,10 +412,14 @@ const MathTemplateManager = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={handleSubmit}>
-            Salvar
+          <Button onClick={() => setOpenDialog(false)}>
+            {selectedTemplate?.is_default ? 'Fechar' : 'Cancelar'}
           </Button>
+          {!selectedTemplate?.is_default && (
+            <Button variant="contained" onClick={handleSubmit}>
+              Salvar
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

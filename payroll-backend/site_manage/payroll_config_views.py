@@ -32,6 +32,24 @@ class PayrollMathTemplateViewSet(viewsets.ModelViewSet):
     serializer_class = PayrollMathTemplateSerializer
     permission_classes = [IsSuperAdmin]
 
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.is_default:
+            return Response(
+                {"error": "Não é possível alterar o template padrão do sistema."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.is_default:
+            return Response(
+                {"error": "Não é possível excluir o template padrão do sistema."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().destroy(request, *args, **kwargs)
+
 
 class PayrollConfigurationViewSet(viewsets.ModelViewSet):
     """

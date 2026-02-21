@@ -232,6 +232,7 @@ export interface PayrollMathTemplate {
   id: number
   name: string
   description: string
+  is_default?: boolean
   overtime_percentage: string
   night_shift_percentage: string
   holiday_percentage: string

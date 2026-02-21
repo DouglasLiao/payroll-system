@@ -31,7 +31,9 @@ class TestPayrollConfigurationIntegration(APITestCase):
     def test_get_configuration(self):
         """Test retrieving configuration for a company"""
         self.client.force_authenticate(user=self.super_admin)
-        response = self.client.get(f"/payroll-configs/?company_id={self.company.id}")
+        response = self.client.get(
+            f"/users/payroll-configs/?company_id={self.company.id}"
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Handle pagination
@@ -45,7 +47,9 @@ class TestPayrollConfigurationIntegration(APITestCase):
 
         payload = {"overtime_percentage": "100.00", "night_shift_percentage": "30.00"}
 
-        response = self.client.patch(f"/payroll-configs/{self.config.id}/", payload)
+        response = self.client.patch(
+            f"/users/payroll-configs/{self.config.id}/", payload
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["overtime_percentage"], "100.00")
@@ -65,13 +69,43 @@ class TestPayrollConfigurationIntegration(APITestCase):
 
         payload = {"company_id": self.company.id, "template_id": template.id}
 
-        response = self.client.post("/payroll-configs/apply-template/", payload)
+        response = self.client.post("/users/payroll-configs/apply-template/", payload)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["overtime_percentage"], "200.00")
 
-        # Verify persistence
         self.company.payroll_config.refresh_from_db()
         self.assertEqual(
             self.company.payroll_config.overtime_percentage, Decimal("200.00")
+        )
+
+    def test_cannot_update_default_template(self):
+        """Test that the default template cannot be updated"""
+        self.client.force_authenticate(user=self.super_admin)
+        template = PayrollMathTemplate.objects.create(
+            name="Padrão", is_default=True, overtime_percentage=Decimal("50.00")
+        )
+
+        payload = {"overtime_percentage": "100.00"}
+        response = self.client.patch(f"/users/math-templates/{template.id}/", payload)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.data["error"],
+            "Não é possível alterar o template padrão do sistema.",
+        )
+
+    def test_cannot_delete_default_template(self):
+        """Test that the default template cannot be deleted"""
+        self.client.force_authenticate(user=self.super_admin)
+        template = PayrollMathTemplate.objects.create(
+            name="Padrão Delete", is_default=True, overtime_percentage=Decimal("50.00")
+        )
+
+        response = self.client.delete(f"/users/math-templates/{template.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.data["error"],
+            "Não é possível excluir o template padrão do sistema.",
         )

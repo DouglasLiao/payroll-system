@@ -82,6 +82,11 @@ class PayrollMathTemplate(BasePayrollConfig):
         max_length=100, unique=True, verbose_name="Nome do Template"
     )
     description = models.TextField(blank=True, verbose_name="Descrição")
+    is_default = models.BooleanField(
+        default=False,
+        verbose_name="Template Padrão Sistema",
+        help_text="Se verdadeiro, este é o template inalterável usado como base para cálculos.",
+    )
 
     class Meta:
         verbose_name = "Template de Cálculo"
