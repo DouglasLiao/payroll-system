@@ -27,12 +27,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv(
-    "SECRET_KEY", "django-insecure--egnau4+aixm^=vk3f3^xx2zf4wrn34vlq_i913^0+5k$5nt7o"
-)
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "t")
+DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
@@ -278,6 +278,7 @@ REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"] = [
 ]
 
 SIMPLE_JWT = {
+    "SIGNING_KEY": os.environ.get("JWT_SECRET", SECRET_KEY),
     "ACCESS_TOKEN_LIFETIME": timedelta(
         hours=int(os.getenv("JWT_ACCESS_TOKEN_LIFETIME_HOURS", "1"))
     ),
@@ -306,3 +307,13 @@ EMAIL_PORT = int(os.getenv("EMAIL_PORT", "1025"))
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = "noreply@payroll-system.com"
+
+# ==============================================================================
+# PRODUCTION SECURITY SETTINGS
+# ==============================================================================
+if not DEBUG:
+    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True") == "True"
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
