@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SnackbarProvider } from 'notistack'
 import { ThemeContextProvider } from 'src/contexts/ThemeContext'
 import { AuthProvider } from 'src/contexts/AuthContext'
-import { getTheme } from 'src/theme'
+import { getTheme } from '@payroll/design-system'
 import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
 
@@ -30,6 +30,7 @@ import SuperAdminSubscriptions from 'src/pages/super-admin/Subscriptions'
 import MathTemplateManager from 'src/pages/super-admin/MathTemplateManager'
 import ProviderPayments from 'src/pages/provider/ProviderPayments'
 import { ProtectedRoute } from 'src/components/routing'
+
 const EmployeeView = () => <div>Employee View (Coming Soon)</div>
 
 const queryClient = new QueryClient()

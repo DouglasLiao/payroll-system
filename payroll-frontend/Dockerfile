@@ -1,18 +1,24 @@
 FROM node:20-alpine
 
+# Cria a pasta e já define o dono como o usuário "node" não-root do alpine
 WORKDIR /app
+RUN chown node:node /app
 
-COPY package.json package-lock.json ./
+# Daqui pra baixo entramos como node para ganhar agilidade, evitando "chown -R"
+USER node
+
+# Copia base do workspace (com permissões próprias na transação)
+COPY --chown=node:node package.json package-lock.json ./
+COPY --chown=node:node payroll-frontend/package.json ./payroll-frontend/
+COPY --chown=node:node payroll-design-system/package.json ./payroll-design-system/
+
+# Instala rápido como user node
 RUN npm install
 
-COPY . .
-
-# Change ownership to the built-in node user
-RUN chown -R node:node /app
-
-# Switch to non-root user
-USER node
+# Copia os source-codes em fração de segundos
+COPY --chown=node:node payroll-frontend/ ./payroll-frontend/
+COPY --chown=node:node payroll-design-system/ ./payroll-design-system/
 
 EXPOSE 5173
 
-CMD ["npm", "run", "dev", "--", "--host"]
+CMD ["npm", "run", "dev", "--workspace=payroll-frontend", "--", "--host", "0.0.0.0"]

@@ -1,9 +1,14 @@
-import type {
-  Payroll,
-  PayrollStats,
-  MonthlyData,
-  FinancialMetrics,
-} from 'src/types'
+import type { Payroll, MonthlyData, FinancialMetrics } from 'src/types'
+
+// Local interface definition for PayrollStats since it's not exported
+export interface PayrollStats {
+  total: number
+  drafts: number
+  closed: number
+  paid: number
+  totalValue: number
+  avgValue: number
+}
 
 /**
  * Calculate aggregate statistics from payroll data

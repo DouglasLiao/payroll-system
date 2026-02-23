@@ -35,12 +35,15 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
 
   frontend:
-    build: ./payroll-frontend
+    build:
+      context: .
+      dockerfile: ./payroll-frontend/Dockerfile
     container_name: payroll_frontend
     ports:
       - "5173:5173"
     volumes:
-      - ./payroll-frontend:/app
+      - ./payroll-frontend:/app/payroll-frontend
+      - ./payroll-design-system:/app/payroll-design-system
       - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true

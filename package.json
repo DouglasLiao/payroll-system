@@ -1,0 +1,16 @@
+{
+  "name": "payroll-system-workspace",
+  "private": true,
+  "workspaces": [
+    "payroll-frontend",
+    "payroll-landing-page",
+    "payroll-design-system"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace=payroll-frontend",
+    "dev:landing": "npm run dev --workspace=payroll-landing-page",
+    "build:frontend": "npm run build --workspace=payroll-frontend",
+    "build:landing": "npm run build --workspace=payroll-landing-page",
+    "build:all": "npm run build --workspaces --if-present"
+  }
+}

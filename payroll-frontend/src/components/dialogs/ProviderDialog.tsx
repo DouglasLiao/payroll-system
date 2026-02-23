@@ -158,7 +158,7 @@ export const ProviderDialog = ({
     if (provider) {
       reset({
         name: provider.name,
-        document: provider.document || '', // Added document field
+        document: (provider as any).document || '', // Added document field
         role: provider.role,
         monthly_value: provider.monthly_value,
         payment_method: provider.payment_method,
@@ -219,10 +219,10 @@ export const ProviderDialog = ({
                     label="CPF/CNPJ"
                     fullWidth
                     required
-                    disabled={!!provider && !!provider.document}
+                    disabled={!!provider && !!(provider as any).document}
                     error={!!fieldState.error}
                     helperText={
-                      provider && provider.document
+                      provider && (provider as any).document
                         ? 'CPF/CNPJ não pode ser alterado'
                         : fieldState.error?.message
                     }

@@ -12,6 +12,7 @@ import {
 import { Link, useSearchParams } from 'react-router-dom'
 import { authApi } from 'src/services/authApi'
 import { useMutation } from '@tanstack/react-query'
+import { AxiosError } from 'axios'
 
 const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams()
@@ -19,9 +20,10 @@ const ResetPasswordPage = () => {
   const [passwords, setPasswords] = useState({ new: '', confirm: '' })
   const [success, setSuccess] = useState(false)
 
-  const resetMutation = useMutation({
-    mutationFn: (data: typeof passwords) =>
-      authApi.confirmPasswordReset(token || '', data.new, data.confirm),
+  const resetMutation = useMutation<void, AxiosError<any>, typeof passwords>({
+    mutationFn: async (data: typeof passwords) => {
+      await authApi.confirmPasswordReset(token || '', data.new, data.confirm)
+    },
     onSuccess: () => {
       setSuccess(true)
     },
@@ -176,9 +178,9 @@ const ResetPasswordPage = () => {
 
                 {resetMutation.isError && (
                   <Alert severity="error" sx={{ mb: 2 }}>
-                    {resetMutation.error?.response?.data?.message ||
+                    {(resetMutation.error?.response?.data as any)?.message ||
                       Object.values(
-                        resetMutation.error?.response?.data || {}
+                        (resetMutation.error?.response?.data as any) || {}
                       )[0] ||
                       'Erro ao redefinir senha'}
                   </Alert>

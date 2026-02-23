@@ -72,7 +72,7 @@ export const ContractDataSection: React.FC<ContractDataSectionProps> = ({
                 null ||
                 undefined
               }
-              onChange={(event, newValue) => {
+              onChange={(_event, newValue) => {
                 onProviderChange(newValue?.id || 0)
                 field.onChange(newValue?.id || 0)
               }}

@@ -1,0 +1,29 @@
+# Node and dependencies
+node_modules/
+payroll-frontend/node_modules/
+payroll-design-system/node_modules/
+payroll-landing-page/node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build files
+payroll-frontend/dist/
+payroll-landing-page/dist/
+
+# Env files
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Git
+.git
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
