@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, Typography, Button, Container } from '@mui/material'
+import { Box, Typography, Button, Container, Card } from '@mui/material'
 import { Add, Visibility } from '@mui/icons-material'
 import { GenericTable } from 'src/components/table'
 import { StatusChip } from 'src/components/table'
@@ -56,7 +56,7 @@ const Payrolls = () => {
 
   const { data: providersData } = useQuery({
     queryKey: ['providers'],
-    queryFn: () => getProviders({ page_size: 1000 }),
+    queryFn: () => getProviders({ page_size: 100 }),
   })
 
   const { data: payrollDetail } = useQuery({
@@ -252,6 +252,10 @@ const Payrolls = () => {
     }
   }
 
+  const rawList: Payroll[] =
+    (payrollsData as any)?.results ||
+    (Array.isArray(payrollsData) ? payrollsData : [])
+
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>
       {/* Header */}
@@ -272,85 +276,89 @@ const Payrolls = () => {
       {/* Filters */}
       <PayrollFiltersComponent
         filters={filters}
-        onFiltersChange={setFilters}
-        providers={providersData?.results}
+        onFiltersChange={(newFilters) => {
+          setFilters(newFilters)
+          setPage(0)
+        }}
+        providers={(providersData as any)?.results || providersData || []}
       />
-
-      {/* Table */}
-      <GenericTable<Payroll>
-        data={payrollsData?.results}
-        loading={isLoading}
-        keyExtractor={(p) => p.id}
-        columns={[
-          { id: 'provider', label: 'Prestador', accessor: 'provider_name' },
-          { id: 'month', label: 'Mês', accessor: 'reference_month' },
-          {
-            id: 'status',
-            label: 'Status',
-            render: (p) => (
-              <StatusChip
-                status={p.status as 'DRAFT' | 'CLOSED' | 'PAID'}
-                label={p.status_display}
-              />
-            ),
-          },
-          {
-            id: 'base',
-            label: 'Base',
-            align: 'right',
-            render: (p) => formatCurrency(p.base_value),
-          },
-          {
-            id: 'earnings',
-            label: 'Proventos',
-            align: 'right',
-            render: (p) => (
-              <Box sx={{ color: 'success.main' }}>
-                +{formatCurrency(p.total_earnings)}
-              </Box>
-            ),
-          },
-          {
-            id: 'discounts',
-            label: 'Descontos',
-            align: 'right',
-            render: (p) => (
-              <Box sx={{ color: 'error.main' }}>
-                -{formatCurrency(p.total_discounts)}
-              </Box>
-            ),
-          },
-          {
-            id: 'net',
-            label: 'Líquido',
-            align: 'right',
-            render: (p) => (
-              <Typography fontWeight={700}>
-                {formatCurrency(p.net_value)}
-              </Typography>
-            ),
-          },
-          {
-            id: 'actions',
-            label: 'Ações',
-            align: 'right',
-            render: (p) => (
-              <Button
-                size="small"
-                startIcon={<Visibility />}
-                onClick={() => handleViewDetails(p)}
-              >
-                Ver
-              </Button>
-            ),
-          },
-        ]}
-        totalCount={payrollsData?.count}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        onPageChange={handlePageChange}
-        onRowsPerPageChange={handleRowsPerPageChange}
-      />
+      <Card sx={{ p: 2 }}>
+        {/* Table */}
+        <GenericTable<Payroll>
+          data={rawList}
+          loading={isLoading}
+          keyExtractor={(p) => p.id}
+          columns={[
+            { id: 'provider', label: 'Prestador', accessor: 'provider_name' },
+            { id: 'month', label: 'Mês', accessor: 'reference_month' },
+            {
+              id: 'status',
+              label: 'Status',
+              render: (p) => (
+                <StatusChip
+                  status={p.status as 'DRAFT' | 'CLOSED' | 'PAID'}
+                  label={p.status_display}
+                />
+              ),
+            },
+            {
+              id: 'base',
+              label: 'Base',
+              align: 'right',
+              render: (p) => formatCurrency(p.base_value),
+            },
+            {
+              id: 'earnings',
+              label: 'Proventos',
+              align: 'right',
+              render: (p) => (
+                <Box sx={{ color: 'success.main' }}>
+                  +{formatCurrency(p.total_earnings)}
+                </Box>
+              ),
+            },
+            {
+              id: 'discounts',
+              label: 'Descontos',
+              align: 'right',
+              render: (p) => (
+                <Box sx={{ color: 'error.main' }}>
+                  -{formatCurrency(p.total_discounts)}
+                </Box>
+              ),
+            },
+            {
+              id: 'net',
+              label: 'Líquido',
+              align: 'right',
+              render: (p) => (
+                <Typography fontWeight={700}>
+                  {formatCurrency(p.net_value)}
+                </Typography>
+              ),
+            },
+            {
+              id: 'actions',
+              label: 'Ações',
+              align: 'right',
+              render: (p) => (
+                <Button
+                  size="small"
+                  startIcon={<Visibility />}
+                  onClick={() => handleViewDetails(p)}
+                >
+                  Ver
+                </Button>
+              ),
+            },
+          ]}
+          totalCount={(payrollsData as any)?.count || rawList.length}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+        />
+      </Card>
 
       {/* Form Dialog */}
       <PayrollFormDialog
@@ -360,7 +368,7 @@ const Payrolls = () => {
           setEditingPayroll(null)
         }}
         onSubmit={handleFormSubmit}
-        providers={providersData?.results}
+        providers={(providersData as any)?.results || providersData || []}
         isPending={createMutation.isPending || updateMutation.isPending}
         editingPayroll={editingPayroll}
       />

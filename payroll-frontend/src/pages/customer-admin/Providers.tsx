@@ -8,7 +8,7 @@ import {
   Container,
 } from '@mui/material'
 import { Add, Edit, Delete } from '@mui/icons-material'
-import { GenericTable } from 'src/components/table'
+import { GenericTable, type Column } from 'src/components/table'
 import { SearchField } from 'src/components/search'
 import { ProviderDialog } from 'src/components/dialogs/ProviderDialog'
 import type { ProviderFormInputs } from 'src/components/dialogs/ProviderDialog'
@@ -20,7 +20,7 @@ import {
   deleteProvider,
   updateProvider,
 } from 'src/services/api'
-import type { Provider, PaginatedResponse } from 'src/types'
+import type { Provider } from 'src/types'
 
 const Providers = () => {
   const [open, setOpen] = useState(false)
@@ -32,24 +32,14 @@ const Providers = () => {
   const queryClient = useQueryClient()
   const { enqueueSnackbar } = useSnackbar()
 
-  // First fetch to get the total count
-  const { data: initialData } = useQuery<PaginatedResponse<Provider>>({
-    queryKey: ['providers', 'initial'],
-    queryFn: () => getProviders({ page: 1, page_size: 10 }),
-  })
-
-  // Fetch all providers using the count from the initial fetch
-  const { data: providersData, isLoading } = useQuery<
-    PaginatedResponse<Provider>
-  >({
-    queryKey: ['providers', 'all', searchTerm],
+  const { data: providersData, isLoading } = useQuery({
+    queryKey: ['providers', page, rowsPerPage, searchTerm],
     queryFn: () =>
       getProviders({
-        page: 1,
-        page_size: initialData!.count,
+        page: page + 1,
+        page_size: rowsPerPage,
         search: searchTerm,
       }),
-    enabled: !!initialData?.count,
   })
 
   const createMutation = useMutation({
@@ -126,19 +116,11 @@ const Providers = () => {
     setOpen(true)
   }
 
-  // Client-side filtering + pagination
-  const filteredProviders = providersData?.results?.filter((provider) => {
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      provider.name.toLowerCase().includes(searchLower) ||
-      provider.role.toLowerCase().includes(searchLower)
-    )
-  })
+  const rawList: Provider[] =
+    (providersData as any)?.results ||
+    (Array.isArray(providersData) ? providersData : [])
 
-  const paginatedProviders = filteredProviders?.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  )
+  const listCount = (providersData as any)?.count || rawList.length
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending
 
@@ -165,18 +147,21 @@ const Providers = () => {
 
       <Box sx={{ mb: 2 }}>
         <SearchField
-          onSearch={setSearchTerm}
+          onSearch={(val) => {
+            setSearchTerm(val)
+            setPage(0)
+          }}
           placeholder="Buscar por nome ou cargo..."
           width={300}
         />
       </Box>
 
       <Card sx={{ p: 2 }}>
-        <GenericTable
-          data={paginatedProviders}
+        <GenericTable<Provider>
+          data={rawList}
           loading={isLoading}
           keyExtractor={(p) => p.id}
-          totalCount={filteredProviders?.length || 0}
+          totalCount={listCount}
           page={page}
           rowsPerPage={rowsPerPage}
           onPageChange={setPage}
@@ -184,44 +169,46 @@ const Providers = () => {
             setRowsPerPage(n)
             setPage(0)
           }}
-          columns={[
-            { id: 'name', label: 'Nome', accessor: 'name' },
-            { id: 'role', label: 'Cargo', accessor: 'role' },
-            {
-              id: 'salary',
-              label: 'Salário Base',
-              render: (p) => `R$ ${p.monthly_value || '0.00'}`,
-            },
-            {
-              id: 'method',
-              label: 'Forma de Pagamento',
-              accessor: 'payment_method',
-            },
-            {
-              id: 'vt',
-              label: 'Número de vales por dia',
-              render: (p) => (p.vt_enabled ? `${p.vt_trips_per_day}` : '-'),
-            },
-            {
-              id: 'actions',
-              label: 'Ações',
-              align: 'right',
-              render: (p) => (
-                <>
-                  <IconButton size="small" onClick={() => handleEdit(p)}>
-                    <Edit />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => handleDelete(p.id)}
-                  >
-                    <Delete />
-                  </IconButton>
-                </>
-              ),
-            },
-          ]}
+          columns={
+            [
+              { id: 'name', label: 'Nome', accessor: 'name' },
+              { id: 'role', label: 'Cargo', accessor: 'role' },
+              {
+                id: 'salary',
+                label: 'Salário Base',
+                render: (p) => `R$ ${p.monthly_value || '0.00'}`,
+              },
+              {
+                id: 'method',
+                label: 'Forma de Pagamento',
+                accessor: 'payment_method',
+              },
+              {
+                id: 'vt',
+                label: 'Número de vales por dia',
+                render: (p) => (p.vt_enabled ? `${p.vt_trips_per_day}` : '-'),
+              },
+              {
+                id: 'actions',
+                label: 'Ações',
+                align: 'right',
+                render: (p) => (
+                  <>
+                    <IconButton size="small" onClick={() => handleEdit(p)}>
+                      <Edit />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDelete(p.id)}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </>
+                ),
+              },
+            ] as Column<Provider>[]
+          }
         />
       </Card>
 

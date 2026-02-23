@@ -13,6 +13,7 @@ ViewSets:
 from datetime import datetime, timedelta
 
 from django.http import HttpResponse
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -25,6 +26,7 @@ from site_manage.api.serializers import (
     PayrollUpdateSerializer,
     ProviderSerializer,
 )
+from site_manage.pagination import CustomPageNumberPagination
 from site_manage.application.commands.email_service import EmailService
 from site_manage.application.commands.payroll_service import PayrollService
 from site_manage.application.queries.selectors import (
@@ -63,6 +65,18 @@ class ProviderListCreateAPIView(APIView):
         payment_method_filter = request.query_params.get("payment_method")
         if payment_method_filter:
             providers = providers.filter(payment_method=payment_method_filter)
+
+        search_query = request.query_params.get("search")
+        if search_query:
+            providers = providers.filter(
+                Q(name__icontains=search_query) | Q(role__icontains=search_query)
+            )
+
+        paginator = CustomPageNumberPagination()
+        paginated_queryset = paginator.paginate_queryset(providers, request, view=self)
+        if paginated_queryset is not None:
+            serializer = ProviderSerializer(paginated_queryset, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
         serializer = ProviderSerializer(providers, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -186,6 +200,12 @@ class PayrollListAPIView(APIView):
         provider_filter = request.query_params.get("provider")
         if provider_filter:
             payrolls = payrolls.filter(provider_id=provider_filter)
+
+        paginator = CustomPageNumberPagination()
+        paginated_queryset = paginator.paginate_queryset(payrolls, request, view=self)
+        if paginated_queryset is not None:
+            serializer = PayrollSerializer(paginated_queryset, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
         serializer = PayrollSerializer(payrolls, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

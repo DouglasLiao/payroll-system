@@ -121,6 +121,7 @@ export const PayrollFiltersComponent = ({
         border: '1px solid',
         borderColor: 'divider',
         overflow: 'hidden',
+        mb: 4,
       }}
     >
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>

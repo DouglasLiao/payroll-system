@@ -19,7 +19,7 @@ import {
   Download as DownloadIcon,
   FilterList as FilterIcon,
 } from '@mui/icons-material'
-import { GenericTable } from 'src/components/table'
+import { GenericTable, type Column } from 'src/components/table'
 import { useQuery } from '@tanstack/react-query'
 import api from 'src/services/authApi'
 
@@ -41,26 +41,36 @@ export default function ProviderPayments() {
   const [rowsPerPage, setRowsPerPage] = useState(10)
 
   // Fetch payrolls
-  const { data: payrolls = [], isLoading } = useQuery({
-    queryKey: ['provider-payrolls', filterMonth, filterStatus],
+  const { data: payrolls, isLoading } = useQuery({
+    queryKey: [
+      'provider-payrolls',
+      filterMonth,
+      filterStatus,
+      page,
+      rowsPerPage,
+    ],
     queryFn: async () => {
       let url = '/payrolls/'
       const params = new URLSearchParams()
 
       if (filterMonth) params.append('reference_month', filterMonth)
       if (filterStatus) params.append('status', filterStatus)
+      params.append('page', (page + 1).toString())
+      params.append('page_size', rowsPerPage.toString())
 
       if (params.toString()) url += `?${params.toString()}`
 
-      const response = await api.get<{ results: Payroll[] }>(url)
-      return response.data.results || response.data
+      const response = await api.get<
+        { count: number; results: Payroll[] } | Payroll[]
+      >(url)
+      return response.data
     },
   })
 
-  const paginatedPayrolls = payrolls.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  )
+  // Normalize API response shape
+  const payrollsList =
+    (payrolls as any)?.results || (Array.isArray(payrolls) ? payrolls : [])
+  const totalCount = (payrolls as any)?.count || payrollsList.length
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -146,12 +156,11 @@ export default function ProviderPayments() {
         </CardContent>
       </Card>
 
-      {/* Payrolls Table */}
-      <GenericTable
-        data={paginatedPayrolls}
+      <GenericTable<Payroll>
+        data={payrollsList}
         loading={isLoading}
         keyExtractor={(p) => p.id}
-        totalCount={payrolls.length}
+        totalCount={totalCount}
         page={page}
         rowsPerPage={rowsPerPage}
         onPageChange={setPage}
@@ -159,74 +168,79 @@ export default function ProviderPayments() {
           setRowsPerPage(newRows)
           setPage(0)
         }}
-        columns={[
-          {
-            id: 'reference',
-            label: 'Referência',
-            render: (p) => (
-              <Typography variant="body2" fontWeight={500}>
-                {p.reference_month}
-              </Typography>
-            ),
-          },
-          { id: 'provider', label: 'Colaborador', accessor: 'provider_name' },
-          {
-            id: 'net_value',
-            label: 'Valor Líquido',
-            align: 'right',
-            render: (p) => (
-              <Typography variant="body2" fontWeight={600} color="primary">
-                {formatCurrency(p.net_value)}
-              </Typography>
-            ),
-          },
-          {
-            id: 'status',
-            label: 'Status',
-            align: 'center',
-            render: (p) => (
-              <Chip
-                label={p.status_display}
-                color={
-                  getStatusColor(p.status) as
-                    | 'default'
-                    | 'primary'
-                    | 'secondary'
-                    | 'error'
-                    | 'info'
-                    | 'success'
-                    | 'warning'
-                }
-                size="small"
-              />
-            ),
-          },
-          {
-            id: 'date',
-            label: 'Data',
-            align: 'center',
-            render: (p) => (
-              <Typography variant="caption">
-                {new Date(p.created_at).toLocaleDateString('pt-BR')}
-              </Typography>
-            ),
-          },
-          {
-            id: 'actions',
-            label: 'Ações',
-            align: 'right',
-            render: (p) => (
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <IconButton size="small" onClick={() => setSelectedPayroll(p)}>
-                  <ViewIcon />
-                </IconButton>
-                <IconButton size="small" onClick={() => handleDownload(p.id)}>
-                  <DownloadIcon />
-                </IconButton>
-              </Box>
-            ),
-          },
-        ]}
+        columns={
+          [
+            {
+              id: 'reference',
+              label: 'Referência',
+              render: (p) => (
+                <Typography variant="body2" fontWeight={500}>
+                  {p.reference_month}
+                </Typography>
+              ),
+            },
+            { id: 'provider', label: 'Colaborador', accessor: 'provider_name' },
+            {
+              id: 'net_value',
+              label: 'Valor Líquido',
+              align: 'right',
+              render: (p) => (
+                <Typography variant="body2" fontWeight={600} color="primary">
+                  {formatCurrency(p.net_value)}
+                </Typography>
+              ),
+            },
+            {
+              id: 'status',
+              label: 'Status',
+              align: 'center',
+              render: (p) => (
+                <Chip
+                  label={p.status_display}
+                  color={
+                    getStatusColor(p.status) as
+                      | 'default'
+                      | 'primary'
+                      | 'secondary'
+                      | 'error'
+                      | 'info'
+                      | 'success'
+                      | 'warning'
+                  }
+                  size="small"
+                />
+              ),
+            },
+            {
+              id: 'date',
+              label: 'Data',
+              align: 'center',
+              render: (p) => (
+                <Typography variant="caption">
+                  {new Date(p.created_at).toLocaleDateString('pt-BR')}
+                </Typography>
+              ),
+            },
+            {
+              id: 'actions',
+              label: 'Ações',
+              align: 'right',
+              render: (p) => (
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <IconButton
+                    size="small"
+                    onClick={() => setSelectedPayroll(p)}
+                  >
+                    <ViewIcon />
+                  </IconButton>
+                  <IconButton size="small" onClick={() => handleDownload(p.id)}>
+                    <DownloadIcon />
+                  </IconButton>
+                </Box>
+              ),
+            },
+          ] as Column<Payroll>[]
+        }
       />
 
       {/* Details Dialog */}
