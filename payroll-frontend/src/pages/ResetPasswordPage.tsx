@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react'
 import {
   Box,
@@ -8,6 +9,8 @@ import {
   Typography,
   Alert,
   Fade,
+  useTheme,
+  alpha,
 } from '@mui/material'
 import { Link, useSearchParams } from 'react-router-dom'
 import { authApi } from 'src/services/authApi'
@@ -15,6 +18,7 @@ import { useMutation } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 
 const ResetPasswordPage = () => {
+  const theme = useTheme()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
   const [passwords, setPasswords] = useState({ new: '', confirm: '' })
@@ -48,7 +52,7 @@ const ResetPasswordPage = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
         }}
       >
         <Container maxWidth="sm">
@@ -57,8 +61,8 @@ const ResetPasswordPage = () => {
               sx={{
                 p: 4,
                 backdropFilter: 'blur(10px)',
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                backgroundColor: alpha(theme.palette.background.paper, 0.95), // Fundo translúcido
+                boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.1)}`,
                 borderRadius: 3,
               }}
             >
@@ -77,11 +81,9 @@ const ResetPasswordPage = () => {
                   textTransform: 'none',
                   fontSize: '1rem',
                   fontWeight: 600,
-                  background:
-                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                   '&:hover': {
-                    background:
-                      'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
                   },
                 }}
               >
@@ -102,7 +104,7 @@ const ResetPasswordPage = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
         position: 'relative',
         '&::before': {
           content: '""',
@@ -111,8 +113,7 @@ const ResetPasswordPage = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          background:
-            'radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)',
+          background: `radial-gradient(circle at 20% 50%, ${alpha(theme.palette.common.white, 0.1)} 0%, transparent 50%)`,
         },
       }}
     >
@@ -122,8 +123,8 @@ const ResetPasswordPage = () => {
             sx={{
               p: 4,
               backdropFilter: 'blur(10px)',
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+              backgroundColor: alpha(theme.palette.background.paper, 0.95),
+              boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.1)}`,
               borderRadius: 3,
             }}
           >
@@ -151,11 +152,9 @@ const ResetPasswordPage = () => {
                     textTransform: 'none',
                     fontSize: '1rem',
                     fontWeight: 600,
-                    background:
-                      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                     '&:hover': {
-                      background:
-                        'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                      background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
                     },
                   }}
                 >
@@ -202,15 +201,18 @@ const ResetPasswordPage = () => {
                   sx={{
                     mb: 2,
                     '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                      backgroundColor: alpha(
+                        theme.palette.background.paper,
+                        0.9
+                      ),
                       '& fieldset': {
-                        borderColor: 'rgba(0, 0, 0, 0.23)',
+                        borderColor: alpha(theme.palette.common.black, 0.23),
                       },
                       '&:hover fieldset': {
-                        borderColor: 'rgba(0, 0, 0, 0.5)',
+                        borderColor: alpha(theme.palette.common.black, 0.5),
                       },
                       '&.Mui-focused fieldset': {
-                        borderColor: '#667eea',
+                        borderColor: theme.palette.primary.main,
                       },
                     },
                   }}
@@ -232,15 +234,18 @@ const ResetPasswordPage = () => {
                   sx={{
                     mb: 3,
                     '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                      backgroundColor: alpha(
+                        theme.palette.background.paper,
+                        0.9
+                      ),
                       '& fieldset': {
-                        borderColor: 'rgba(0, 0, 0, 0.23)',
+                        borderColor: alpha(theme.palette.common.black, 0.23),
                       },
                       '&:hover fieldset': {
-                        borderColor: 'rgba(0, 0, 0, 0.5)',
+                        borderColor: alpha(theme.palette.common.black, 0.5),
                       },
                       '&.Mui-focused fieldset': {
-                        borderColor: '#667eea',
+                        borderColor: theme.palette.primary.main,
                       },
                     },
                   }}
@@ -257,11 +262,9 @@ const ResetPasswordPage = () => {
                     textTransform: 'none',
                     fontSize: '1rem',
                     fontWeight: 600,
-                    background:
-                      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                     '&:hover': {
-                      background:
-                        'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                      background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
                     },
                   }}
                 >

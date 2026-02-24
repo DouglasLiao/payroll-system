@@ -5,17 +5,15 @@ import { formatCurrency } from 'src/utils/formatters'
  * Get chart colors optimized for both light and dark modes
  */
 export const getChartColors = (theme: Theme) => {
-  const isDark = theme.palette.mode === 'dark'
-
   return {
-    draft: isDark ? '#FFA726' : '#FF9800', // Orange
-    closed: isDark ? '#42A5F5' : '#2196F3', // Blue
-    paid: isDark ? '#66BB6A' : '#4CAF50', // Green
-    total: isDark ? '#AB47BC' : '#9C27B0', // Purple
-    income: isDark ? '#26C6DA' : '#00BCD4', // Cyan
-    expense: isDark ? '#EF5350' : '#F44336', // Red
-    balance: isDark ? '#9CCC65' : '#8BC34A', // Light Green
-    projection: isDark ? '#78909C' : '#607D8B', // Blue Grey
+    draft: theme.palette.warning.main, // Orange
+    closed: theme.palette.info.main, // Blue
+    paid: theme.palette.success.main, // Green
+    total: theme.palette.secondary.main, // Primary or Secondary
+    income: theme.palette.info.light, // Cyanish
+    expense: theme.palette.error.main, // Red
+    balance: theme.palette.success.light, // Light Green
+    projection: theme.palette.text.secondary, // Grey
   }
 }
 
@@ -69,7 +67,7 @@ export const getBaseChartOptions = (theme: Theme): ApexCharts.ApexOptions => {
       mode: isDark ? 'dark' : 'light',
     },
     grid: {
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+      borderColor: theme.palette.divider,
       strokeDashArray: 3,
     },
     tooltip: {
@@ -80,27 +78,27 @@ export const getBaseChartOptions = (theme: Theme): ApexCharts.ApexOptions => {
     },
     legend: {
       labels: {
-        colors: isDark ? '#fff' : '#000',
+        colors: theme.palette.text.primary,
       },
     },
     xaxis: {
       labels: {
         style: {
-          colors: isDark ? '#aaa' : '#666',
+          colors: theme.palette.text.secondary,
           fontSize: '12px',
         },
       },
       axisBorder: {
-        color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        color: theme.palette.divider,
       },
       axisTicks: {
-        color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+        color: theme.palette.divider,
       },
     },
     yaxis: {
       labels: {
         style: {
-          colors: isDark ? '#aaa' : '#666',
+          colors: theme.palette.text.secondary,
           fontSize: '12px',
         },
       },

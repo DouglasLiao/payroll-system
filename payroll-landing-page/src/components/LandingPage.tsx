@@ -4,9 +4,10 @@ import {
   Container,
   Typography,
   Grid,
-  Card,
   CardContent,
   alpha,
+  useTheme,
+  Card,
 } from "@mui/material";
 import { keyframes } from "@emotion/react";
 import BoltIcon from "@mui/icons-material/Bolt";
@@ -20,18 +21,21 @@ const float = keyframes`
   100% { transform: translateY(0px); }
 `;
 
-const pulse = keyframes`
-  0% { box-shadow: 0 0 0 0 rgba(94, 23, 235, 0.4); }
-  70% { box-shadow: 0 0 0 15px rgba(94, 23, 235, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(94, 23, 235, 0); }
-`;
-
 export default function LandingPage() {
-  const bgColor = "#050508";
-  const textPrimary = "#e2e8f0";
-  const textSecondary = "#94a3b8";
-  const accent = "#5e17eb";
-  const accentLight = "#8b5cf6";
+  const theme = useTheme();
+
+  // Use theme colors directly instead of hardcoded strings
+  const bgColor = theme.palette.background.default;
+  const textPrimary = theme.palette.text.primary;
+  const textSecondary = theme.palette.text.secondary;
+  const accent = theme.palette.primary.main;
+  const accentLight = theme.palette.primary.light;
+
+  const pulse = keyframes`
+    0% { box-shadow: 0 0 0 0 ${alpha(accent, 0.4)}; }
+    70% { box-shadow: 0 0 0 15px ${alpha(accent, 0)}; }
+    100% { box-shadow: 0 0 0 0 ${alpha(accent, 0)}; }
+  `;
 
   return (
     <Box
@@ -54,9 +58,9 @@ export default function LandingPage() {
           top: 0,
           width: "100%",
           zIndex: 100,
-          background: alpha("#050508", 0.8),
+          background: alpha(theme.palette.background.default, 0.8),
           backdropFilter: "blur(20px)",
-          borderBottom: `1px solid ${alpha("#ffffff", 0.08)}`,
+          borderBottom: `1px solid ${theme.palette.divider}`,
           py: 2,
           px: { xs: 2, md: 5 },
           display: "flex",
@@ -69,7 +73,7 @@ export default function LandingPage() {
             sx={{
               width: 24,
               height: 24,
-              background: `linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)`,
+              background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.primary.main} 100%)`,
               borderRadius: 1.5,
             }}
           />
@@ -127,8 +131,8 @@ export default function LandingPage() {
               borderRadius: 2,
               px: 3,
               "&:hover": {
-                bgcolor: "#ffffff",
-                boxShadow: "0 0 20px rgba(255,255,255,0.3)",
+                bgcolor: theme.palette.common.white,
+                boxShadow: `0 0 20px ${alpha(theme.palette.common.white, 0.3)}`,
                 transform: "translateY(-2px)",
               },
               transition: "all 0.3s",
@@ -174,7 +178,7 @@ export default function LandingPage() {
             position: "absolute",
             width: 500,
             height: 500,
-            bgcolor: "#ec4899",
+            bgcolor: theme.palette.secondary.main,
             filter: "blur(150px)",
             borderRadius: "50%",
             opacity: 0.2,
@@ -207,7 +211,7 @@ export default function LandingPage() {
             <Box
               component="span"
               sx={{
-                background: `linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)`,
+                background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.primary.main} 100%)`,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -250,8 +254,8 @@ export default function LandingPage() {
                 py: 1.5,
                 fontSize: "1.1rem",
                 "&:hover": {
-                  bgcolor: "#ffffff",
-                  boxShadow: "0 0 20px rgba(255,255,255,0.3)",
+                  bgcolor: theme.palette.common.white,
+                  boxShadow: `0 0 20px ${alpha(theme.palette.common.white, 0.3)}`,
                   transform: "translateY(-2px)",
                 },
                 transition: "all 0.3s",
@@ -269,7 +273,7 @@ export default function LandingPage() {
               }}
               sx={{
                 color: textPrimary,
-                borderColor: alpha("#ffffff", 0.08),
+                borderColor: alpha(theme.palette.common.white, 0.08),
                 fontWeight: 600,
                 textTransform: "none",
                 borderRadius: 2,
@@ -277,8 +281,8 @@ export default function LandingPage() {
                 py: 1.5,
                 fontSize: "1.1rem",
                 "&:hover": {
-                  bgcolor: alpha("#ffffff", 0.05),
-                  borderColor: alpha("#ffffff", 0.2),
+                  bgcolor: alpha(theme.palette.common.white, 0.05),
+                  borderColor: alpha(theme.palette.common.white, 0.2),
                 },
               }}
             >
@@ -293,7 +297,7 @@ export default function LandingPage() {
               gap: { xs: 4, md: 8 },
               mt: 6,
               pt: 4,
-              borderTop: `1px solid ${alpha("#ffffff", 0.08)}`,
+              borderTop: `1px solid ${theme.palette.divider}`,
               flexWrap: "wrap",
             }}
           >
@@ -343,21 +347,20 @@ export default function LandingPage() {
               right: -50,
               width: 200,
               height: 200,
-              background:
-                "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0))",
+              background: `linear-gradient(135deg, ${alpha(theme.palette.common.white, 0.1)}, ${alpha(theme.palette.common.white, 0)})`,
               backdropFilter: "blur(20px)",
               borderRadius: "50%",
-              border: "1px solid rgba(255,255,255,0.2)",
+              border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
               animation: `${float} 6s ease-in-out infinite`,
               zIndex: 11,
             }}
           />
           <Box
             sx={{
-              bgcolor: "#0d0d12",
+              bgcolor: theme.palette.background.paper,
               borderRadius: 3,
-              border: "1px solid #1f2937",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              border: `1px solid ${theme.palette.divider}`,
+              boxShadow: `0 25px 50px -12px ${alpha(theme.palette.common.black, 0.5)}`,
               overflow: "hidden",
               position: "relative",
               height: 400,
@@ -368,8 +371,8 @@ export default function LandingPage() {
             <Box
               sx={{
                 height: 40,
-                bgcolor: "#111827",
-                borderBottom: "1px solid #1f2937",
+                bgcolor: theme.palette.background.default,
+                borderBottom: `1px solid ${theme.palette.divider}`,
                 display: "flex",
                 alignItems: "center",
                 px: 2,
@@ -381,7 +384,7 @@ export default function LandingPage() {
                   width: 12,
                   height: 12,
                   borderRadius: "50%",
-                  bgcolor: "#ef4444",
+                  bgcolor: theme.palette.error.main,
                 }}
               />
               <Box
@@ -389,7 +392,7 @@ export default function LandingPage() {
                   width: 12,
                   height: 12,
                   borderRadius: "50%",
-                  bgcolor: "#f59e0b",
+                  bgcolor: theme.palette.warning.main,
                 }}
               />
               <Box
@@ -397,7 +400,7 @@ export default function LandingPage() {
                   width: 12,
                   height: 12,
                   borderRadius: "50%",
-                  bgcolor: "#10b981",
+                  bgcolor: theme.palette.success.main,
                 }}
               />
             </Box>
@@ -405,16 +408,15 @@ export default function LandingPage() {
               <Box
                 sx={{
                   width: 200,
-                  borderRight: "1px solid #1f2937",
-                  bgcolor: "#0d0d12",
+                  borderRight: `1px solid ${theme.palette.divider}`,
+                  bgcolor: theme.palette.background.paper,
                 }}
               />
               <Box
                 sx={{
                   flex: 1,
                   p: 4,
-                  background:
-                    "radial-gradient(circle at top, #111827 0%, #0d0d12 100%)",
+                  background: `radial-gradient(circle at top, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
                 }}
               >
                 <Box sx={{ display: "flex", gap: 2, mb: 4 }}>
@@ -422,7 +424,7 @@ export default function LandingPage() {
                     sx={{
                       height: 100,
                       borderRadius: 2,
-                      bgcolor: "#1f2937",
+                      bgcolor: theme.palette.divider,
                       flex: 1,
                       opacity: 0.5,
                     }}
@@ -431,7 +433,7 @@ export default function LandingPage() {
                     sx={{
                       height: 100,
                       borderRadius: 2,
-                      background: `linear-gradient(135deg, #5e17eb 0%, #1e3a8a 100%)`,
+                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                       flex: 1,
                       opacity: 0.8,
                     }}
@@ -444,8 +446,8 @@ export default function LandingPage() {
                       sx={{
                         height: 50,
                         borderRadius: 1.5,
-                        bgcolor: "#111827",
-                        border: "1px solid #1f2937",
+                        bgcolor: theme.palette.background.default,
+                        border: `1px solid ${theme.palette.divider}`,
                       }}
                     />
                   ))}
@@ -502,8 +504,8 @@ export default function LandingPage() {
             <Grid size={{ xs: 12, md: 6 }} key={index}>
               <Card
                 sx={{
-                  bgcolor: alpha("#ffffff", 0.03),
-                  border: `1px solid ${alpha("#ffffff", 0.08)}`,
+                  bgcolor: alpha(theme.palette.common.white, 0.03),
+                  border: `1px solid ${alpha(theme.palette.common.white, 0.08)}`,
                   backdropFilter: "blur(12px)",
                   borderRadius: 4,
                   p: 4,
@@ -511,7 +513,7 @@ export default function LandingPage() {
                   transition: "all 0.3s ease",
                   "&:hover": {
                     transform: "translateY(-5px)",
-                    bgcolor: alpha("#ffffff", 0.05),
+                    bgcolor: alpha(theme.palette.common.white, 0.05),
                     borderColor: alpha(accentLight, 0.3),
                   },
                 }}
@@ -551,9 +553,9 @@ export default function LandingPage() {
         id="fluxo"
         sx={{
           py: 12,
-          bgcolor: alpha("#ffffff", 0.02),
-          borderTop: `1px solid ${alpha("#ffffff", 0.05)}`,
-          borderBottom: `1px solid ${alpha("#ffffff", 0.05)}`,
+          bgcolor: alpha(theme.palette.common.white, 0.02),
+          borderTop: `1px solid ${alpha(theme.palette.common.white, 0.05)}`,
+          borderBottom: `1px solid ${alpha(theme.palette.common.white, 0.05)}`,
         }}
       >
         <Container sx={{ maxWidth: "1200px !important" }}>
@@ -596,7 +598,7 @@ export default function LandingPage() {
                         width: 40,
                         height: 40,
                         borderRadius: "50%",
-                        background: `linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)`,
+                        background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.primary.main} 100%)`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -633,9 +635,9 @@ export default function LandingPage() {
                   sx={{
                     px: 6,
                     py: 3,
-                    bgcolor: "#1f2937",
+                    bgcolor: theme.palette.background.paper,
                     borderRadius: 2,
-                    border: "1px solid #374151",
+                    border: `1px solid ${theme.palette.divider}`,
                     fontWeight: 600,
                     textTransform: "uppercase",
                     letterSpacing: 1,
@@ -648,8 +650,7 @@ export default function LandingPage() {
                   sx={{
                     width: 2,
                     height: 40,
-                    background:
-                      "linear-gradient(to bottom, #374151, rgba(94,23,235,0.5))",
+                    background: `linear-gradient(to bottom, ${theme.palette.divider}, ${alpha(accent, 0.5)})`,
                   }}
                 />
                 <Box
@@ -663,7 +664,7 @@ export default function LandingPage() {
                     letterSpacing: 1,
                     fontSize: "0.85rem",
                     animation: `${pulse} 2s infinite`,
-                    boxShadow: "0 0 20px rgba(94, 23, 235, 0.4)",
+                    boxShadow: `0 0 20px ${alpha(accent, 0.4)}`,
                   }}
                 >
                   Cálculo
@@ -672,17 +673,16 @@ export default function LandingPage() {
                   sx={{
                     width: 2,
                     height: 40,
-                    background:
-                      "linear-gradient(to bottom, rgba(94,23,235,0.5), #374151)",
+                    background: `linear-gradient(to bottom, ${alpha(accent, 0.5)}, ${theme.palette.divider})`,
                   }}
                 />
                 <Box
                   sx={{
                     px: 6,
                     py: 3,
-                    bgcolor: "#1f2937",
+                    bgcolor: theme.palette.background.paper,
                     borderRadius: 2,
-                    border: "1px solid #374151",
+                    border: `1px solid ${theme.palette.divider}`,
                     fontWeight: 600,
                     textTransform: "uppercase",
                     letterSpacing: 1,
@@ -704,7 +704,7 @@ export default function LandingPage() {
             position: "absolute",
             width: 500,
             height: 500,
-            bgcolor: "#00ffcc",
+            bgcolor: theme.palette.info.light,
             filter: "blur(150px)",
             borderRadius: "50%",
             opacity: 0.1,
@@ -740,8 +740,8 @@ export default function LandingPage() {
               py: 1.5,
               fontSize: "1.1rem",
               "&:hover": {
-                bgcolor: "#ffffff",
-                boxShadow: "0 0 20px rgba(255,255,255,0.3)",
+                bgcolor: theme.palette.common.white,
+                boxShadow: `0 0 20px ${alpha(theme.palette.common.white, 0.3)}`,
                 transform: "translateY(-2px)",
               },
             }}
@@ -754,9 +754,9 @@ export default function LandingPage() {
       {/* Footer */}
       <Box
         sx={{
-          borderTop: `1px solid ${alpha("#ffffff", 0.08)}`,
+          borderTop: `1px solid ${theme.palette.divider}`,
           py: 8,
-          bgcolor: "#000",
+          bgcolor: theme.palette.background.default,
         }}
       >
         <Container sx={{ maxWidth: "1200px !important" }}>
@@ -769,7 +769,7 @@ export default function LandingPage() {
                   sx={{
                     width: 24,
                     height: 24,
-                    background: `linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)`,
+                    background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.primary.main} 100%)`,
                     borderRadius: 1.5,
                   }}
                 />
@@ -833,7 +833,7 @@ export default function LandingPage() {
           </Grid>
           <Box
             sx={{
-              borderTop: `1px solid ${alpha("#ffffff", 0.08)}`,
+              borderTop: `1px solid ${alpha(theme.palette.common.white, 0.08)}`,
               pt: 4,
               textAlign: "center",
             }}

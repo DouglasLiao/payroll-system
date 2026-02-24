@@ -13,6 +13,8 @@ import {
   InputAdornment,
   IconButton,
   Fade,
+  useTheme,
+  alpha,
 } from '@mui/material'
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material'
 import { Link } from 'react-router-dom'
@@ -24,6 +26,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const theme = useTheme()
 
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -75,7 +78,7 @@ export default function LoginPage() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.4)', // Overlay escuro para melhorar contraste
+          backgroundColor: alpha(theme.palette.common.black, 0.4), // Overlay escuro para melhorar contraste
           zIndex: 1,
         },
       }}
@@ -87,9 +90,9 @@ export default function LoginPage() {
             width: '90%',
             position: 'relative',
             zIndex: 2,
-            backgroundColor: 'rgba(255, 255, 255, 0.9)', // Fundo translúcido
+            backgroundColor: alpha(theme.palette.background.paper, 0.9), // Fundo translúcido
             backdropFilter: 'blur(10px)', // Efeito de vidro
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+            boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.2)}`,
             borderRadius: 2,
           }}
         >
@@ -140,52 +143,48 @@ export default function LoginPage() {
                 sx={{
                   mb: 2,
                   '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    backgroundColor: alpha(theme.palette.background.paper, 0.9),
                     '& fieldset': {
-                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                      borderColor: alpha(theme.palette.text.primary, 0.23),
                     },
                     '&:hover fieldset': {
-                      borderColor: 'rgba(0, 0, 0, 0.5)',
+                      borderColor: alpha(theme.palette.text.primary, 0.5),
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: '#4F46E5',
+                      borderColor: theme.palette.primary.main,
                     },
                   },
                   '& .MuiInputLabel-root': {
-                    color: 'rgba(0, 0, 0, 0.6)',
+                    color: theme.palette.text.secondary,
                     '&.Mui-focused': {
-                      color: '#4F46E5',
+                      color: theme.palette.primary.main,
                     },
                   },
                   '& .MuiInputBase-input': {
-                    color: '#0F172A',
+                    color: theme.palette.text.primary,
                     // Forçar background branco no autocomplete do navegador
                     '&:-webkit-autofill': {
-                      WebkitBoxShadow:
-                        '0 0 0 100px rgba(255, 255, 255, 0.9) inset',
-                      WebkitTextFillColor: '#0F172A',
+                      WebkitBoxShadow: `0 0 0 100px ${alpha(theme.palette.background.paper, 0.9)} inset`,
+                      WebkitTextFillColor: theme.palette.text.primary,
                     },
                     '&:-webkit-autofill:hover': {
-                      WebkitBoxShadow:
-                        '0 0 0 100px rgba(255, 255, 255, 0.9) inset',
-                      WebkitTextFillColor: '#0F172A',
+                      WebkitBoxShadow: `0 0 0 100px ${alpha(theme.palette.background.paper, 0.9)} inset`,
+                      WebkitTextFillColor: theme.palette.text.primary,
                     },
                     '&:-webkit-autofill:focus': {
-                      WebkitBoxShadow:
-                        '0 0 0 100px rgba(255, 255, 255, 0.9) inset',
-                      WebkitTextFillColor: '#0F172A',
+                      WebkitBoxShadow: `0 0 0 100px ${alpha(theme.palette.background.paper, 0.9)} inset`,
+                      WebkitTextFillColor: theme.palette.text.primary,
                     },
                     '&:-webkit-autofill:active': {
-                      WebkitBoxShadow:
-                        '0 0 0 100px rgba(255, 255, 255, 0.9) inset',
-                      WebkitTextFillColor: '#0F172A',
+                      WebkitBoxShadow: `0 0 0 100px ${alpha(theme.palette.background.paper, 0.9)} inset`,
+                      WebkitTextFillColor: theme.palette.text.primary,
                     },
                   },
                 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Email sx={{ color: 'rgba(0, 0, 0, 0.54)' }} />
+                      <Email sx={{ color: theme.palette.text.secondary }} />
                     </InputAdornment>
                   ),
                 }}
@@ -202,31 +201,31 @@ export default function LoginPage() {
                 sx={{
                   mb: 3,
                   '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    backgroundColor: alpha(theme.palette.background.paper, 0.9),
                     '& fieldset': {
-                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                      borderColor: alpha(theme.palette.text.primary, 0.23),
                     },
                     '&:hover fieldset': {
-                      borderColor: 'rgba(0, 0, 0, 0.5)',
+                      borderColor: alpha(theme.palette.text.primary, 0.5),
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: '#4F46E5',
+                      borderColor: theme.palette.primary.main,
                     },
                   },
                   '& .MuiInputLabel-root': {
-                    color: 'rgba(0, 0, 0, 0.6)',
+                    color: theme.palette.text.secondary,
                     '&.Mui-focused': {
-                      color: '#4F46E5',
+                      color: theme.palette.primary.main,
                     },
                   },
                   '& .MuiInputBase-input': {
-                    color: '#0F172A',
+                    color: theme.palette.text.primary,
                   },
                 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Lock sx={{ color: 'rgba(0, 0, 0, 0.54)' }} />
+                      <Lock sx={{ color: theme.palette.text.secondary }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -234,7 +233,7 @@ export default function LoginPage() {
                       <IconButton
                         onClick={() => setShowPassword(!showPassword)}
                         edge="end"
-                        sx={{ color: 'rgba(0, 0, 0, 0.54)' }}
+                        sx={{ color: theme.palette.text.secondary }}
                       >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -247,7 +246,7 @@ export default function LoginPage() {
                 <Link
                   to="/forgot-password"
                   style={{
-                    color: '#4F46E5',
+                    color: theme.palette.primary.main,
                     textDecoration: 'none',
                     fontSize: '0.875rem',
                     fontWeight: 500,
@@ -268,11 +267,9 @@ export default function LoginPage() {
                   textTransform: 'none',
                   fontSize: '1rem',
                   fontWeight: 600,
-                  background:
-                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                   '&:hover': {
-                    background:
-                      'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
                   },
                 }}
               >

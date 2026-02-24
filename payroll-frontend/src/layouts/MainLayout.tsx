@@ -1,36 +1,31 @@
 import { useState } from 'react'
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import {
   Box,
   Drawer,
   AppBar,
   Toolbar,
   Typography,
-  List,
-  ListItemButton,
   ListItemIcon,
-  ListItemText,
   IconButton,
   Avatar,
   Divider,
+  alpha,
   Chip,
   Menu,
 } from '@mui/material'
 import {
   Menu as MenuIcon,
-  Dashboard as DashboardIcon,
-  People as PeopleIcon,
-  Receipt as ReceiptIcon,
   Logout as LogoutIcon,
   Brightness4 as MoonIcon,
   Brightness7 as SunIcon,
   Business as BusinessIcon,
-  Settings as SettingsIcon,
-  Description as DescriptionIcon,
 } from '@mui/icons-material'
 import { CustomMenuItem } from 'src/components/menu'
 import { useThemeContext } from 'src/contexts/ThemeContext'
 import { useAuth } from 'src/contexts/AuthContext'
+import { SidebarContent } from 'src/components/sidebar/SidebarContent'
+import { useTheme } from '@mui/material/styles'
 
 const DRAWER_WIDTH = 260
 const VIEW_PORT_WIDTH = 95
@@ -41,65 +36,11 @@ const MainLayout = () => {
   const [open, setOpen] = useState(true)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
 
-  const navigate = useNavigate()
-  const location = useLocation()
-
-  const menuItems =
-    user?.role === 'SUPER_ADMIN'
-      ? [
-          {
-            text: 'Dashboard',
-            icon: <DashboardIcon />,
-            path: '/super-admin/dashboard',
-          },
-          {
-            text: 'Empresas',
-            icon: <BusinessIcon />,
-            path: '/super-admin/companies',
-          },
-          {
-            text: 'Aprovações',
-            icon: <PeopleIcon />,
-            path: '/super-admin/approvals',
-          },
-          {
-            text: 'Assinaturas',
-            icon: <DescriptionIcon />,
-            path: '/super-admin/subscriptions',
-          },
-          {
-            text: 'Configurações',
-            icon: <SettingsIcon />,
-            path: '/super-admin/configs',
-          },
-        ]
-      : [
-          { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-          {
-            text: 'Colaboradores',
-            icon: <PeopleIcon />,
-            path: '/admin/providers',
-          },
-          {
-            text: 'Pagamentos',
-            icon: <ReceiptIcon />,
-            path: '/admin/payrolls',
-          },
-          {
-            text: 'Relatórios',
-            icon: <DescriptionIcon />,
-            path: '/admin/reports',
-          },
-          {
-            text: 'Configurações',
-            icon: <SettingsIcon />,
-            path: '/admin/settings',
-          },
-        ]
-
   const handleLogout = async () => {
     await logout()
   }
+
+  const theme = useTheme()
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -113,38 +54,6 @@ const MainLayout = () => {
         return 'default'
     }
   }
-
-  const drawerContent = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <List sx={{ px: 1, py: 10, flexGrow: 1, borderBottom: 1 }}>
-        {menuItems.map((item) => (
-          <ListItemButton
-            key={item.text}
-            selected={location.pathname === item.path}
-            onClick={() => navigate(item.path)}
-            sx={{
-              minHeight: 48,
-              borderRadius: 1,
-              mb: 0.5,
-              '&.Mui-selected': {
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  bgcolor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
-          </ListItemButton>
-        ))}
-      </List>
-    </Box>
-  )
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -253,7 +162,7 @@ const MainLayout = () => {
                     elevation: 0,
                     sx: {
                       overflow: 'visible',
-                      filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                      filter: `drop-shadow(0px 2px 8px ${theme.palette.mode === 'dark' ? alpha(theme.palette.common.black, 0.8) : alpha(theme.palette.common.black, 0.32)})`,
                       mt: 1.5,
                       minWidth: 200,
                       '&:before': {
@@ -325,10 +234,11 @@ const MainLayout = () => {
           '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,
             boxSizing: 'border-box',
+            border: 'none',
           },
         }}
       >
-        {drawerContent}
+        <SidebarContent />
       </Drawer>
 
       <Box

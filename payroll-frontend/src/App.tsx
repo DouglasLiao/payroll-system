@@ -29,6 +29,7 @@ import SuperAdminApprovals from 'src/pages/super-admin/Approvals'
 import SuperAdminSubscriptions from 'src/pages/super-admin/Subscriptions'
 import MathTemplateManager from 'src/pages/super-admin/MathTemplateManager'
 import ProviderPayments from 'src/pages/provider/ProviderPayments'
+import LandingPage from 'src/pages/LandingPage'
 import { ProtectedRoute } from 'src/components/routing'
 
 const EmployeeView = () => <div>Employee View (Coming Soon)</div>
@@ -51,6 +52,17 @@ function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
+              {/* Landing page — public, uses dynamic theme */}
+              <Route
+                path="/landing"
+                element={
+                  <ThemeContextProvider>
+                    <CssBaseline />
+                    <LandingPage />
+                  </ThemeContextProvider>
+                }
+              />
+
               {/* Public Routes - Auth pages with fixed light theme */}
               <Route
                 path="/login"
