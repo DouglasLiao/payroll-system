@@ -27,7 +27,6 @@ export const getProviders = async (
   }
 
   const queryString = searchParams.toString()
-  console.log(queryString)
   const url = `/providers/${queryString ? '?' + queryString : ''}`
 
   const { data } = await api.get<PaginatedResponse<Provider>>(url)
