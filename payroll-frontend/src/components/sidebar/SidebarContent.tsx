@@ -87,44 +87,18 @@ export function SidebarContent() {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: theme.palette.secondary.main,
+        bgcolor: theme.palette.background.paper,
         color: theme.palette.text.primary,
       }}
     >
-      {/* Logo */}
       <Box
         sx={{
           px: 2.5,
           py: 2.5,
-          display: 'flex',
-          alignItems: 'center',
           gap: 1.5,
           minHeight: 64,
         }}
-      >
-        <Box
-          sx={{
-            width: 30,
-            height: 30,
-            bgcolor: theme.palette.primary.main,
-            borderRadius: 1,
-            flexShrink: 0,
-          }}
-        />
-        <Typography
-          variant="h6"
-          fontWeight={700}
-          sx={{
-            color: theme.palette.text.primary,
-            letterSpacing: -0.3,
-            fontSize: '1rem',
-          }}
-        >
-          Payroll System
-        </Typography>
-      </Box>
-
-      <Divider sx={{ borderColor: theme.palette.divider }} />
+      ></Box>
 
       {/* Nav items */}
       <List sx={{ px: 1.5, py: 1.5, flexGrow: 1 }}>

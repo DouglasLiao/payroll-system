@@ -234,7 +234,7 @@ const MainLayout = () => {
           '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,
             boxSizing: 'border-box',
-            border: 'none',
+            borderShadow: (theme) => `1px solid ${theme.palette.divider}`,
           },
         }}
       >
