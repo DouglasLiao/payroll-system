@@ -14,6 +14,10 @@ import BoltIcon from "@mui/icons-material/Bolt";
 import BusinessIcon from "@mui/icons-material/Business";
 import NoteAltIcon from "@mui/icons-material/NoteAlt";
 import EmailIcon from "@mui/icons-material/Email";
+import { useState } from "react";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+import dashboardPreview from "../assets/dashboard-preview.png";
 
 const float = keyframes`
   0% { transform: translateY(0px); }
@@ -36,6 +40,13 @@ export default function LandingPage() {
     70% { box-shadow: 0 0 0 15px ${alpha(accent, 0)}; }
     100% { box-shadow: 0 0 0 0 ${alpha(accent, 0)}; }
   `;
+
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+
+  const handleComingSoon = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setComingSoonOpen(true);
+  };
 
   return (
     <Box
@@ -93,7 +104,14 @@ export default function LandingPage() {
             <Typography
               key={item}
               component="a"
-              href={`#${item.toLowerCase().replace(" ", "-")}`}
+              href={
+                item === "Como Funciona"
+                  ? "#fluxo"
+                  : item === "Recursos"
+                    ? "#recursos"
+                    : "#"
+              }
+              onClick={item === "Auditoria" ? handleComingSoon : undefined}
               sx={{
                 color: textSecondary,
                 textDecoration: "none",
@@ -111,7 +129,7 @@ export default function LandingPage() {
         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <Button
             variant="text"
-            href="http://localhost:5173/login"
+            href="/login"
             sx={{
               color: textPrimary,
               fontWeight: 500,
@@ -122,7 +140,7 @@ export default function LandingPage() {
           </Button>
           <Button
             variant="contained"
-            href="http://localhost:5173/register"
+            href="/register"
             sx={{
               bgcolor: textPrimary,
               color: bgColor,
@@ -243,7 +261,7 @@ export default function LandingPage() {
             <Button
               variant="contained"
               size="large"
-              href="http://localhost:5173/register"
+              href="/register"
               sx={{
                 bgcolor: textPrimary,
                 color: bgColor,
@@ -363,7 +381,7 @@ export default function LandingPage() {
               boxShadow: `0 25px 50px -12px ${alpha(theme.palette.common.black, 0.5)}`,
               overflow: "hidden",
               position: "relative",
-              height: 400,
+              aspectRatio: "16/10",
               display: "flex",
               flexDirection: "column",
             }}
@@ -404,56 +422,16 @@ export default function LandingPage() {
                 }}
               />
             </Box>
-            <Box sx={{ display: "flex", flex: 1 }}>
-              <Box
-                sx={{
-                  width: 200,
-                  borderRight: `1px solid ${theme.palette.divider}`,
-                  bgcolor: theme.palette.background.paper,
-                }}
-              />
-              <Box
-                sx={{
-                  flex: 1,
-                  p: 4,
-                  background: `radial-gradient(circle at top, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
-                }}
-              >
-                <Box sx={{ display: "flex", gap: 2, mb: 4 }}>
-                  <Box
-                    sx={{
-                      height: 100,
-                      borderRadius: 2,
-                      bgcolor: theme.palette.divider,
-                      flex: 1,
-                      opacity: 0.5,
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      height: 100,
-                      borderRadius: 2,
-                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                      flex: 1,
-                      opacity: 0.8,
-                    }}
-                  />
-                </Box>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  {[1, 2, 3].map((i) => (
-                    <Box
-                      key={i}
-                      sx={{
-                        height: 50,
-                        borderRadius: 1.5,
-                        bgcolor: theme.palette.background.default,
-                        border: `1px solid ${theme.palette.divider}`,
-                      }}
-                    />
-                  ))}
-                </Box>
-              </Box>
-            </Box>
+            <Box
+              component="img"
+              src={dashboardPreview}
+              alt="Dashboard Preview"
+              sx={{
+                width: "100%",
+                height: "auto",
+                display: "block",
+              }}
+            />
           </Box>
         </Box>
       </Box>
@@ -729,7 +707,7 @@ export default function LandingPage() {
           <Button
             variant="contained"
             size="large"
-            href="http://localhost:5173/register"
+            href="/register"
             sx={{
               bgcolor: textPrimary,
               color: bgColor,
@@ -798,6 +776,7 @@ export default function LandingPage() {
                     key={link}
                     component="a"
                     href="#"
+                    onClick={handleComingSoon}
                     sx={{
                       color: textSecondary,
                       textDecoration: "none",
@@ -818,6 +797,7 @@ export default function LandingPage() {
                     key={link}
                     component="a"
                     href="#"
+                    onClick={handleComingSoon}
                     sx={{
                       color: textSecondary,
                       textDecoration: "none",
@@ -844,6 +824,23 @@ export default function LandingPage() {
           </Box>
         </Container>
       </Box>
+
+      {/* Coming Soon Alert */}
+      <Snackbar
+        open={comingSoonOpen}
+        autoHideDuration={4000}
+        onClose={() => setComingSoonOpen(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setComingSoonOpen(false)}
+          severity="info"
+          variant="filled"
+          sx={{ width: "100%", borderRadius: 2 }}
+        >
+          Página em construção! Em breve novidades.
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

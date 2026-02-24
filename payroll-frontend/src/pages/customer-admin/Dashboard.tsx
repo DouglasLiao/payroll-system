@@ -20,7 +20,7 @@ const Dashboard = () => {
     useDashboardData({ period: '1y' })
 
   return (
-    <Box sx={{ maxWidth: '100%', width: '100%', mt: 4 }}>
+    <Box sx={{ maxWidth: '100%', width: '100%' }}>
       {/* Header with Period Filter */}
       <Box
         sx={{

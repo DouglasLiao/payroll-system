@@ -10,6 +10,7 @@ services:
     depends_on:
       - backend
       - frontend
+      - landing-page
 
   backend:
     build: ./payroll-backend
@@ -43,6 +44,22 @@ services:
       - "5173:5173"
     volumes:
       - ./payroll-frontend:/app/payroll-frontend
+      - ./payroll-design-system:/app/payroll-design-system
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
+
+  landing-page:
+    build:
+      context: .
+      dockerfile: ./payroll-landing-page/Dockerfile
+    container_name: payroll_landing_page
+    ports:
+      - "5174:5174"
+    volumes:
+      - ./payroll-landing-page:/app/payroll-landing-page
       - ./payroll-design-system:/app/payroll-design-system
       - /app/node_modules
     environment:
