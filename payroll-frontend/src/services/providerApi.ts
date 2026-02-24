@@ -22,8 +22,12 @@ export const getProviders = async (
   if (params?.page_size) {
     searchParams.append('page_size', params.page_size.toString())
   }
+  if (params?.search) {
+    searchParams.append('search', params.search)
+  }
 
   const queryString = searchParams.toString()
+  console.log(queryString)
   const url = `/providers/${queryString ? '?' + queryString : ''}`
 
   const { data } = await api.get<PaginatedResponse<Provider>>(url)
