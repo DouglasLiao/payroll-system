@@ -8,45 +8,45 @@ import {
   alpha,
   useTheme,
   Card,
-} from "@mui/material";
-import { keyframes } from "@emotion/react";
-import BoltIcon from "@mui/icons-material/Bolt";
-import BusinessIcon from "@mui/icons-material/Business";
-import NoteAltIcon from "@mui/icons-material/NoteAlt";
-import EmailIcon from "@mui/icons-material/Email";
-import { useState } from "react";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
-import dashboardPreview from "../assets/dashboard-preview.png";
+} from "@mui/material"
+import { keyframes } from "@emotion/react"
+import BoltIcon from "@mui/icons-material/Bolt"
+import BusinessIcon from "@mui/icons-material/Business"
+import NoteAltIcon from "@mui/icons-material/NoteAlt"
+import EmailIcon from "@mui/icons-material/Email"
+import { useState } from "react"
+import Snackbar from "@mui/material/Snackbar"
+import Alert from "@mui/material/Alert"
+import dashboardPreview from "../assets/dashboard-preview.png"
 
 const float = keyframes`
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-  100% { transform: translateY(0px); }
-`;
+  0% { transform: translateY(0px) }
+  50% { transform: translateY(-20px) }
+  100% { transform: translateY(0px) }
+`
 
 export default function LandingPage() {
-  const theme = useTheme();
+  const theme = useTheme()
 
   // Use theme colors directly instead of hardcoded strings
-  const bgColor = theme.palette.background.default;
-  const textPrimary = theme.palette.text.primary;
-  const textSecondary = theme.palette.text.secondary;
-  const accent = theme.palette.primary.main;
-  const accentLight = theme.palette.primary.light;
+  const bgColor = theme.palette.background.default
+  const textPrimary = theme.palette.text.primary
+  const textSecondary = theme.palette.text.secondary
+  const accent = theme.palette.primary.main
+  const accentLight = theme.palette.primary.light
 
   const pulse = keyframes`
-    0% { box-shadow: 0 0 0 0 ${alpha(accent, 0.4)}; }
-    70% { box-shadow: 0 0 0 15px ${alpha(accent, 0)}; }
-    100% { box-shadow: 0 0 0 0 ${alpha(accent, 0)}; }
-  `;
+    0% { box-shadow: 0 0 0 0 ${alpha(accent, 0.4)} }
+    70% { box-shadow: 0 0 0 15px ${alpha(accent, 0)} }
+    100% { box-shadow: 0 0 0 0 ${alpha(accent, 0)} }
+  `
 
-  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false)
 
   const handleComingSoon = (e?: React.MouseEvent) => {
-    if (e) e.preventDefault();
-    setComingSoonOpen(true);
-  };
+    if (e) e.preventDefault()
+    setComingSoonOpen(true)
+  }
 
   return (
     <Box
@@ -287,7 +287,7 @@ export default function LandingPage() {
               onClick={() => {
                 document
                   .getElementById("fluxo")
-                  ?.scrollIntoView({ behavior: "smooth" });
+                  ?.scrollIntoView({ behavior: "smooth" })
               }}
               sx={{
                 color: textPrimary,
@@ -819,7 +819,7 @@ export default function LandingPage() {
             }}
           >
             <Typography sx={{ color: textSecondary, fontSize: "0.85rem" }}>
-              &copy; 2026 Payroll System. All rights reserved.
+              &copy 2026 Payroll System. All rights reserved.
             </Typography>
           </Box>
         </Container>
@@ -842,5 +842,5 @@ export default function LandingPage() {
         </Alert>
       </Snackbar>
     </Box>
-  );
+  )
 }
