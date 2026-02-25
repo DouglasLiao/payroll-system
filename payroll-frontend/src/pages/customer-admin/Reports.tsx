@@ -17,7 +17,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs, { Dayjs } from 'dayjs'
 import 'dayjs/locale/pt-br'
 import { downloadMonthlyReport, sendReportEmail } from 'src/services/api'
-import { useSnackbar } from 'notistack'
+import { useToast } from 'src/hooks/useToast'
 import {
   Description as DescriptionIcon,
   Email as EmailIcon,
@@ -29,7 +29,7 @@ const Reports = () => {
   const [email, setEmail] = useState('')
   const [isDownloading, setIsDownloading] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
-  const { enqueueSnackbar } = useSnackbar()
+  const toast = useToast()
 
   const handleDownload = async () => {
     if (!selectedDate) return
@@ -43,9 +43,8 @@ const Reports = () => {
         selectedDate.isAfter(currentMonth, 'month') ||
         selectedDate.isSame(currentMonth, 'month')
       ) {
-        enqueueSnackbar(
-          'O mês selecionado ainda não terminou. Relatórios só podem ser gerados para meses encerrados.',
-          { variant: 'warning' }
+        toast.warning(
+          'O mês selecionado ainda não terminou. Relatórios só podem ser gerados para meses encerrados.'
         )
         return
       }
@@ -53,10 +52,9 @@ const Reports = () => {
       setIsDownloading(true)
       await downloadMonthlyReport(month)
 
-      enqueueSnackbar('Relatório baixado com sucesso!', { variant: 'success' })
-    } catch (error) {
-      console.error(error)
-      enqueueSnackbar('Erro ao baixar relatório.', { variant: 'error' })
+      toast.success('Relatório baixado com sucesso!')
+    } catch {
+      toast.error('Erro ao baixar relatório.')
     } finally {
       setIsDownloading(false)
     }
@@ -74,22 +72,18 @@ const Reports = () => {
         selectedDate.isAfter(dayjs(), 'month') ||
         selectedDate.isSame(dayjs(), 'month')
       ) {
-        enqueueSnackbar(
-          'O mês selecionado ainda não terminou. Relatórios só podem ser gerados para meses encerrados.',
-          { variant: 'warning' }
+        toast.warning(
+          'O mês selecionado ainda não terminou. Relatórios só podem ser gerados para meses encerrados.'
         )
         return
       }
 
       await sendReportEmail(month, email || undefined)
 
-      enqueueSnackbar(`Relatório enviado para ${email || 'seu e-mail'}!`, {
-        variant: 'success',
-      })
+      toast.success(`Relatório enviado para ${email || 'seu e-mail'}!`)
       setEmail('')
-    } catch (error) {
-      console.error(error)
-      enqueueSnackbar('Erro ao enviar e-mail.', { variant: 'error' })
+    } catch {
+      toast.error('Erro ao enviar e-mail.')
     } finally {
       setIsSendingEmail(false)
     }

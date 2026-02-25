@@ -67,6 +67,5 @@ export const getMonthCalendarInfo = (referenceMonth: string) => {
 /**
  * Exemplo de uso:
  * const info = getMonthCalendarInfo('01/2026')
- * console.log(info)
  * // { workDays: 23, sundays: 5, holidays: 2, restDays: 7, totalDays: 31 }
  */

@@ -22,6 +22,7 @@ import {
 import { GenericTable, type Column } from 'src/components/table'
 import { useQuery } from '@tanstack/react-query'
 import api from 'src/services/authApi'
+import { useToast } from 'src/hooks/useToast'
 
 interface Payroll {
   id: number
@@ -35,6 +36,7 @@ interface Payroll {
 
 export default function ProviderPayments() {
   const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null)
+  const toast = useToast()
   const [filterMonth, setFilterMonth] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [page, setPage] = useState(0)
@@ -105,8 +107,8 @@ export default function ProviderPayments() {
       document.body.appendChild(link)
       link.click()
       link.remove()
-    } catch (error) {
-      console.error('Erro ao baixar:', error)
+    } catch {
+      toast.error('Erro ao baixar arquivo')
     }
   }
 

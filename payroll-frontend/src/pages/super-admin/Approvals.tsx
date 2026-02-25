@@ -5,7 +5,7 @@ import {
   Cancel as CancelIcon,
 } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSnackbar } from 'notistack'
+import { useToast } from 'src/hooks/useToast'
 import {
   getCompanies,
   approveCompany,
@@ -15,7 +15,7 @@ import { SearchField } from 'src/components/search'
 import { GenericTable } from 'src/components/table'
 
 const Approvals = () => {
-  const { enqueueSnackbar } = useSnackbar()
+  const toast = useToast()
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
@@ -37,13 +37,13 @@ const Approvals = () => {
   const approveMutation = useMutation({
     mutationFn: approveCompany,
     onSuccess: () => {
-      enqueueSnackbar('Empresa aprovada com sucesso!', { variant: 'success' })
+      toast.success('Empresa aprovada com sucesso!')
       queryClient.invalidateQueries({ queryKey: ['pendingCompanies'] })
       queryClient.invalidateQueries({ queryKey: ['companies'] })
       queryClient.invalidateQueries({ queryKey: ['superAdminStats'] })
     },
     onError: () => {
-      enqueueSnackbar('Erro ao aprovar empresa.', { variant: 'error' })
+      toast.error('Erro ao aprovar empresa.')
     },
   })
 
@@ -56,13 +56,13 @@ const Approvals = () => {
   const rejectMutation = useMutation({
     mutationFn: rejectCompany,
     onSuccess: () => {
-      enqueueSnackbar('Empresa rejeitada com sucesso!', { variant: 'success' })
+      toast.success('Empresa rejeitada com sucesso!')
       queryClient.invalidateQueries({ queryKey: ['pendingCompanies'] })
       queryClient.invalidateQueries({ queryKey: ['companies'] })
       queryClient.invalidateQueries({ queryKey: ['superAdminStats'] })
     },
     onError: () => {
-      enqueueSnackbar('Erro ao rejeitar empresa.', { variant: 'error' })
+      toast.error('Erro ao rejeitar empresa.')
     },
   })
 

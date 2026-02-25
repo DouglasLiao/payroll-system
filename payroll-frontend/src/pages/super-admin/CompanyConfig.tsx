@@ -21,7 +21,7 @@ import {
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSnackbar } from 'notistack'
+import { useToast } from 'src/hooks/useToast'
 import {
   getPayrollConfig,
   updatePayrollConfig,
@@ -40,7 +40,7 @@ import { CustomMenuItem } from 'src/components/menu'
 const CompanyConfig = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { enqueueSnackbar } = useSnackbar()
+  const toast = useToast()
   const queryClient = useQueryClient()
   const companyId = Number(id)
 
@@ -134,13 +134,11 @@ const CompanyConfig = () => {
     mutationFn: (data: Partial<PayrollConfiguration>) =>
       updatePayrollConfig(config!.id, data),
     onSuccess: () => {
-      enqueueSnackbar('Configuração atualizada com sucesso!', {
-        variant: 'success',
-      })
+      toast.success('Configuração atualizada com sucesso!')
       queryClient.invalidateQueries({ queryKey: ['payrollConfig', companyId] })
     },
     onError: () => {
-      enqueueSnackbar('Erro ao atualizar configuração.', { variant: 'error' })
+      toast.error('Erro ao atualizar configuração.')
     },
   })
 
@@ -149,19 +147,18 @@ const CompanyConfig = () => {
     mutationFn: (templateId: number) =>
       applyTemplateToCompany(companyId, templateId),
     onSuccess: () => {
-      enqueueSnackbar('Template aplicado com sucesso!', { variant: 'success' })
+      toast.success('Template aplicado com sucesso!')
       queryClient.invalidateQueries({ queryKey: ['payrollConfig', companyId] })
     },
     onError: () => {
-      enqueueSnackbar('Erro ao aplicar template.', { variant: 'error' })
+      toast.error('Erro ao aplicar template.')
     },
   })
 
   const handleSave = () => {
     if (!config) {
-      enqueueSnackbar(
-        'Configuração não encontrada para esta empresa (feature pending creation).',
-        { variant: 'warning' }
+      toast.warning(
+        'Configuração não encontrada para esta empresa (feature pending creation).'
       )
       return
     }

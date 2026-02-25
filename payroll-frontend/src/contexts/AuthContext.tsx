@@ -7,6 +7,7 @@ import React, {
   type ReactNode,
 } from 'react'
 import { authApi, type User } from 'src/services/authApi'
+import { useToast } from 'src/hooks/useToast'
 
 interface AuthContextType {
   user: User | null
@@ -28,6 +29,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [inactivityTimeout, setInactivityTimeout] = useState(300)
+  const toast = useToast()
   const inactivityTimerRef = useRef<number | null>(null)
   const lastActivityRef = useRef<number>(Date.now())
 
@@ -41,7 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     inactivityTimerRef.current = setTimeout(() => {
       // Logout automático por inatividade
-      console.log('Sessão expirada por inatividade')
+      toast.warning('Sessão expirada por inatividade')
       logout()
     }, inactivityTimeout * 1000)
   }, [inactivityTimeout])
@@ -82,7 +84,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setInactivityTimeout(userData.inactivity_timeout || 300)
       } catch {
         // Sem sessão ativa
-        console.log('Nenhuma sessão ativa')
       } finally {
         setIsLoading(false)
       }
@@ -103,8 +104,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       await authApi.logout()
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error)
+    } catch {
+      // Ignore error
     } finally {
       setUser(null)
       if (inactivityTimerRef.current) {

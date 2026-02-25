@@ -29,7 +29,7 @@ import {
   Visibility as VisibilityIcon,
 } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSnackbar } from 'notistack'
+import { useToast } from 'src/hooks/useToast'
 import {
   getMathTemplates,
   createMathTemplate,
@@ -46,7 +46,7 @@ const MathTemplateManager = () => {
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedTemplate, setSelectedTemplate] =
     useState<PayrollMathTemplate | null>(null)
-  const { enqueueSnackbar } = useSnackbar()
+  const toast = useToast()
   const queryClient = useQueryClient()
 
   const [formData, setFormData] = useState({
@@ -106,12 +106,11 @@ const MathTemplateManager = () => {
   const createMutation = useMutation({
     mutationFn: createMathTemplate,
     onSuccess: () => {
-      enqueueSnackbar('Template criado com sucesso!', { variant: 'success' })
+      toast.success('Template criado com sucesso!')
       queryClient.invalidateQueries({ queryKey: ['mathTemplates'] })
       setOpenDialog(false)
     },
-    onError: () =>
-      enqueueSnackbar('Erro ao criar template.', { variant: 'error' }),
+    onError: () => toast.error('Erro ao criar template.'),
   })
 
   // Update Mutation
@@ -119,23 +118,21 @@ const MathTemplateManager = () => {
     mutationFn: (data: Partial<PayrollMathTemplate>) =>
       updateMathTemplate(selectedTemplate!.id, data),
     onSuccess: () => {
-      enqueueSnackbar('Template atualizado!', { variant: 'success' })
+      toast.success('Template atualizado!')
       queryClient.invalidateQueries({ queryKey: ['mathTemplates'] })
       setOpenDialog(false)
     },
-    onError: () =>
-      enqueueSnackbar('Erro ao atualizar template.', { variant: 'error' }),
+    onError: () => toast.error('Erro ao atualizar template.'),
   })
 
   // Delete Mutation
   const deleteMutation = useMutation({
     mutationFn: deleteMathTemplate,
     onSuccess: () => {
-      enqueueSnackbar('Template removido!', { variant: 'success' })
+      toast.success('Template removido!')
       queryClient.invalidateQueries({ queryKey: ['mathTemplates'] })
     },
-    onError: () =>
-      enqueueSnackbar('Erro ao remover template.', { variant: 'error' }),
+    onError: () => toast.error('Erro ao remover template.'),
   })
 
   const handleSubmit = () => {

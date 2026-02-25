@@ -11,7 +11,7 @@ import { PayrollFormDialog } from 'src/components/dialogs'
 import { PayrollDetailDialog } from 'src/components/dialogs'
 import { PayrollStats } from 'src/components/stats'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSnackbar } from 'notistack'
+import { useToast } from 'src/hooks/useToast'
 import type {
   Payroll,
   PayrollCreateData,
@@ -46,7 +46,7 @@ const Payrolls = () => {
   })
 
   const queryClient = useQueryClient()
-  const { enqueueSnackbar } = useSnackbar()
+  const toast = useToast()
 
   const { data: payrollsData, isLoading } = useQuery({
     queryKey: ['payrolls', filters, page, rowsPerPage],
@@ -70,10 +70,9 @@ const Payrolls = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payrolls'] })
       setOpenForm(false)
-      enqueueSnackbar('Folha criada com sucesso!', { variant: 'success' })
+      toast.success('Folha criada com sucesso!')
     },
-    onError: (error: Error) =>
-      enqueueSnackbar(error.message, { variant: 'error' }),
+    onError: (error: Error) => toast.error(error.message),
   })
 
   const closeMutation = useMutation({
@@ -106,7 +105,7 @@ const Payrolls = () => {
 
       queryClient.invalidateQueries({ queryKey: ['payrolls'] })
       queryClient.invalidateQueries({ queryKey: ['payroll-detail'] })
-      enqueueSnackbar('Folha fechada com sucesso!', { variant: 'success' })
+      toast.success('Folha fechada com sucesso!')
     },
   })
 
@@ -140,7 +139,7 @@ const Payrolls = () => {
 
       queryClient.invalidateQueries({ queryKey: ['payrolls'] })
       queryClient.invalidateQueries({ queryKey: ['payroll-detail'] })
-      enqueueSnackbar('Folha marcada como paga!', { variant: 'success' })
+      toast.success('Folha marcada como paga!')
     },
   })
 
@@ -174,7 +173,7 @@ const Payrolls = () => {
 
       queryClient.invalidateQueries({ queryKey: ['payrolls'] })
       queryClient.invalidateQueries({ queryKey: ['payroll-detail'] })
-      enqueueSnackbar('Folha reaberta com sucesso!', { variant: 'success' })
+      toast.success('Folha reaberta com sucesso!')
     },
   })
 
@@ -207,10 +206,10 @@ const Payrolls = () => {
 
       setEditingPayroll(null)
       setOpenForm(false)
-      enqueueSnackbar('Folha atualizada com sucesso!', { variant: 'success' })
+      toast.success('Folha atualizada com sucesso!')
     },
     onError: (error: Error) => {
-      enqueueSnackbar(error.message, { variant: 'error' })
+      toast.error(error.message)
     },
   })
 
@@ -245,10 +244,9 @@ const Payrolls = () => {
   const handleDownloadFile = async (id: number) => {
     try {
       await downloadPayrollFile(id)
-      enqueueSnackbar('Arquivo baixado com sucesso!', { variant: 'success' })
-    } catch (error) {
-      console.error(error)
-      enqueueSnackbar('Erro ao baixar arquivo', { variant: 'error' })
+      toast.success('Arquivo baixado com sucesso!')
+    } catch {
+      toast.error('Erro ao baixar arquivo')
     }
   }
 

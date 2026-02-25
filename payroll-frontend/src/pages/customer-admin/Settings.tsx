@@ -20,13 +20,13 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material'
 import Grid from '@mui/material/Grid'
-import { useSnackbar } from 'notistack'
+import { useToast } from 'src/hooks/useToast'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getProviders, updateProvider } from 'src/services/api'
 import type { Provider } from 'src/types'
 
 const Settings = () => {
-  const { enqueueSnackbar } = useSnackbar()
+  const toast = useToast()
   const queryClient = useQueryClient()
   const [vtFare, setVtFare] = useState('4.60')
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
@@ -75,15 +75,12 @@ const Settings = () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] })
       queryClient.invalidateQueries({ queryKey: ['providers-all'] })
 
-      enqueueSnackbar(
-        `Tarifa atualizada para ${affectedProviders.length} colaborador(es)!`,
-        { variant: 'success' }
+      toast.success(
+        `Tarifa atualizada para ${affectedProviders.length} colaborador(es)!`
       )
       setConfirmDialogOpen(false)
     } catch (error) {
-      enqueueSnackbar(`Erro ao atualizar tarifa ${String(error)}`, {
-        variant: 'error',
-      })
+      toast.error(`Erro ao atualizar tarifa ${String(error)}`)
     }
   }
 

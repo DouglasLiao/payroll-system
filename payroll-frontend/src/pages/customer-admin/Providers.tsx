@@ -13,7 +13,7 @@ import { SearchField } from 'src/components/search'
 import { ProviderDialog } from 'src/components/dialogs/ProviderDialog'
 import type { ProviderFormInputs } from 'src/components/dialogs/ProviderDialog'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSnackbar } from 'notistack'
+import { useToast } from 'src/hooks/useToast'
 import {
   getProviders,
   createProvider,
@@ -30,7 +30,7 @@ const Providers = () => {
   const [searchTerm, setSearchTerm] = useState('')
 
   const queryClient = useQueryClient()
-  const { enqueueSnackbar } = useSnackbar()
+  const toast = useToast()
 
   const { data: providersData, isLoading } = useQuery({
     queryKey: ['providers', page, rowsPerPage, searchTerm],
@@ -47,10 +47,9 @@ const Providers = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] })
       handleCloseDialog()
-      enqueueSnackbar('Colaborador criado com sucesso', { variant: 'success' })
+      toast.success('Colaborador criado com sucesso')
     },
     onError: (error: any) => {
-      console.error(error)
       const message =
         error.response?.data?.detail ||
         error.response?.data?.[0] ||
@@ -58,7 +57,7 @@ const Providers = () => {
           ? error.response?.data[0]
           : null) ||
         'Erro ao criar colaborador'
-      enqueueSnackbar(message, { variant: 'error' })
+      toast.error(message)
     },
   })
 
@@ -68,19 +67,16 @@ const Providers = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] })
       handleCloseDialog()
-      enqueueSnackbar('Colaborador atualizado com sucesso', {
-        variant: 'success',
-      })
+      toast.success('Colaborador atualizado com sucesso')
     },
-    onError: () =>
-      enqueueSnackbar('Erro ao atualizar colaborador', { variant: 'error' }),
+    onError: () => toast.error('Erro ao atualizar colaborador'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: deleteProvider,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] })
-      enqueueSnackbar('Colaborador removido', { variant: 'success' })
+      toast.success('Colaborador removido')
     },
   })
 

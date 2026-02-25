@@ -21,7 +21,7 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSnackbar } from 'notistack'
+import { useToast } from 'src/hooks/useToast'
 import {
   getSubscription,
   renewSubscription,
@@ -32,7 +32,7 @@ import { CustomMenuItem } from 'src/components/menu'
 const CompanySubscription = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { enqueueSnackbar } = useSnackbar()
+  const toast = useToast()
   const queryClient = useQueryClient()
   const companyId = Number(id)
 
@@ -83,21 +83,17 @@ const CompanySubscription = () => {
         data.end_date || undefined
       ),
     onSuccess: () => {
-      enqueueSnackbar('Assinatura atualizada com sucesso!', {
-        variant: 'success',
-      })
+      toast.success('Assinatura atualizada com sucesso!')
       queryClient.invalidateQueries({ queryKey: ['subscription', companyId] })
     },
     onError: () => {
-      enqueueSnackbar('Erro ao atualizar assinatura.', { variant: 'error' })
+      toast.error('Erro ao atualizar assinatura.')
     },
   })
 
   const handleSave = () => {
     if (!subscription) {
-      enqueueSnackbar('Assinatura inexistente. Feature de criação pendente.', {
-        variant: 'warning',
-      })
+      toast.warning('Assinatura inexistente. Feature de criação pendente.')
       return
     }
     renewMutation.mutate(formData)
