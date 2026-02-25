@@ -55,6 +55,7 @@ from users.application.queries.selectors import (
     user_list_for_company,
 )
 from users.models import UserRole
+from site_manage.pagination import CustomPageNumberPagination
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 from utils.redis_publisher import event_publisher
@@ -396,6 +397,13 @@ class CompanyListAPIView(APIView):
             is_active=is_active,
             search=params.get("search"),
         )
+
+        paginator = CustomPageNumberPagination()
+        page = paginator.paginate_queryset(qs, request)
+        if page is not None:
+            serializer = CompanySerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
         return Response(CompanySerializer(qs, many=True).data)
 
 
@@ -584,9 +592,14 @@ class PayrollMathTemplateListCreateAPIView(APIView):
         from site_manage.api.serializers import PayrollMathTemplateSerializer
         from site_manage.application.queries.selectors import math_template_list
 
-        return Response(
-            PayrollMathTemplateSerializer(math_template_list(), many=True).data
-        )
+        qs = math_template_list()
+        paginator = CustomPageNumberPagination()
+        page = paginator.paginate_queryset(qs, request)
+        if page is not None:
+            serializer = PayrollMathTemplateSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        return Response(PayrollMathTemplateSerializer(qs, many=True).data)
 
     def post(self, request):
         from site_manage.api.serializers import PayrollMathTemplateSerializer
@@ -662,6 +675,13 @@ class PayrollConfigurationListCreateAPIView(APIView):
         from site_manage.application.queries.selectors import payroll_config_list
 
         qs = payroll_config_list(company_id=request.query_params.get("company_id"))
+
+        paginator = CustomPageNumberPagination()
+        page = paginator.paginate_queryset(qs, request)
+        if page is not None:
+            serializer = PayrollConfigurationSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
         return Response(PayrollConfigurationSerializer(qs, many=True).data)
 
     def post(self, request):
@@ -763,6 +783,13 @@ class SubscriptionListAPIView(APIView):
 
     def get(self, request):
         qs = subscription_list(company_id=request.query_params.get("company_id"))
+
+        paginator = CustomPageNumberPagination()
+        page = paginator.paginate_queryset(qs, request)
+        if page is not None:
+            serializer = SubscriptionSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
         serializer = SubscriptionSerializer(qs, many=True)
         return Response(serializer.data)
 

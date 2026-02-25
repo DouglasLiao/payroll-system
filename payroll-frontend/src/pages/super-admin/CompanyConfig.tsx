@@ -69,10 +69,11 @@ const CompanyConfig = () => {
   })
 
   // Fetch Templates
-  const { data: templates = [] } = useQuery({
+  const { data: templatesResponse } = useQuery({
     queryKey: ['mathTemplates'],
     queryFn: getMathTemplates,
   })
+  const templates = templatesResponse?.results || []
 
   // Update local state when config loads
   useEffect(() => {

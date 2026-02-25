@@ -61,10 +61,12 @@ const MathTemplateManager = () => {
   })
 
   // Fetch Templates
-  const { data: templates = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['mathTemplates'],
     queryFn: getMathTemplates,
   })
+
+  const templates = data?.results || []
 
   const resetForm = () => {
     setFormData({

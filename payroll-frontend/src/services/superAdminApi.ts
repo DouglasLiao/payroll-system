@@ -88,7 +88,7 @@ export const getPayrollConfig = async (companyId: number) => {
   const { data } = await api.get<PaginatedResponse<PayrollConfiguration>>(
     `/users/payroll-configs/?company_id=${companyId}`
   )
-  return data.results ? data.results[0] : (data as any)[0]
+  return data.results[0]
 }
 
 export const updatePayrollConfig = async (
@@ -122,7 +122,7 @@ export const getMathTemplates = async () => {
   const { data } = await api.get<PaginatedResponse<PayrollMathTemplate>>(
     '/users/math-templates/'
   )
-  return data.results
+  return data
 }
 
 export const createMathTemplate = async (
