@@ -77,11 +77,6 @@ class ProviderSerializer(serializers.ModelSerializer):
                 # Do nothing, let Django handle "4.60"
                 pass
 
-            print(
-                f"DEBUG: vt_fare processing - Input: '{val}', Output: '{data['vt_fare']}'",
-                flush=True,
-            )
-
         return super().to_internal_value(data)
 
     class Meta:

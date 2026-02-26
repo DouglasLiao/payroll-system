@@ -24,8 +24,5 @@ def update_draft_payrolls_on_provider_change(sender, instance, **kwargs):
     service = PayrollService()
 
     for payroll in draft_payrolls:
-        print(
-            f"🔄 Recalculando folha {payroll.id} ({payroll.reference_month}) do prestador {instance.name}..."
-        )
         # Recalcula usando o serviço, forçando sincronia com dados do prestador
         service.recalculate_payroll(payroll.id, sync_provider_data=True)
