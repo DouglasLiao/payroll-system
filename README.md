@@ -1,12 +1,56 @@
-# Fluxo e Lógica da Aplicação: Payroll System (Folha de Pagamento PJ)
+# Fluxo, Lógica e Arquitetura: Payroll System (Folha de Pagamento PJ)
 
-Este documento mapeia todas as funcionalidades, fluxos e a lógica geral do sistema de folha de pagamento para colaboradores PJ (Pessoas Jurídicas).
+Este documento mapeia todas as funcionalidades, fluxos e a lógica geral do sistema de folha de pagamento para colaboradores PJ (Pessoas Jurídicas), bem como o detalhamento arquitetural da aplicação.
 
-## 1. Visão Geral
+---
 
-O sistema simplifica, automatiza e audita todo o processo de cálculo e pagamento de colaboradores B2B (PJ), desde o cadastro das empresas e prestadores de serviços até o envio dos comprovantes por e-mail e relatórios finais.
+## 1. Visão Geral Arquitetural (Monorepo)
 
-## 2. Atores do Sistema
+O repositório adota uma abordagem de **Monorepo** muito organizada, dividida em quatro pilares principais, que isola as responsabilidades de backend, frontends (aplicação e landing page) e estilização global:
+
+- `payroll-backend`
+- `payroll-frontend`
+- `payroll-landing-page`
+- `payroll-design-system`
+
+## 2. Backend (Django REST Framework)
+
+O backend destaca-se pela excelente organização e adoção de práticas modernas em engenharia de software, fugindo do padrão MVC tradicional do Django ("Fat Models, Fat Views") e partindo para um modelo escalável.
+
+### 2.1 Padrão Arquitetural: Clean Architecture & Domain-Driven Design (DDD)
+
+Dentro dos principais bounded contexts (módulos como `site_manage` e `users`), foi identificada a estruturação através da Clean Architecture, dividida rigorosamente nas seguintes camadas:
+
+- **`api/`**: A camada de apresentação (Controllers). Onde residem as `views.py`, `urls.py` e `serializers.py`. Seu único papel é expor os endpoints e tratar a ponte HTTP.
+- **`application/`**: O coração da coordenação. Aqui reside a orquestração de regras de negócio complexas. Notável a divisão interna em CQRS (Command Query Responsibility Segregation) com as pastas `commands/` e `queries/`, e os services utilitários (Emails, CSV).
+- **`domain/`**: A lógica pura do negócio, independente de banco de dados ou frameworks. Onde se encontram agentes como o `payroll_calculator.py`.
+- **`infrastructure/`**: Onde os `models.py` (banco de dados) efetivamente residem. Essa camada implementa os detalhes técnicos (persistência e mapeamento ORM).
+
+## 3. Frontend (React + Vite + TypeScript)
+
+O frontend também reflete um design muito bem pensado, voltado tanto para a manutenção rápida quanto para a segurança no tráfego de dados e UI consistente.
+
+### 3.1 Padrão de Estado do Cliente vs. Servidor
+
+- **Server State**: Toda a comunicação e gerenciamento de estado das requisições com a API são extraídas via **React Query (`@tanstack/react-query`)**. Isso delega as pesadas lógicas de cache, loaders, retries e revalidação (`invalidateQueries`) para a biblioteca, despoluindo os componentes.
+- **Client State/Global**: O estado do cliente global utiliza nativamente a Context API do React (`AuthContext` e `ThemeContext`), o que é suficiente e ideal sem colocar bibliotecas de store massivas (como Redux) excessivas.
+
+### 3.2 Estruturação de UI e Consistência (Design System Central)
+
+- O projeto usa como fundação a extração da inteligência de UI e Tema através do pacote `@payroll/design-system`.
+- Ao isolar os temas, o `payroll-frontend` e a `payroll-landing-page` conversam em sintonia, limitando discrepâncias visuais, uma das maiores armadilhas de sistemas que possuem "duas caras" (app e LP). Tudo isso foi envelopado via **Material UI (MUI)** modificado, entregando consistência no ecossistema inteiro.
+
+### 3.3 Roteamento Baseado em Funções (Role-Based Access Control)
+
+As rotas do sistema (`App.tsx`) delegam claramente o componente `ProtectedRoute` para tratar restrições no nível da interface. A separação entre ambientes de Super Admin, Customer Admin e Provider através de hierarquia de pastas nas `pages/` garante uma manutenção direta para cada persona do produto.
+
+### 3.4 Padrão de Integração Analítica e Tipada (Services / Axios)
+
+Os serviços em `src/services/` usam instâncias separadas por entidades (`dashboardApi.ts`, `superAdminApi.ts`). Isso modulariza totalmente as conexões de API com a base e garante que os contratos do TypeScript atuem diretamente nesse ponto.
+
+---
+
+## 4. Atores do Sistema
 
 - **Super Admin:** Tem acesso total à plataforma, gerencia empresas filiais, audita os pagamentos gerais e configurações do sistema.
 - **Admin da Empresa (Company Admin):** Controla os colaboradores, modelos de cálculo e folhas apenas da sua respectiva empresa.
