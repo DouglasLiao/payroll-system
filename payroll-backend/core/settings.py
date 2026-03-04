@@ -98,8 +98,14 @@ DATABASES = {
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
         "HOST": os.environ.get("DB_HOST", ""),
         "PORT": os.environ.get("DB_PORT", ""),
-    }
+    },
+    "shard2": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db_shard2.sqlite3",
+    },
 }
+
+DATABASE_ROUTERS = ["core.sharding_router.ShardingRouter"]
 
 
 # Password validation
