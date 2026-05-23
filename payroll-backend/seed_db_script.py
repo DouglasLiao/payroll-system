@@ -404,10 +404,64 @@ def main():
     print(
         f"Done! Created {len(providers)} providers and {total_payrolls} payroll records."
     )
-    print("User Credentials:")
+    
+    # ---------------------------------------------------------
+    # Generate mock TimeRecords for the current month
+    # ---------------------------------------------------------
+    from site_manage.infrastructure.models import TimeRecord, TimeRecordType, TimeAdjustmentRequest, TimeAdjustmentStatus
+    from datetime import time
+    
+    print("\nGenerating mock TimeRecords for the Ponto feature...")
+    today = timezone.now().date()
+    start_of_month = today.replace(day=1)
+    
+    for provider in providers:
+        # Generate for the last 5 days
+        for i in range(5):
+            current_date = today - timedelta(days=i)
+            # Skip weekends randomly or systematically
+            if current_date.weekday() >= 5:
+                continue
+                
+            # Clock IN
+            dt_in = timezone.make_aware(timezone.datetime.combine(current_date, time(9, random.randint(0, 15))))
+            TimeRecord.objects.create(
+                provider=provider,
+                record_type=TimeRecordType.CLOCK_IN,
+                latitude=Decimal("-1.45502"), # Belém coords approx
+                longitude=Decimal("-48.5024"),
+                timestamp=dt_in
+            )
+            TimeRecord.objects.filter(id=TimeRecord.objects.last().id).update(timestamp=dt_in) # Bypass auto_now_add
+            
+            # Clock OUT
+            dt_out = timezone.make_aware(timezone.datetime.combine(current_date, time(18, random.randint(0, 30))))
+            TimeRecord.objects.create(
+                provider=provider,
+                record_type=TimeRecordType.CLOCK_OUT,
+                latitude=Decimal("-1.45502"),
+                longitude=Decimal("-48.5024"),
+                timestamp=dt_out
+            )
+            TimeRecord.objects.filter(id=TimeRecord.objects.last().id).update(timestamp=dt_out) # Bypass auto_now_add
+
+        # Generate a mock adjustment for some providers
+        if random.random() > 0.5:
+            adj_date = today - timedelta(days=10)
+            TimeAdjustmentRequest.objects.create(
+                provider=provider,
+                date=adj_date,
+                time=time(9, 0),
+                record_type=TimeRecordType.CLOCK_IN,
+                justification="Esqueci de bater o ponto pois o celular descarregou.",
+                status=TimeAdjustmentStatus.PENDING
+            )
+
+    print("✓ TimeRecords & Adjustments created.")
+    
+    print("\nUser Credentials:")
     print("  Super Admin: admin / password123 (Company ID: 1)")
     print("  Customer Admin: tech_admin / password123 (Company ID: 2)")
-
 
 if __name__ == "__main__":
     main()

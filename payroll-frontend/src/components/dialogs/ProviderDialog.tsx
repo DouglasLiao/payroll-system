@@ -28,11 +28,7 @@ import type { Provider } from 'src/types'
 
 const providerSchema = z
   .object({
-    name: z
-      .string()
-      .min(3, 'Nome deve ter pelo menos 3 caracteres')
-      .max(100, 'Nome muito longo')
-      .refine(onlyLetters, 'Nome deve conter apenas letras e espaços'),
+    name: z.string().optional().or(z.literal('')),
 
     document: z
       .string()
@@ -59,16 +55,10 @@ const providerSchema = z
       message: 'Selecione um método de pagamento válido',
     }),
 
-    pix_key: z.string().optional(),
-    bank_name: z.string().optional(),
-    bank_agency: z.string().optional(),
-    bank_account: z.string().optional(),
-
     email: z
       .string()
-      .optional()
-      .refine((val) => !val || validateEmail(val), 'Email inválido')
-      .or(z.literal('')),
+      .min(1, 'O E-mail é obrigatório para enviar o convite')
+      .refine((val) => validateEmail(val), 'Email inválido'),
 
     description: z.string().max(500, 'Descrição muito longa').optional(),
 
@@ -76,30 +66,6 @@ const providerSchema = z
     vt_fare: z.string().optional(),
     vt_trips_per_day: z.number().min(0).optional(),
   })
-  .refine(
-    (data) => {
-      if (data.payment_method === 'PIX' && !data.pix_key) return false
-      return true
-    },
-    {
-      message: 'Chave PIX é obrigatória para pagamento via PIX',
-      path: ['pix_key'],
-    }
-  )
-  .refine(
-    (data) => {
-      if (
-        data.payment_method !== 'PIX' &&
-        (!data.bank_name || !data.bank_account)
-      )
-        return false
-      return true
-    },
-    {
-      message: 'Dados bancários são obrigatórios para TED/Transferência',
-      path: ['bank_name'],
-    }
-  )
 
 export type ProviderFormInputs = z.infer<typeof providerSchema>
 
@@ -109,10 +75,6 @@ const DEFAULT_PROVIDER_VALUES: ProviderFormInputs = {
   role: '',
   monthly_value: '',
   payment_method: 'PIX',
-  pix_key: '',
-  bank_name: '',
-  bank_agency: '',
-  bank_account: '',
   email: '',
   description: '',
   vt_enabled: false,
@@ -157,15 +119,11 @@ export const ProviderDialog = ({
   useEffect(() => {
     if (provider) {
       reset({
-        name: provider.name,
+        name: provider.name || '',
         document: (provider as any).document || '', // Added document field
         role: provider.role,
         monthly_value: provider.monthly_value,
         payment_method: provider.payment_method,
-        pix_key: provider.pix_key || '',
-        bank_name: provider.bank_name || '',
-        bank_agency: provider.bank_agency || '',
-        bank_account: provider.bank_account || '',
         email: provider.email || '',
         description: provider.description || '',
         vt_enabled: provider.vt_enabled || false,
@@ -292,67 +250,6 @@ export const ProviderDialog = ({
               />
             </Grid>
 
-            {/* PIX ou Dados Bancários */}
-            {paymentMethod === 'PIX' ? (
-              <Grid size={{ xs: 12 }}>
-                <Controller
-                  name="pix_key"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Chave PIX"
-                      fullWidth
-                      error={!!errors.pix_key}
-                      helperText={errors.pix_key?.message}
-                    />
-                  )}
-                />
-              </Grid>
-            ) : (
-              <>
-                <Grid size={{ xs: 12 }}>
-                  <Controller
-                    name="bank_name"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Nome do Banco"
-                        fullWidth
-                        error={!!errors.bank_name}
-                        helperText={errors.bank_name?.message}
-                      />
-                    )}
-                  />
-                </Grid>
-                <Grid size={{ xs: 6 }}>
-                  <Controller
-                    name="bank_agency"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField {...field} label="Agência" fullWidth />
-                    )}
-                  />
-                </Grid>
-                <Grid size={{ xs: 6 }}>
-                  <Controller
-                    name="bank_account"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Conta"
-                        fullWidth
-                        error={!!errors.bank_account}
-                        helperText={errors.bank_account?.message}
-                      />
-                    )}
-                  />
-                </Grid>
-              </>
-            )}
-
             {/* Email */}
             <Grid size={{ xs: 12 }}>
               <Controller
@@ -361,10 +258,11 @@ export const ProviderDialog = ({
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Email (Opcional)"
+                    label="Email (Obrigatório para Convite)"
                     fullWidth
+                    required
                     error={!!errors.email}
-                    helperText={errors.email?.message}
+                    helperText={errors.email?.message || 'O prestador receberá o convite neste e-mail'}
                   />
                 )}
               />

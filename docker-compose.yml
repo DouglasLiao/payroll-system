@@ -57,7 +57,7 @@ services:
       dockerfile: ./payroll-landing-page/Dockerfile
     container_name: payroll_landing_page
     ports:
-      - "5174:5174"
+      - "5175:5174"
     volumes:
       - ./payroll-landing-page:/app/payroll-landing-page
       - ./payroll-design-system:/app/payroll-design-system
@@ -76,8 +76,8 @@ services:
       - POSTGRES_DB=${DB_NAME:-payroll}
       - POSTGRES_USER=${DB_USER:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
-    ports:
-      - "127.0.0.1:5432:5432"
+    # Port 5432 is NOT exposed to the host to avoid conflicts with local Postgres.
+    # The backend reaches the DB via Docker internal network (host: "db").
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s

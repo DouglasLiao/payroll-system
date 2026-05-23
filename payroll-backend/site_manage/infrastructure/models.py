@@ -140,7 +140,19 @@ class Provider(models.Model):
     Prestador de Serviços (Pessoa Jurídica - PJ)
     """
 
-    name = models.CharField(max_length=255, verbose_name="Nome")
+    name = models.CharField(
+        max_length=255, 
+        verbose_name="Nome", 
+        null=True, 
+        blank=True, 
+        help_text="Pode ser preenchido posteriormente pelo prestador no onboarding"
+    )
+    address = models.TextField(
+        verbose_name="Endereço Completo", 
+        null=True, 
+        blank=True, 
+        help_text="Endereço preenchido pelo prestador no onboarding"
+    )
     document = models.CharField(
         max_length=14,
         verbose_name="CPF/CNPJ",
@@ -596,3 +608,66 @@ class PayrollItem(models.Model):
 
     def __str__(self):
         return f"{self.description}: R$ {self.amount}"
+
+
+# ==============================================================================
+# TIME TRACKING (PONTO)
+# ==============================================================================
+
+class TimeRecordType(models.TextChoices):
+    CLOCK_IN = "CLOCK_IN", "Entrada"
+    CLOCK_OUT = "CLOCK_OUT", "Saída"
+
+
+class TimeRecord(models.Model):
+    """
+    Registro de Ponto do Colaborador (Entrada/Saída), incluindo geolocalização.
+    """
+    provider = models.ForeignKey(
+        Provider, on_delete=models.CASCADE, related_name="time_records"
+    )
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Data/Hora do Registro")
+    record_type = models.CharField(max_length=20, choices=TimeRecordType.choices, verbose_name="Tipo de Registro")
+    latitude = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True, verbose_name="Latitude")
+    longitude = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True, verbose_name="Longitude")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Registro de Ponto"
+        verbose_name_plural = "Registros de Ponto"
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"{self.provider.name} - {self.record_type} em {self.timestamp}"
+
+
+class TimeAdjustmentStatus(models.TextChoices):
+    PENDING = "PENDING", "Pendente"
+    APPROVED = "APPROVED", "Aprovado"
+    REJECTED = "REJECTED", "Rejeitado"
+
+
+class TimeAdjustmentRequest(models.Model):
+    """
+    Solicitação de ajuste de ponto submetida pelo colaborador para aprovação da empresa.
+    """
+    provider = models.ForeignKey(
+        Provider, on_delete=models.CASCADE, related_name="time_adjustments"
+    )
+    date = models.DateField(verbose_name="Data da Ocorrência")
+    time = models.TimeField(verbose_name="Horário Sugerido")
+    record_type = models.CharField(max_length=20, choices=TimeRecordType.choices, default=TimeRecordType.CLOCK_IN, verbose_name="Tipo")
+    justification = models.TextField(verbose_name="Justificativa")
+    status = models.CharField(max_length=20, choices=TimeAdjustmentStatus.choices, default=TimeAdjustmentStatus.PENDING, verbose_name="Status")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Ajuste de Ponto"
+        verbose_name_plural = "Ajustes de Ponto"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Ajuste {self.provider.name} - {self.date} ({self.status.value})"

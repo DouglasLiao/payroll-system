@@ -1,1 +1,2 @@
-export { getTheme } from "./theme";
+export * from './theme';
+export * from './components/LocationMap';

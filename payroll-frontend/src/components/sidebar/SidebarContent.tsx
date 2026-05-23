@@ -65,6 +65,11 @@ export function SidebarContent() {
             path: '/admin/providers',
           },
           {
+            text: 'Gestão de Ponto',
+            icon: <DashboardIcon />, // Will import AccessTime dynamically or just use Dashboard/Receipt
+            path: '/admin/time-records',
+          },
+          {
             text: 'Pagamentos',
             icon: <ReceiptIcon />,
             path: '/admin/payrolls',

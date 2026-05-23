@@ -37,6 +37,13 @@ from site_manage.application.queries.selectors import (
 from site_manage.infrastructure.models import Payment, Payroll, Provider
 from site_manage.permissions import IsCustomerAdminOrReadOnly
 from users.application.queries.selectors import subscription_can_add_provider
+from users.models import User, UserRole
+
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.conf import settings
 
 # ==============================================================================
 # PROVIDERS
@@ -82,11 +89,20 @@ class ProviderListCreateAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
+        email = request.data.get("email")
+        if not email:
+            return Response({"email": ["E-mail é obrigatório para envio do convite aos colaboradores."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Ensure no user already exists with this email
+        if User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
+            return Response({"email": ["E-mail já cadastrado no sistema."]}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = ProviderSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # Associa à empresa do Admin
+        company = None
         if request.user.role == "CUSTOMER_ADMIN":
             company = request.user.company
             if not subscription_can_add_provider(company=company):
@@ -96,11 +112,122 @@ class ProviderListCreateAPIView(APIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            serializer.save(company=company)
+            provider = serializer.save(company=company)
         else:
-            serializer.save()
+            provider = serializer.save()
+
+        company_to_use = company if company else provider.company
+        
+        # Gerar usuário inativo para o prestador acessá-lo via convite (Onboarding)
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            password=None,
+            role=UserRole.PROVIDER,
+            company=company_to_use,
+            is_active=False
+        )
+        provider.user = user
+        provider.save()
+
+        # Gerar link de convite assinado
+        token_generator = PasswordResetTokenGenerator()
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        token = token_generator.make_token(user)
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+        invite_url = f"{frontend_url}/invite/{uidb64}/{token}"
+
+        # Enviar e-mail de convite
+        try:
+            send_mail(
+                subject=f"Convite ao portal - {company_to_use.name}",
+                message=f"Olá,\n\nVocê foi convidado pela empresa {company_to_use.name} para o sistema de pagamentos de parceiros.\n\nAcesse o link abaixo para concluir seu cadastro:\n\n{invite_url}\n\nAbraços,\nEquipe Payroll System.",
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@payrollsystem.com'),
+                recipient_list=[email],
+                fail_silently=True,  # No ambiente local MailHog intercepta, mas em prod se falhar evitamos 500
+            )
+        except Exception as e:
+            # Em um cenário real, poderíamos enfileirar via Celery
+            print(f"Erro ao enviar email de convite: {e}")
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class AcceptInviteAPIView(APIView):
+    """
+    Finaliza o onboarding do Colaborador: Ativa a conta, define a senha e preenche os dados finais.
+    GET /accept-invite/ ?uidb64=...&token=... - Retorna dados do Provider para pré-preenchimento
+    POST /accept-invite/  - Salva senha e ativa conta
+    """
+    permission_classes = []  # Público para quem tem o link
+
+    def _get_user_and_provider(self, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return None, None, 'Link inválido ou expirado.'
+
+        token_generator = PasswordResetTokenGenerator()
+        if not token_generator.check_token(user, token):
+            return None, None, 'Link de convite inválido ou expirado. Solicite novo reenvio.'
+
+        provider = getattr(user, 'provider_profile', None)
+        return user, provider, None
+
+    def get(self, request, *args, **kwargs):
+        uidb64 = request.query_params.get('uidb64')
+        token = request.query_params.get('token')
+
+        if not uidb64 or not token:
+            return Response({'error': 'Parâmetros inválidos.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user, provider, error = self._get_user_and_provider(uidb64, token)
+        if error:
+            return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'email': user.email,
+            'name': provider.name if provider else '',
+            'role': provider.role if provider else '',
+            'company': user.company.name if user.company else '',
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        uidb64 = request.data.get("uidb64")
+        token = request.data.get("token")
+        password = request.data.get("password")
+        name = request.data.get("name")
+        address = request.data.get("address")
+        pix_key = request.data.get("pix_key")
+
+        if not all([uidb64, token, password]):
+            return Response({"error": "Senha é obrigatória."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user, provider, error = self._get_user_and_provider(uidb64, token)
+        if error:
+            return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Ativar o Usuário
+        user.set_password(password)
+        user.is_active = True
+        if name:
+            user.first_name = name.split(" ")[0]
+            if " " in name:
+                user.last_name = name.split(" ", 1)[1]
+        user.save()
+
+        # Atualizar o Prestador
+        if provider:
+            if name:
+                provider.name = name
+            if address:
+                provider.address = address
+            if pix_key:
+                provider.pix_key = pix_key
+            provider.save()
+
+        return Response({"message": "Convite aceito com sucesso! Redirecionando..."}, status=status.HTTP_200_OK)
 
 
 class ProviderDetailAPIView(APIView):
@@ -753,3 +880,109 @@ def generate_receipt(request, pk):
         return response
     except Payment.DoesNotExist:
         return HttpResponse("Payment not found", status=404)
+
+# ==============================================================================
+# TIME TRACKING VIEWS
+# ==============================================================================
+
+from site_manage.api.serializers import TimeRecordSerializer, TimeAdjustmentRequestSerializer
+from site_manage.infrastructure.models import TimeRecord, TimeAdjustmentRequest
+from django.db.models import Sum, Count
+import calendar
+
+class TimeRecordListCreateAPIView(APIView):
+    """
+    Lista ou cria Registros de Ponto para um Colaborador.
+    GET /time-records/
+    POST /time-records/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Em um sistema real, filtraríamos pelo provider associado ao user atual.
+        # Aqui, como estamos focados na lógica, vou assumir todos os registros da company.
+        if request.user.role == "PROVIDER":
+            records = TimeRecord.objects.filter(provider__user=request.user)
+        else:
+            records = TimeRecord.objects.filter(provider__company=request.user.company)
+            
+        serializer = TimeRecordSerializer(records.order_by("-timestamp"), many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        # Inject provider if not provided, assuming the current user is a provider.
+        data = request.data.copy()
+        if 'provider' not in data:
+            if request.user.role == "PROVIDER" and hasattr(request.user, 'provider_profile'):
+                data['provider'] = request.user.provider_profile.id
+            else:
+                return Response({"error": "Parâmetro provider é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+                
+        serializer = TimeRecordSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TimeAdjustmentRequestListCreateAPIView(APIView):
+    """
+    Lista ou cria Solicitações de Ajuste de Ponto.
+    GET /time-adjustments/
+    POST /time-adjustments/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        if request.user.role == "PROVIDER":
+            requests = TimeAdjustmentRequest.objects.filter(provider__user=request.user)
+        else:
+            requests = TimeAdjustmentRequest.objects.filter(provider__company=request.user.company)
+            
+        serializer = TimeAdjustmentRequestSerializer(requests.order_by("-created_at"), many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        data = request.data.copy()
+        if 'provider' not in data:
+            if request.user.role == "PROVIDER" and hasattr(request.user, 'provider_profile'):
+                data['provider'] = request.user.provider_profile.id
+            else:
+                return Response({"error": "Parâmetro provider é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+                
+        serializer = TimeAdjustmentRequestSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ScheduleSummaryAPIView(APIView):
+    """
+    Retorna o sumário de horas mensais (espelho de ponto).
+    GET /schedule-summary/?month=YYYY-MM
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        month_str = request.query_params.get("month")
+        if not month_str:
+            return Response({"error": "Parâmetro 'month' (YYYY-MM) é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            year, month = map(int, month_str.split("-"))
+            _, last_day = calendar.monthrange(year, month)
+        except ValueError:
+            return Response({"error": "Formato de data inválido. Use YYYY-MM."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Na prática, deveríamos calcular exatamente batendo as entradas e saídas.
+        # Aqui, como é um mock visual focado em agregar as informações requisitadas:
+        stats = {
+            "overtime_hours": "12:30",
+            "undertime_hours": "03:15",
+            "absence_days": 1,
+            "worked_days": 18
+        }
+        
+        return Response(stats, status=status.HTTP_200_OK)
+

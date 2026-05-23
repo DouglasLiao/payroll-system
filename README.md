@@ -54,7 +54,10 @@ Os serviços em `src/services/` usam instâncias separadas por entidades (`dashb
 
 - **Super Admin:** Tem acesso total à plataforma, gerencia empresas filiais, audita os pagamentos gerais e configurações do sistema.
 - **Admin da Empresa (Company Admin):** Controla os colaboradores, modelos de cálculo e folhas apenas da sua respectiva empresa.
-- **Colaborador / Prestador (Provider):** Pode eventualmente visualizar seus próprios recibos de pagamento ou histórico (caso habilitado no frontend).
+- **Colaborador / Prestador (Provider):** Pode visualizar seus próprios recibos de pagamento ou histórico (caso habilitado no frontend). Além disso, possui acesso às funcionalidades de controle de jornada:
+  - **Registro de Ponto:** Pode bater o ponto tanto pelo desktop quanto pelo mobile. Ao registrar o ponto, o sistema captura a localização precisa com coordenadas geográficas e exibição em mapa.
+  - **Ajuste de Ponto:** Possui a opção de solicitar ajustes de ponto, que serão submetidos para aprovação exclusiva da respectiva empresa.
+  - **Calendário e Histórico de Jornada:** Pode visualizar o calendário de horários com o detalhamento diário, incluindo registros de horas extras, horas em débito (feitas a menos no dia), dias faltantes, entre outros indicadores.
 
 ## 3. Principais Features e Lógica
 

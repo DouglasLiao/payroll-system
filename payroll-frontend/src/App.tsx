@@ -13,6 +13,7 @@ import 'dayjs/locale/pt-br'
 import MainLayout from 'src/layouts/MainLayout'
 import Dashboard from 'src/pages/customer-admin/Dashboard'
 import Providers from 'src/pages/customer-admin/Providers'
+import TimeRecordsManager from 'src/pages/customer-admin/TimeRecordsManager'
 import Payrolls from 'src/pages/customer-admin/Payrolls'
 import Reports from 'src/pages/customer-admin/Reports'
 import Settings from 'src/pages/customer-admin/Settings'
@@ -20,6 +21,7 @@ import LoginPage from 'src/pages/LoginPage'
 import RegisterPage from 'src/pages/RegisterPage'
 import ForgotPasswordPage from 'src/pages/ForgotPasswordPage'
 import ResetPasswordPage from 'src/pages/ResetPasswordPage'
+import AcceptInvitation from 'src/pages/AcceptInvitation'
 import UnauthorizedPage from 'src/pages/UnauthorizedPage'
 import SuperAdminOverview from 'src/pages/super-admin/Overview'
 import SuperAdminCompanies from 'src/pages/super-admin/Companies'
@@ -29,6 +31,9 @@ import SuperAdminApprovals from 'src/pages/super-admin/Approvals'
 import SuperAdminSubscriptions from 'src/pages/super-admin/Subscriptions'
 import MathTemplateManager from 'src/pages/super-admin/MathTemplateManager'
 import ProviderPayments from 'src/pages/provider/ProviderPayments'
+import TimeTracker from 'src/pages/provider/TimeTracker'
+import TimeAdjustments from 'src/pages/provider/TimeAdjustments'
+import ScheduleCalendar from 'src/pages/provider/ScheduleCalendar'
 import LandingPage from 'src/pages/LandingPage'
 import { ProtectedRoute } from 'src/components/routing'
 
@@ -100,6 +105,15 @@ function App() {
                   </ThemeProvider>
                 }
               />
+              <Route
+                path="/invite/:uidb64/:token"
+                element={
+                  <ThemeProvider theme={loginTheme}>
+                    <CssBaseline />
+                    <AcceptInvitation />
+                  </ThemeProvider>
+                }
+              />
 
               {/* All other routes with dynamic theme */}
               <Route
@@ -167,6 +181,7 @@ function App() {
                       >
                         <Route index element={<Dashboard />} />
                         <Route path="admin/providers" element={<Providers />} />
+                        <Route path="admin/time-records" element={<TimeRecordsManager />} />
                         <Route path="admin/payrolls" element={<Payrolls />} />
                         <Route path="admin/reports" element={<Reports />} />
                         <Route path="admin/settings" element={<Settings />} />
@@ -182,6 +197,9 @@ function App() {
                         }
                       >
                         <Route index element={<ProviderPayments />} />
+                        <Route path="time-tracker" element={<TimeTracker />} />
+                        <Route path="time-adjustments" element={<TimeAdjustments />} />
+                        <Route path="schedule" element={<ScheduleCalendar />} />
                       </Route>
 
                       {/* Standalone Employee Route - Provider */}

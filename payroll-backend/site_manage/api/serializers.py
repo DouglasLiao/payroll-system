@@ -414,3 +414,33 @@ class PayrollUpdateSerializer(serializers.Serializer):
     hired_date = serializers.DateField(
         required=False, allow_null=True, help_text="Data de início no mês"
     )
+
+# ==============================================================================
+# TIME TRACKING SERIALIZERS
+# ==============================================================================
+
+from site_manage.infrastructure.models import TimeRecord, TimeAdjustmentRequest
+
+class TimeRecordSerializer(serializers.ModelSerializer):
+    """Serializer para registros de ponto (entrada/saída)"""
+    
+    class Meta:
+        model = TimeRecord
+        fields = ['id', 'provider', 'timestamp', 'record_type', 'latitude', 'longitude', 'created_at']
+        read_only_fields = ['created_at']
+
+
+class TimeAdjustmentRequestSerializer(serializers.ModelSerializer):
+    """Serializer para solicitar ajuste no espelho de ponto"""
+    
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    
+    class Meta:
+        model = TimeAdjustmentRequest
+        fields = [
+            'id', 'provider', 'date', 'time', 'record_type', 
+            'justification', 'status', 'status_display', 
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['status', 'created_at', 'updated_at']
+

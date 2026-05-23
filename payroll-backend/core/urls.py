@@ -8,8 +8,8 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # Payroll domain: providers, payrolls, dashboard
-    path("", include("site_manage.api.urls")),
+    # Payroll domain: providers, payrolls, dashboard, time-tracking, invite
+    path("api/", include("site_manage.api.urls")),
     # User domain: auth, companies, subscriptions, config
     path("users/", include("users.api.urls")),
     # Swagger/OpenAPI Documentation
